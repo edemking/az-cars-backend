@@ -1,0 +1,7 @@
+// Configuration with fallback values if .env is not available
+module.exports = {
+  PORT: process.env.PORT || 4000,
+  MONGO_URI: process.env.MONGO_URI,
+  JWT_SECRET: process.env.JWT_SECRET || "az_cars_jwt_secret_key_change_in_production",
+  JWT_EXPIRE: process.env.JWT_EXPIRE || "30d"
+}; 
