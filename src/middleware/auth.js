@@ -5,7 +5,7 @@ const config = require("../config/config");
 // Middleware to protect routes
 exports.protect = async (req, res, next) => {
   let token;
-
+  
   // Check if Authorization header exists and starts with Bearer
   if (
     req.headers.authorization &&
@@ -13,6 +13,7 @@ exports.protect = async (req, res, next) => {
   ) {
     // Get token from header (format: "Bearer <token>")
     token = req.headers.authorization.split(" ")[1];
+    console.log(token);
   }
 
   // Check if token exists

@@ -1,0 +1,279 @@
+const Auction = require('../models/Auction');
+const Bid = require('../models/Bid');
+const Car = require('../models/cars/Car');
+const asyncHandler = require('../middleware/asyncHandler');
+const ErrorResponse = require('../utils/errorResponse');
+
+// @desc    Create a new auction
+// @route   POST /api/auctions
+// @access  Private
+exports.createAuction = asyncHandler(async (req, res, next) => {
+  // Add user to req.body
+  req.body.createdBy = req.user.id;
+  
+  // Check if car exists
+  const car = await Car.findById(req.body.car);
+  if (!car) {
+    return next(new ErrorResponse(`Car not found with id of ${req.body.car}`, 404));
+  }
+  
+  // Create auction
+  const auction = await Auction.create(req.body);
+  
+  res.status(201).json({ success: true, data: auction });
+});
+
+// @desc    Get all auctions
+// @route   GET /api/auctions
+// @access  Public
+exports.getAuctions = asyncHandler(async (req, res, next) => {
+  // Create query
+  const query = {};
+  
+  // Filter by status if provided
+  if (req.query.status) {
+    query.status = req.query.status;
+  }
+  
+  // Filter by type if provided
+  if (req.query.type) {
+    query.type = req.query.type;
+  }
+  
+  // Find auctions
+  const auctions = await Auction.find(query)
+    .populate('car', 'make model year price')
+    .populate('createdBy', 'firstName lastName');
+  
+  res.status(200).json({
+    success: true,
+    count: auctions.length,
+    data: auctions
+  });
+});
+
+// @desc    Get single auction
+// @route   GET /api/auctions/:id
+// @access  Public
+exports.getAuction = asyncHandler(async (req, res, next) => {
+  const auction = await Auction.findById(req.params.id)
+    .populate('car')
+    .populate('createdBy', 'firstName lastName')
+    .populate('winner', 'firstName lastName');
+  
+  if (!auction) {
+    return next(new ErrorResponse(`Auction not found with id of ${req.params.id}`, 404));
+  }
+  
+  // Get bids for this auction
+  const bids = await Bid.find({ auction: req.params.id })
+    .populate('bidder', 'firstName lastName')
+    .sort({ amount: -1 });
+  
+  res.status(200).json({ 
+    success: true, 
+    data: {
+      ...auction._doc,
+      bids
+    }
+  });
+});
+
+// @desc    Update auction
+// @route   PUT /api/auctions/:id
+// @access  Private
+exports.updateAuction = asyncHandler(async (req, res, next) => {
+  let auction = await Auction.findById(req.params.id);
+  
+  if (!auction) {
+    return next(new ErrorResponse(`Auction not found with id of ${req.params.id}`, 404));
+  }
+  
+  // Make sure user is auction creator or admin
+  if (auction.createdBy.toString() !== req.user.id && req.user.role !== 'admin') {
+    return next(new ErrorResponse('Not authorized to update this auction', 401));
+  }
+  
+  // Don't allow updating certain fields if auction has bids
+  if (auction.totalBids > 0) {
+    const protectedFields = ['type', 'startingPrice', 'car'];
+    for (const field of protectedFields) {
+      if (req.body[field]) {
+        delete req.body[field];
+      }
+    }
+  }
+  
+  auction = await Auction.findByIdAndUpdate(req.params.id, req.body, {
+    new: true,
+    runValidators: true
+  });
+  
+  res.status(200).json({ success: true, data: auction });
+});
+
+// @desc    Delete auction
+// @route   DELETE /api/auctions/:id
+// @access  Private
+exports.deleteAuction = asyncHandler(async (req, res, next) => {
+  const auction = await Auction.findById(req.params.id);
+  
+  if (!auction) {
+    return next(new ErrorResponse(`Auction not found with id of ${req.params.id}`, 404));
+  }
+  
+  // Make sure user is auction creator or admin
+  if (auction.createdBy.toString() !== req.user.id && req.user.role !== 'admin') {
+    return next(new ErrorResponse('Not authorized to delete this auction', 401));
+  }
+  
+  // Don't allow deletion if auction has bids
+  if (auction.totalBids > 0) {
+    return next(new ErrorResponse('Cannot delete auction with existing bids', 400));
+  }
+  
+  // Delete the auction
+  await auction.deleteOne();
+  
+  res.status(200).json({ success: true, data: {} });
+});
+
+// @desc    Place bid on auction
+// @route   POST /api/auctions/:id/bid
+// @access  Private
+exports.placeBid = asyncHandler(async (req, res, next) => {
+  const { amount } = req.body;
+  
+  if (!amount) {
+    return next(new ErrorResponse('Please provide a bid amount', 400));
+  }
+  
+  const auction = await Auction.findById(req.params.id);
+  
+  if (!auction) {
+    return next(new ErrorResponse(`Auction not found with id of ${req.params.id}`, 404));
+  }
+  
+  // Check if auction is active
+  if (auction.status !== 'active') {
+    return next(new ErrorResponse('This auction is no longer active', 400));
+  }
+  
+  // Check if auction has ended
+  if (new Date() > auction.endTime) {
+    return next(new ErrorResponse('This auction has ended', 400));
+  }
+  
+  // Check if user is the creator of the auction
+  if (auction.createdBy.toString() === req.user.id) {
+    return next(new ErrorResponse('You cannot bid on your own auction', 400));
+  }
+  
+  // Check if bid is higher than starting price
+  if (amount < auction.startingPrice) {
+    return next(new ErrorResponse(`Bid must be at least ${auction.startingPrice}`, 400));
+  }
+  
+  // Check if bid is higher than current highest bid + increment
+  if (auction.currentHighestBid > 0 && amount < (auction.currentHighestBid + auction.bidIncrement)) {
+    return next(new ErrorResponse(`Bid must be at least ${auction.currentHighestBid + auction.bidIncrement}`, 400));
+  }
+  
+  // Create new bid
+  const bid = await Bid.create({
+    auction: auction._id,
+    bidder: req.user.id,
+    amount,
+    time: new Date()
+  });
+  
+  // Update auction with new highest bid
+  auction.currentHighestBid = amount;
+  auction.totalBids += 1;
+  
+  // If this is a buyNow auction and the bid matches or exceeds the buyNow price
+  if (auction.type === 'buyNow' && amount >= auction.buyNowPrice) {
+    auction.status = 'completed';
+    auction.winner = req.user.id;
+    bid.isWinningBid = true;
+    await bid.save();
+  }
+  
+  await auction.save();
+  
+  res.status(200).json({
+    success: true,
+    data: {
+      auction,
+      bid
+    }
+  });
+});
+
+// @desc    Get auctions created by user
+// @route   GET /api/auctions/user
+// @access  Private
+exports.getUserAuctions = asyncHandler(async (req, res, next) => {
+  const auctions = await Auction.find({ createdBy: req.user.id })
+    .populate('car', 'make model year price');
+  
+  res.status(200).json({
+    success: true,
+    count: auctions.length,
+    data: auctions
+  });
+});
+
+// @desc    Get auctions user has bid on
+// @route   GET /api/auctions/mybids
+// @access  Private
+exports.getUserBids = asyncHandler(async (req, res, next) => {
+  // Find all bids by the user
+  const bids = await Bid.find({ bidder: req.user.id })
+    .populate({
+      path: 'auction',
+      select: 'auctionTitle startingPrice currentHighestBid endTime status',
+      populate: {
+        path: 'car',
+        select: 'make model year'
+      }
+    })
+    .sort({ createdAt: -1 });
+  
+  // Get unique auctions from bids
+  const auctionIds = [...new Set(bids.map(bid => bid.auction._id.toString()))];
+  
+  // Get the auctions
+  const auctions = await Auction.find({ _id: { $in: auctionIds } })
+    .populate('car', 'make model year price');
+  
+  res.status(200).json({
+    success: true,
+    count: auctions.length,
+    data: {
+      auctions,
+      bids
+    }
+  });
+});
+
+// @desc    Get all bids for an auction
+// @route   GET /api/auctions/:id/bids
+// @access  Public
+exports.getAuctionBids = asyncHandler(async (req, res, next) => {
+  const auction = await Auction.findById(req.params.id);
+  
+  if (!auction) {
+    return next(new ErrorResponse(`Auction not found with id of ${req.params.id}`, 404));
+  }
+  
+  const bids = await Bid.find({ auction: req.params.id })
+    .populate('bidder', 'firstName lastName')
+    .sort({ amount: -1 });
+  
+  res.status(200).json({
+    success: true,
+    count: bids.length,
+    data: bids
+  });
+}); 
