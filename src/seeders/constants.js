@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 // Helper function to create a fixed ObjectId with a valid hexadecimal string
-const createId = (id) => mongoose.Types.ObjectId(id);
+const createId = (id) => new mongoose.Types.ObjectId(id);
 
 // Make IDs - using valid hexadecimal strings
 const MAKES = {

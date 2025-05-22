@@ -1,3 +1,6 @@
+// Load environment variables
+require('dotenv').config();
+
 const mongoose = require('mongoose');
 const config = require('../config/config');
 
@@ -39,10 +42,12 @@ const seedDatabase = async () => {
     
     console.log('Reference data seeded successfully');
     
-    // Then seed service history and cars
-    console.log('Starting to seed service history and cars...');
-    await seedServiceHistory();
+    // Then seed cars first, then service history
+    console.log('Starting to seed cars...');
     await seedCars();
+    
+    console.log('Starting to seed service history...');
+    await seedServiceHistory();
     
     console.log('Database seeding completed successfully');
     

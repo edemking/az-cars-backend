@@ -22,7 +22,7 @@ This document outlines the API endpoints for the auction functionality in the AZ
   "auctionDescription": "Clean title Toyota Camry with low mileage",
   "buyNowPrice": 25000, // Optional for buyNow auctions
   "startTime": "2023-06-01T12:00:00Z",
-  "endTime": "2023-06-02T12:00:00Z", // Calculated based on startTime + duration
+  "endTime": "2023-06-02T12:00:00Z", // Auto-calculated based on startTime + duration
   "status": "active", // active, completed, cancelled
   "createdBy": "6470a9ae10b5d12345600001", // Reference to User
   "currentHighestBid": 16000, // The current highest bid amount
@@ -85,6 +85,9 @@ Required fields:
 
 Optional fields:
 - `buyNowPrice`: Price at which auction ends immediately (for buyNow type)
+- `startTime`: When the auction should start (defaults to current time)
+
+Note: The `endTime` is automatically calculated based on `startTime` + `duration` and should not be provided.
 
 Authentication required: Yes
 
@@ -162,4 +165,4 @@ GET /api/auctions/check-completed
 
 Manually triggers a check for auctions that have ended and updates their status.
 
-Authentication required: Yes (admin only) 
+Authentication required: Yes (admin only)

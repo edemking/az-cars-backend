@@ -53,8 +53,7 @@ const AuctionSchema = new mongoose.Schema({
     default: Date.now
   },
   endTime: {
-    type: Date,
-    required: true
+    type: Date
   },
   status: {
     type: String,
@@ -82,7 +81,9 @@ const AuctionSchema = new mongoose.Schema({
 
 // Calculate end time before saving
 AuctionSchema.pre('save', function(next) {
-  if (this.isNew) {
+  // Calculate end time based on duration and start time
+  // Either when the document is new or when duration or start time is modified
+  if (this.isNew || this.isModified('duration') || this.isModified('startTime')) {
     const durationMs = 
       (this.duration.hours * 60 * 60 * 1000) + 
       (this.duration.minutes * 60 * 1000) + 

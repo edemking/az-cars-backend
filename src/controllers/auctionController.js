@@ -11,6 +11,11 @@ exports.createAuction = asyncHandler(async (req, res, next) => {
   // Add user to req.body
   req.body.createdBy = req.user.id;
   
+  // Remove endTime if provided, as it will be auto-calculated
+  if (req.body.endTime) {
+    delete req.body.endTime;
+  }
+  
   // Check if car exists
   const car = await Car.findById(req.body.car);
   if (!car) {
@@ -102,6 +107,11 @@ exports.updateAuction = asyncHandler(async (req, res, next) => {
         delete req.body[field];
       }
     }
+  }
+  
+  // Remove endTime from the request as it will be auto-calculated based on duration and startTime
+  if (req.body.endTime) {
+    delete req.body.endTime;
   }
   
   auction = await Auction.findByIdAndUpdate(req.params.id, req.body, {

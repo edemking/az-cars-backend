@@ -1,5 +1,6 @@
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
+const { Role } = require("../models/Role");
 const config = require("../config/config");
 
 // Middleware to protect routes
@@ -13,7 +14,6 @@ exports.protect = async (req, res, next) => {
   ) {
     // Get token from header (format: "Bearer <token>")
     token = req.headers.authorization.split(" ")[1];
-    console.log(token);
   }
 
   // Check if token exists
@@ -27,8 +27,10 @@ exports.protect = async (req, res, next) => {
     // Verify token
     const decoded = jwt.verify(token, config.JWT_SECRET);
 
-    // Add user from payload to request object
-    req.user = await User.findById(decoded.id).select("-password");
+    // Add user from payload to request object, including role
+    req.user = await User.findById(decoded.id)
+      .select("-password")
+      .populate('role');
 
     if (!req.user) {
       return res.status(401).json({
@@ -40,6 +42,50 @@ exports.protect = async (req, res, next) => {
   } catch (error) {
     return res.status(401).json({
       message: "Not authorized to access this route",
+    });
+  }
+};
+
+// Middleware to check for specific permissions
+exports.hasPermission = (permission) => {
+  return async (req, res, next) => {
+    try {
+      // If no user or role, deny access
+      if (!req.user || !req.user.role) {
+        return res.status(403).json({
+          message: "Access denied: No role assigned",
+        });
+      }
+
+      // For backward compatibility with existing roleType field
+      if (req.user.roleType === 'admin') {
+        return next();
+      }
+
+      // Check if user's role has the required permission
+      if (req.user.role.permissions.includes(permission)) {
+        return next();
+      }
+
+      return res.status(403).json({
+        message: `Access denied: '${permission}' permission required`,
+      });
+    } catch (error) {
+      return res.status(500).json({
+        message: "Error checking permissions",
+        error: error.message
+      });
+    }
+  };
+};
+
+// Middleware to restrict access to admin only (for backward compatibility)
+exports.admin = (req, res, next) => {
+  if (req.user && req.user.roleType === 'admin') {
+    next();
+  } else {
+    return res.status(403).json({
+      message: "Access denied: Admin role required",
     });
   }
 };

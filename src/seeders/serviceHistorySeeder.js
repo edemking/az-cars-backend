@@ -2,9 +2,16 @@ const mongoose = require('mongoose');
 const ServiceHistory = require('../models/cars/ServiceHistory');
 const connectDB = require('../config/db');
 
+// Car IDs from carSeeder.js
+const CAR_IDS = {
+  TOYOTA_CAMRY: new mongoose.Types.ObjectId('6470a9ae10b5d12345690001'),
+  HONDA_CIVIC: new mongoose.Types.ObjectId('6470a9ae10b5d12345690002')
+};
+
 const serviceHistories = [
   {
     _id: new mongoose.Types.ObjectId('6470a9ae10b5d12345680001'),
+    car: CAR_IDS.TOYOTA_CAMRY,
     serviceType: 'Regular Maintenance',
     serviceDate: new Date(2023, 11, 15), // December 15, 2023
     mileage: 14000,
@@ -14,6 +21,7 @@ const serviceHistories = [
   },
   {
     _id: new mongoose.Types.ObjectId('6470a9ae10b5d12345680002'),
+    car: CAR_IDS.HONDA_CIVIC,
     serviceType: 'Regular Maintenance',
     serviceDate: new Date(2023, 10, 20), // November 20, 2023
     mileage: 19000,

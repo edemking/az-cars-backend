@@ -28,12 +28,14 @@ const carRoutes = require('./routes/cars');
 const userRoutes = require('./routes/users');
 const authRoutes = require('./routes/auth');
 const auctionRoutes = require('./routes/auctions');
+const roleRoutes = require('./routes/roles');
 
 // Use routes
 app.use('/api/cars', carRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/auctions', auctionRoutes);
+app.use('/api/roles', roleRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
