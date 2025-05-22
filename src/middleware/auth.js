@@ -57,11 +57,6 @@ exports.hasPermission = (permission) => {
         });
       }
 
-      // For backward compatibility with existing roleType field
-      if (req.user.roleType === 'admin') {
-        return next();
-      }
-
       // Check if user's role has the required permission
       if (req.user.role.permissions.includes(permission)) {
         return next();
@@ -79,13 +74,3 @@ exports.hasPermission = (permission) => {
   };
 };
 
-// Middleware to restrict access to admin only (for backward compatibility)
-exports.admin = (req, res, next) => {
-  if (req.user && req.user.roleType === 'admin') {
-    next();
-  } else {
-    return res.status(403).json({
-      message: "Access denied: Admin role required",
-    });
-  }
-};
