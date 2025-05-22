@@ -53,7 +53,7 @@ exports.login = async (req, res) => {
 // Get current logged in user
 exports.getMe = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select('-password');
+    const user = await User.findById(req.user.id).select('-password').populate('role');
     
     res.status(200).json({
       success: true,
