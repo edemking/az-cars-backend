@@ -8,7 +8,11 @@ const {
   placeBid,
   getUserAuctions,
   getUserBids,
-  getAuctionBids
+  getAuctionBids,
+  getAuctionsByType,
+  getNewLiveAuctions,
+  getEndingSoonAuctions,
+  getDashboardData
 } = require('../controllers/auctionController');
 
 // Import the auction scheduler
@@ -39,6 +43,20 @@ router.route('/check-completed')
     res.status(200).json({ success: true, message: 'Auction completion check triggered' });
   });
 
+// New routes for filtering auctions - MUST be placed before /:id routes
+router.route('/type/:type')
+  .get(getAuctionsByType);
+
+router.route('/new-live')
+  .get(getNewLiveAuctions);
+
+router.route('/ending-soon')
+  .get(getEndingSoonAuctions);
+
+router.route('/dashboard')
+  .get(protect, getDashboardData);
+
+// Parameterized routes should come AFTER specific routes
 router.route('/:id')
   .get(getAuction)
   .put(protect, updateAuction)
