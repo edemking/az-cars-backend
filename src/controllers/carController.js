@@ -2,14 +2,29 @@ const Car = require("../models/cars/Car");
 const { getFileUrl, getFileUrls } = require("../utils/fileUpload");
 const fs = require("fs");
 const path = require("path");
+const Make = require("../models/cars/Make");
+const Model = require("../models/cars/Model");
+const CarDrive = require("../models/cars/CarDrive");
+const BodyColor = require("../models/cars/BodyColor");
+const CarOption = require("../models/cars/CarOption");
+const FuelType = require("../models/cars/FuelType");
+const Cylinder = require("../models/cars/Cylinder");
+const ServiceHistory = require("../models/cars/ServiceHistory");
+const Country = require("../models/cars/Country");
+const Transmission = require("../models/cars/Transmission");
+const EngineSize = require("../models/cars/EngineSize");
+const VehicleType = require("../models/cars/VehicleType");
+const Rating = require("../models/cars/Rating");
+const CarCondition = require("../models/cars/CarCondition");
+const { sendSuccess, sendError } = require('../utils/responseHandler');
 
 // Get all cars
 exports.getCars = async (req, res) => {
   try {
     const cars = await Car.find();
-    res.status(200).json(cars);
+    sendSuccess(res, { data: cars });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    sendError(res, { message: error.message });
   }
 };
 
@@ -43,11 +58,14 @@ exports.getCar = async (req, res) => {
       });
 
     if (!car) {
-      return res.status(404).json({ message: "Car not found" });
+      return sendError(res, { 
+        statusCode: 404, 
+        message: "Car not found" 
+      });
     }
-    res.status(200).json(car);
+    sendSuccess(res, { data: car });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    sendError(res, { message: error.message });
   }
 };
 
@@ -134,13 +152,16 @@ exports.createCar = async (req, res) => {
         console.log("Cleaned componentSummary:", cleanedSummary);
       } catch (e) {
         console.error("Error processing componentSummary:", e);
-        return res.status(400).json({
+        return sendError(res, {
+          statusCode: 400,
           message: "Invalid componentSummary format",
-          details: e.message,
-          received:
-            typeof carData.componentSummary === "string"
-              ? carData.componentSummary.substring(0, 100) + "..."
-              : typeof carData.componentSummary,
+          errors: {
+            details: e.message,
+            received:
+              typeof carData.componentSummary === "string"
+                ? carData.componentSummary.substring(0, 100) + "..."
+                : typeof carData.componentSummary,
+          }
         });
       }
     }
@@ -161,13 +182,16 @@ exports.createCar = async (req, res) => {
         }
       } catch (e) {
         console.error("Error parsing interiorAndExterior:", e);
-        return res.status(400).json({
+        return sendError(res, {
+          statusCode: 400,
           message: "Invalid interiorAndExterior format",
-          details: e.message,
-          received:
-            typeof carData.interiorAndExterior === "string"
-              ? carData.interiorAndExterior.substring(0, 100) + "..."
-              : typeof carData.interiorAndExterior,
+          errors: {
+            details: e.message,
+            received:
+              typeof carData.interiorAndExterior === "string"
+                ? carData.interiorAndExterior.substring(0, 100) + "..."
+                : typeof carData.interiorAndExterior,
+          }
         });
       }
     }
@@ -219,13 +243,20 @@ exports.createCar = async (req, res) => {
         },
       });
 
-    res.status(201).json(populatedCar);
+    sendSuccess(res, {
+      statusCode: 201,
+      message: "Car created successfully",
+      data: populatedCar
+    });
   } catch (error) {
     console.error("Error creating car:", error);
-    res.status(400).json({
+    sendError(res, {
+      statusCode: 400,
       message: "Error creating car",
-      details: error.message,
-      stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
+      errors: {
+        details: error.message,
+        stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
+      }
     });
   }
 };
@@ -262,12 +293,21 @@ exports.updateCar = async (req, res) => {
     });
 
     if (!car) {
-      return res.status(404).json({ message: "Car not found" });
+      return sendError(res, { 
+        statusCode: 404, 
+        message: "Car not found" 
+      });
     }
 
-    res.status(200).json(car);
+    sendSuccess(res, { 
+      message: "Car updated successfully",
+      data: car 
+    });
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    sendError(res, { 
+      statusCode: 400, 
+      message: error.message 
+    });
   }
 };
 
@@ -276,11 +316,14 @@ exports.deleteCar = async (req, res) => {
   try {
     const car = await Car.findByIdAndDelete(req.params.id);
     if (!car) {
-      return res.status(404).json({ message: "Car not found" });
+      return sendError(res, { 
+        statusCode: 404, 
+        message: "Car not found" 
+      });
     }
-    res.status(200).json({ message: "Car deleted successfully" });
+    sendSuccess(res, { message: "Car deleted successfully" });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    sendError(res, { message: error.message });
   }
 };
 
@@ -288,14 +331,20 @@ exports.deleteCar = async (req, res) => {
 exports.uploadCarImages = async (req, res) => {
   try {
     if (!req.files || !req.files.images) {
-      return res.status(400).json({ message: "No images uploaded" });
+      return sendError(res, { 
+        statusCode: 400, 
+        message: "No images uploaded" 
+      });
     }
 
     const carId = req.params.id;
     const car = await Car.findById(carId);
 
     if (!car) {
-      return res.status(404).json({ message: "Car not found" });
+      return sendError(res, { 
+        statusCode: 404, 
+        message: "Car not found" 
+      });
     }
 
     // Get URLs for the uploaded images
@@ -312,12 +361,15 @@ exports.uploadCarImages = async (req, res) => {
 
     await car.save();
 
-    res.status(200).json({
-      success: true,
-      images: car.images,
+    sendSuccess(res, {
+      message: "Images uploaded successfully",
+      data: { images: car.images }
     });
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    sendError(res, { 
+      statusCode: 400, 
+      message: error.message 
+    });
   }
 };
 
@@ -328,7 +380,10 @@ exports.deleteCarImage = async (req, res) => {
 
     const car = await Car.findById(id);
     if (!car) {
-      return res.status(404).json({ message: "Car not found" });
+      return sendError(res, { 
+        statusCode: 404, 
+        message: "Car not found" 
+      });
     }
 
     // Remove the image URL from the car's images array
@@ -341,12 +396,72 @@ exports.deleteCarImage = async (req, res) => {
     // Optionally, delete the actual file from the server
     // This would require parsing the URL to get the file path
 
-    res.status(200).json({
-      success: true,
+    sendSuccess(res, {
       message: "Image deleted successfully",
-      images: car.images,
+      data: { images: car.images }
     });
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    sendError(res, { 
+      statusCode: 400, 
+      message: error.message 
+    });
+  }
+};
+
+// Get all reference data for creating a car
+exports.getReferenceData = async (req, res) => {
+  try {
+    const [
+      makes,
+      models,
+      carDrives,
+      bodyColors,
+      carOptions,
+      fuelTypes,
+      cylinders,
+      serviceHistories,
+      countries,
+      transmissions,
+      engineSizes,
+      vehicleTypes,
+      ratings,
+      carConditions
+    ] = await Promise.all([
+      Make.find(),
+      Model.find().populate('make'),
+      CarDrive.find(),
+      BodyColor.find(),
+      CarOption.find(),
+      FuelType.find(),
+      Cylinder.find(),
+      ServiceHistory.find(),
+      Country.find(),
+      Transmission.find(),
+      EngineSize.find(),
+      VehicleType.find(),
+      Rating.find(),
+      CarCondition.find()
+    ]);
+
+    sendSuccess(res, {
+      data: {
+        makes,
+        models,
+        carDrives,
+        bodyColors,
+        carOptions,
+        fuelTypes,
+        cylinders,
+        serviceHistories,
+        countries,
+        transmissions,
+        engineSizes,
+        vehicleTypes,
+        ratings,
+        carConditions
+      }
+    });
+  } catch (error) {
+    sendError(res, { message: error.message });
   }
 };

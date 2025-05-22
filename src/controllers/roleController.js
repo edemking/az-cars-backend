@@ -1,12 +1,13 @@
 const { Role, PERMISSIONS } = require('../models/Role');
+const { sendSuccess, sendError } = require('../utils/responseHandler');
 
 // Get all roles
 exports.getRoles = async (req, res) => {
   try {
     const roles = await Role.find();
-    res.status(200).json(roles);
+    sendSuccess(res, { data: roles });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    sendError(res, { message: error.message });
   }
 };
 
@@ -16,11 +17,14 @@ exports.getRole = async (req, res) => {
     const role = await Role.findById(req.params.id);
     
     if (!role) {
-      return res.status(404).json({ message: 'Role not found' });
+      return sendError(res, { 
+        statusCode: 404, 
+        message: 'Role not found' 
+      });
     }
-    res.status(200).json(role);
+    sendSuccess(res, { data: role });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    sendError(res, { message: error.message });
   }
 };
 
@@ -37,9 +41,10 @@ exports.createRole = async (req, res) => {
       );
       
       if (invalidPermissions.length > 0) {
-        return res.status(400).json({ 
+        return sendError(res, { 
+          statusCode: 400, 
           message: `Invalid permissions: ${invalidPermissions.join(', ')}`,
-          validPermissions
+          errors: { validPermissions }
         });
       }
     }
@@ -51,9 +56,16 @@ exports.createRole = async (req, res) => {
     });
     
     const newRole = await role.save();
-    res.status(201).json(newRole);
+    sendSuccess(res, { 
+      statusCode: 201, 
+      message: 'Role created successfully',
+      data: newRole 
+    });
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    sendError(res, { 
+      statusCode: 400, 
+      message: error.message 
+    });
   }
 };
 
@@ -70,9 +82,10 @@ exports.updateRole = async (req, res) => {
       );
       
       if (invalidPermissions.length > 0) {
-        return res.status(400).json({ 
+        return sendError(res, { 
+          statusCode: 400, 
           message: `Invalid permissions: ${invalidPermissions.join(', ')}`,
-          validPermissions
+          errors: { validPermissions }
         });
       }
     }
@@ -84,11 +97,21 @@ exports.updateRole = async (req, res) => {
     );
     
     if (!role) {
-      return res.status(404).json({ message: 'Role not found' });
+      return sendError(res, { 
+        statusCode: 404, 
+        message: 'Role not found' 
+      });
     }
-    res.status(200).json(role);
+    
+    sendSuccess(res, { 
+      message: 'Role updated successfully',
+      data: role 
+    });
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    sendError(res, { 
+      statusCode: 400, 
+      message: error.message 
+    });
   }
 };
 
@@ -98,7 +121,10 @@ exports.deleteRole = async (req, res) => {
     const role = await Role.findById(req.params.id);
     
     if (!role) {
-      return res.status(404).json({ message: 'Role not found' });
+      return sendError(res, { 
+        statusCode: 404, 
+        message: 'Role not found' 
+      });
     }
     
     // Check if role is being used by any users before deleting
@@ -106,23 +132,24 @@ exports.deleteRole = async (req, res) => {
     const usersWithRole = await User.countDocuments({ role: req.params.id });
     
     if (usersWithRole > 0) {
-      return res.status(400).json({ 
+      return sendError(res, { 
+        statusCode: 400, 
         message: `Cannot delete role. It's currently assigned to ${usersWithRole} user(s).`
       });
     }
     
     await Role.findByIdAndDelete(req.params.id);
-    res.status(200).json({ message: 'Role deleted successfully' });
+    sendSuccess(res, { message: 'Role deleted successfully' });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    sendError(res, { message: error.message });
   }
 };
 
 // Get all available permissions
 exports.getPermissions = async (req, res) => {
   try {
-    res.status(200).json(PERMISSIONS);
+    sendSuccess(res, { data: PERMISSIONS });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    sendError(res, { message: error.message });
   }
 }; 

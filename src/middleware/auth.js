@@ -2,6 +2,7 @@ const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const { Role } = require("../models/Role");
 const config = require("../config/config");
+const { sendError } = require('../utils/responseHandler');
 
 // Middleware to protect routes
 exports.protect = async (req, res, next) => {
@@ -18,8 +19,9 @@ exports.protect = async (req, res, next) => {
 
   // Check if token exists
   if (!token) {
-    return res.status(401).json({
-      message: "Not authorized to access this route",
+    return sendError(res, {
+      statusCode: 401,
+      message: "Not authorized to access this route"
     });
   }
 
@@ -33,15 +35,17 @@ exports.protect = async (req, res, next) => {
       .populate('role');
 
     if (!req.user) {
-      return res.status(401).json({
-        message: "User not found",
+      return sendError(res, {
+        statusCode: 401,
+        message: "User not found"
       });
     }
 
     next();
   } catch (error) {
-    return res.status(401).json({
-      message: "Not authorized to access this route",
+    return sendError(res, {
+      statusCode: 401,
+      message: "Not authorized to access this route"
     });
   }
 };
@@ -52,8 +56,9 @@ exports.hasPermission = (permission) => {
     try {
       // If no user or role, deny access
       if (!req.user || !req.user.role) {
-        return res.status(403).json({
-          message: "Access denied: No role assigned",
+        return sendError(res, {
+          statusCode: 403,
+          message: "Access denied: No role assigned"
         });
       }
 
@@ -62,13 +67,15 @@ exports.hasPermission = (permission) => {
         return next();
       }
 
-      return res.status(403).json({
-        message: `Access denied: '${permission}' permission required`,
+      return sendError(res, {
+        statusCode: 403,
+        message: `Access denied: '${permission}' permission required`
       });
     } catch (error) {
-      return res.status(500).json({
+      return sendError(res, {
+        statusCode: 500,
         message: "Error checking permissions",
-        error: error.message
+        errors: error.message
       });
     }
   };

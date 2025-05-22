@@ -5,6 +5,7 @@ const cors = require('cors');
 const path = require('path');
 const config = require('./config/config');
 const connectDB = require('./config/db');
+const { sendError, sendSuccess } = require('./utils/responseHandler');
 
 
 
@@ -24,7 +25,9 @@ connectDB();
 
 // Welcome route
 app.get('/', (req, res) => {
-  res.send('Welcome to the AZ Cars API');
+  sendSuccess(res, {
+    message: 'Welcome to the AZ Cars API'
+  });
 });
 
 // Import routes
@@ -44,7 +47,11 @@ app.use('/api/roles', roleRoutes);
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).send('Something broke!');
+  sendError(res, {
+    statusCode: err.statusCode || 500,
+    message: err.message || 'Something went wrong on the server',
+    errors: err.errors
+  });
 });
 
 // Start server

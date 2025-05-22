@@ -3,6 +3,7 @@ const Bid = require("../models/Bid");
 const Car = require("../models/cars/Car");
 const asyncHandler = require("../middleware/asyncHandler");
 const ErrorResponse = require("../utils/errorResponse");
+const { sendSuccess, sendError } = require('../utils/responseHandler');
 
 // @desc    Create a new auction
 // @route   POST /api/auctions
@@ -27,7 +28,11 @@ exports.createAuction = asyncHandler(async (req, res, next) => {
   // Create auction
   const auction = await Auction.create(req.body);
 
-  res.status(201).json({ success: true, data: auction });
+  sendSuccess(res, {
+    statusCode: 201,
+    message: 'Auction created successfully',
+    data: auction
+  });
 });
 
 // @desc    Get all auctions
@@ -52,10 +57,11 @@ exports.getAuctions = asyncHandler(async (req, res, next) => {
     .populate("car", "make model year price")
     .populate("createdBy", "firstName lastName");
 
-  res.status(200).json({
-    success: true,
-    count: auctions.length,
+  sendSuccess(res, {
     data: auctions,
+    meta: {
+      count: auctions.length
+    }
   });
 });
 
@@ -79,12 +85,11 @@ exports.getAuction = asyncHandler(async (req, res, next) => {
     .populate("bidder", "firstName lastName")
     .sort({ amount: -1 });
 
-  res.status(200).json({
-    success: true,
+  sendSuccess(res, {
     data: {
       ...auction._doc,
       bids,
-    },
+    }
   });
 });
 
@@ -130,7 +135,10 @@ exports.updateAuction = asyncHandler(async (req, res, next) => {
     runValidators: true,
   });
 
-  res.status(200).json({ success: true, data: auction });
+  sendSuccess(res, {
+    message: 'Auction updated successfully',
+    data: auction
+  });
 });
 
 // @desc    Delete auction
@@ -165,7 +173,9 @@ exports.deleteAuction = asyncHandler(async (req, res, next) => {
   // Delete the auction
   await auction.deleteOne();
 
-  res.status(200).json({ success: true, data: {} });
+  sendSuccess(res, {
+    message: 'Auction deleted successfully'
+  });
 });
 
 // @desc    Place bid on auction
@@ -245,12 +255,12 @@ exports.placeBid = asyncHandler(async (req, res, next) => {
 
   await auction.save();
 
-  res.status(200).json({
-    success: true,
+  sendSuccess(res, {
+    message: 'Bid placed successfully',
     data: {
       auction,
       bid,
-    },
+    }
   });
 });
 
@@ -263,10 +273,11 @@ exports.getUserAuctions = asyncHandler(async (req, res, next) => {
     "make model year price"
   );
 
-  res.status(200).json({
-    success: true,
-    count: auctions.length,
+  sendSuccess(res, {
     data: auctions,
+    meta: {
+      count: auctions.length
+    }
   });
 });
 
@@ -297,13 +308,14 @@ exports.getUserBids = asyncHandler(async (req, res, next) => {
     "make model year price"
   );
 
-  res.status(200).json({
-    success: true,
-    count: auctions.length,
+  sendSuccess(res, {
     data: {
       auctions,
       bids,
     },
+    meta: {
+      count: auctions.length
+    }
   });
 });
 
@@ -323,10 +335,11 @@ exports.getAuctionBids = asyncHandler(async (req, res, next) => {
     .populate("bidder", "firstName lastName")
     .sort({ amount: -1 });
 
-  res.status(200).json({
-    success: true,
-    count: bids.length,
+  sendSuccess(res, {
     data: bids,
+    meta: {
+      count: bids.length
+    }
   });
 });
 
@@ -350,10 +363,11 @@ exports.getAuctionsByType = asyncHandler(async (req, res, next) => {
     .populate("createdBy", "firstName lastName")
     .sort({ startTime: -1 });
 
-  res.status(200).json({
-    success: true,
-    count: auctions.length,
+  sendSuccess(res, {
     data: auctions,
+    meta: {
+      count: auctions.length
+    }
   });
 });
 
@@ -374,10 +388,11 @@ exports.getNewLiveAuctions = asyncHandler(async (req, res, next) => {
     .populate("createdBy", "firstName lastName")
     .sort({ startTime: -1 });
 
-  res.status(200).json({
-    success: true,
-    count: auctions.length,
+  sendSuccess(res, {
     data: auctions,
+    meta: {
+      count: auctions.length
+    }
   });
 });
 
@@ -399,10 +414,11 @@ exports.getEndingSoonAuctions = asyncHandler(async (req, res, next) => {
     .populate("createdBy", "firstName lastName")
     .sort({ endTime: 1 }); // Sort by closest to ending
 
-  res.status(200).json({
-    success: true,
-    count: auctions.length,
+  sendSuccess(res, {
     data: auctions,
+    meta: {
+      count: auctions.length
+    }
   });
 });
 
@@ -441,21 +457,19 @@ exports.getDashboardData = asyncHandler(async (req, res, next) => {
     .sort({ endTime: 1 })
     .limit(3);
 
-  // Get all auctions won by the user
+  // Get user's won auctions
   const wonAuctions = await Auction.find({
-    status: "completed",
     winner: req.user.id,
+    status: "completed",
   })
     .populate("car", "make model year price images mileage")
-    .populate("createdBy", "firstName lastName")
     .sort({ endTime: -1 });
 
-  res.status(200).json({
-    success: true,
+  sendSuccess(res, {
     data: {
       newLiveAuctions,
       endingSoonAuctions,
-      wonAuctions,
-    },
+      wonAuctions
+    }
   });
 });
