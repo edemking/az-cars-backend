@@ -13,11 +13,41 @@ const { sendError, sendSuccess } = require('./utils/responseHandler');
 const app = express();
 
 // Middleware
+const allowedOrigins = [
+  'http://localhost:3000',  // Local development
+  'http://localhost:5173',  // Vite default port
+  'https://az-cars-frontend.vercel.app',  // Add your production frontend URL
+  'https://az-cars.vercel.app'  // Add any other production URLs
+];
+
 app.use(cors({
-  origin: '*',
+  origin: function(origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) === -1) {
+      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+      return callback(new Error(msg), false);
+    }
+    return callback(null, true);
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'X-Requested-With',
+    'Accept',
+    'Origin',
+    'Access-Control-Allow-Origin',
+    'Access-Control-Allow-Headers',
+    'Access-Control-Allow-Methods'
+  ],
+  exposedHeaders: ['Content-Range', 'X-Content-Range'],
+  credentials: true,
+  preflightContinue: false,
+  optionsSuccessStatus: 204
 }));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
