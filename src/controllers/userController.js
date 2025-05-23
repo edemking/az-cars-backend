@@ -54,12 +54,12 @@ exports.createUser = async (req, res) => {
     }
     
     // Check if both ID documents are provided
-    if (!userData.idFront || !userData.idBack) {
-      return sendError(res, {
-        statusCode: 400,
-        message: 'Both front and back ID documents are required'
-      });
-    }
+    // if (!userData.idFront || !userData.idBack) {
+    //   return sendError(res, {
+    //     statusCode: 400,
+    //     message: 'Both front and back ID documents are required'
+    //   });
+    // }
     
     // Generate a random password
     const generatedPassword = generatePassword(12);

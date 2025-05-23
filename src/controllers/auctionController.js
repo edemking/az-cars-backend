@@ -379,14 +379,34 @@ exports.getNewLiveAuctions = asyncHandler(async (req, res, next) => {
   const oneDayAgo = new Date();
   oneDayAgo.setHours(oneDayAgo.getHours() - 24);
 
+  const now = new Date();
+
   const auctions = await Auction.find({
     status: "active",
     startTime: { $gte: oneDayAgo },
-    endTime: { $gt: new Date() },
+    endTime: { $gt: now },
   })
-    .populate("car", "make model year price")
+    .populate({
+      path: "car",
+      select: "make model year price images mileage carOptions",
+      populate: [
+        {
+          path: "make",
+          select: "name country logo"
+        },
+        {
+          path: "model",
+          select: "name startYear endYear image"
+        },
+        {
+          path: "carOptions",
+          select: "name category description"
+        }
+      ]
+    })
     .populate("createdBy", "firstName lastName")
-    .sort({ startTime: -1 });
+    .sort({ startTime: -1 })
+    .limit(3);
 
   sendSuccess(res, {
     data: auctions,
@@ -410,7 +430,24 @@ exports.getEndingSoonAuctions = asyncHandler(async (req, res, next) => {
     status: "active",
     endTime: { $gt: now, $lte: oneDayFromNow },
   })
-    .populate("car", "make model year price")
+    .populate({
+      path: "car",
+      select: "make model year price images mileage carOptions",
+      populate: [
+        {
+          path: "make",
+          select: "name country logo"
+        },
+        {
+          path: "model",
+          select: "name startYear endYear image"
+        },
+        {
+          path: "carOptions",
+          select: "name category description"
+        }
+      ]
+    })
     .populate("createdBy", "firstName lastName")
     .sort({ endTime: 1 }); // Sort by closest to ending
 
@@ -442,7 +479,24 @@ exports.getDashboardData = asyncHandler(async (req, res, next) => {
     startTime: { $gte: oneDayAgo },
     endTime: { $gt: now },
   })
-    .populate("car", "make model year price images mileage")
+    .populate({
+      path: "car",
+      select: "make model year price images mileage carOptions",
+      populate: [
+        {
+          path: "make",
+          select: "name country logo"
+        },
+        {
+          path: "model",
+          select: "name startYear endYear image"
+        },
+        {
+          path: "carOptions",
+          select: "name category description"
+        }
+      ]
+    })
     .populate("createdBy", "firstName lastName")
     .sort({ startTime: -1 })
     .limit(3);
@@ -452,7 +506,24 @@ exports.getDashboardData = asyncHandler(async (req, res, next) => {
     status: "active",
     endTime: { $gt: now, $lte: oneDayFromNow },
   })
-    .populate("car", "make model year price images mileage")
+    .populate({
+      path: "car",
+      select: "make model year price images mileage carOptions",
+      populate: [
+        {
+          path: "make",
+          select: "name country logo"
+        },
+        {
+          path: "model",
+          select: "name startYear endYear image"
+        },
+        {
+          path: "carOptions",
+          select: "name category description"
+        }
+      ]
+    })
     .populate("createdBy", "firstName lastName")
     .sort({ endTime: 1 })
     .limit(3);
@@ -462,7 +533,24 @@ exports.getDashboardData = asyncHandler(async (req, res, next) => {
     winner: req.user.id,
     status: "completed",
   })
-    .populate("car", "make model year price images mileage")
+    .populate({
+      path: "car",
+      select: "make model year price images mileage carOptions",
+      populate: [
+        {
+          path: "make",
+          select: "name country logo"
+        },
+        {
+          path: "model",
+          select: "name startYear endYear image"
+        },
+        {
+          path: "carOptions",
+          select: "name category description"
+        }
+      ]
+    })
     .sort({ endTime: -1 });
 
   sendSuccess(res, {
