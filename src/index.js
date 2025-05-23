@@ -12,11 +12,15 @@ const app = express();
 
 app.use(
   cors({
-    origin: "*",
+    origin: "https://az-carz.vercel.app", // exact origin, not *
+    credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
+
+
+app.options("*", cors());
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
