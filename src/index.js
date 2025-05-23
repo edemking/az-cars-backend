@@ -16,8 +16,8 @@ const app = express();
 const allowedOrigins = [
   'http://localhost:3000',  // Local development
   'http://localhost:5173',  // Vite default port
-  'https://az-cars-frontend.vercel.app',  // Add your production frontend URL
-  'https://az-cars.vercel.app'  // Add any other production URLs
+  'https://az-carz.vercel.app',  // Add your production frontend URL
+  'https://az-carz.vercel.app'  // Add any other production URLs
 ];
 
 app.use(cors({
