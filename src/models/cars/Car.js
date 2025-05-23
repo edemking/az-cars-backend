@@ -235,6 +235,32 @@ const carSchema = new mongoose.Schema({
     type: [String],
     default: [],
   },
+  isApproved: {
+    type: Boolean,
+    default: false,
+  },
+  isArchived: {
+    type: Boolean,
+    default: false,
+  },
+  approvedAt: {
+    type: Date,
+    default: null,
+  },
+  approvedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: null,
+  },
+  archivedAt: {
+    type: Date,
+    default: null,
+  },
+  archivedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: null,
+  },
   createdAt: {
     type: Date,
     default: Date.now,

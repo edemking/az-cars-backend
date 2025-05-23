@@ -33,7 +33,7 @@ const userSchema = new mongoose.Schema({
   },
   country: {
     type: String,
-    required: true,
+    required: false,
   },
   address: {
     type: String,
@@ -41,11 +41,11 @@ const userSchema = new mongoose.Schema({
   },
   idFront: {
     type: String,
-    required: true,
+    required: false,
   },
   idBack: {
     type: String,
-    required: true,
+    required: false,
   },
   createdAt: {
     type: Date,

@@ -16,12 +16,52 @@ const EngineSize = require("../models/cars/EngineSize");
 const VehicleType = require("../models/cars/VehicleType");
 const Rating = require("../models/cars/Rating");
 const CarCondition = require("../models/cars/CarCondition");
-const { sendSuccess, sendError } = require('../utils/responseHandler');
+const { sendSuccess, sendError } = require("../utils/responseHandler");
 
 // Get all cars
 exports.getCars = async (req, res) => {
   try {
-    const cars = await Car.find();
+    // Add filter to exclude archived cars by default unless explicitly requested
+    const filter = {};
+    if (req.query.includeArchived !== 'true') {
+      filter.isArchived = false;
+    }
+    
+    // Allow filtering by approval status
+    if (req.query.approved === 'true') {
+      filter.isApproved = true;
+    } else if (req.query.approved === 'false') {
+      filter.isApproved = false;
+    }
+    
+    const cars = await Car.find(filter)
+      .populate("make")
+      .populate("model")
+      .populate("carDrive")
+      .populate("bodyColor")
+      .populate("carOptions")
+      .populate("fuelType")
+      .populate("cylinder")
+      .populate("serviceHistory")
+      .populate("country")
+      .populate("transmission")
+      .populate({
+        path: "componentSummary",
+        populate: {
+          path: "engine steering centralLock centralLocking interiorButtons gearbox dashLight audioSystem windowControl electricComponents acHeating dashboard roof breaks suspension gloveBox frontSeats exhaust clutch backSeat driveTrain",
+          model: "Rating",
+        },
+      })
+      .populate({
+        path: "interiorAndExterior",
+        populate: {
+          path: "frontBumber bonnet roof reerBumber driverSideFrontWing driverSideFrontDoor driverSideRearDoor driverRearQuarter passengerSideFrontWing passengerSideFrontDoor passengerSideRearDoor passengerRearQuarter driverSideFrontTyre driverSideRearTyre passengerSideFrontTyre passengerSideRearTyre trunk frontGlass rearGlass leftGlass rightGlass",
+          model: "CarCondition",
+        },
+      })
+      .populate("approvedBy", "name email")
+      .populate("archivedBy", "name email");
+      
     sendSuccess(res, { data: cars });
   } catch (error) {
     sendError(res, { message: error.message });
@@ -58,9 +98,9 @@ exports.getCar = async (req, res) => {
       });
 
     if (!car) {
-      return sendError(res, { 
-        statusCode: 404, 
-        message: "Car not found" 
+      return sendError(res, {
+        statusCode: 404,
+        message: "Car not found",
       });
     }
     sendSuccess(res, { data: car });
@@ -161,7 +201,7 @@ exports.createCar = async (req, res) => {
               typeof carData.componentSummary === "string"
                 ? carData.componentSummary.substring(0, 100) + "..."
                 : typeof carData.componentSummary,
-          }
+          },
         });
       }
     }
@@ -191,7 +231,7 @@ exports.createCar = async (req, res) => {
               typeof carData.interiorAndExterior === "string"
                 ? carData.interiorAndExterior.substring(0, 100) + "..."
                 : typeof carData.interiorAndExterior,
-          }
+          },
         });
       }
     }
@@ -246,7 +286,7 @@ exports.createCar = async (req, res) => {
     sendSuccess(res, {
       statusCode: 201,
       message: "Car created successfully",
-      data: populatedCar
+      data: populatedCar,
     });
   } catch (error) {
     console.error("Error creating car:", error);
@@ -256,7 +296,7 @@ exports.createCar = async (req, res) => {
       errors: {
         details: error.message,
         stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
-      }
+      },
     });
   }
 };
@@ -293,20 +333,20 @@ exports.updateCar = async (req, res) => {
     });
 
     if (!car) {
-      return sendError(res, { 
-        statusCode: 404, 
-        message: "Car not found" 
+      return sendError(res, {
+        statusCode: 404,
+        message: "Car not found",
       });
     }
 
-    sendSuccess(res, { 
+    sendSuccess(res, {
       message: "Car updated successfully",
-      data: car 
+      data: car,
     });
   } catch (error) {
-    sendError(res, { 
-      statusCode: 400, 
-      message: error.message 
+    sendError(res, {
+      statusCode: 400,
+      message: error.message,
     });
   }
 };
@@ -316,9 +356,9 @@ exports.deleteCar = async (req, res) => {
   try {
     const car = await Car.findByIdAndDelete(req.params.id);
     if (!car) {
-      return sendError(res, { 
-        statusCode: 404, 
-        message: "Car not found" 
+      return sendError(res, {
+        statusCode: 404,
+        message: "Car not found",
       });
     }
     sendSuccess(res, { message: "Car deleted successfully" });
@@ -331,9 +371,9 @@ exports.deleteCar = async (req, res) => {
 exports.uploadCarImages = async (req, res) => {
   try {
     if (!req.files || !req.files.images) {
-      return sendError(res, { 
-        statusCode: 400, 
-        message: "No images uploaded" 
+      return sendError(res, {
+        statusCode: 400,
+        message: "No images uploaded",
       });
     }
 
@@ -341,9 +381,9 @@ exports.uploadCarImages = async (req, res) => {
     const car = await Car.findById(carId);
 
     if (!car) {
-      return sendError(res, { 
-        statusCode: 404, 
-        message: "Car not found" 
+      return sendError(res, {
+        statusCode: 404,
+        message: "Car not found",
       });
     }
 
@@ -363,12 +403,12 @@ exports.uploadCarImages = async (req, res) => {
 
     sendSuccess(res, {
       message: "Images uploaded successfully",
-      data: { images: car.images }
+      data: { images: car.images },
     });
   } catch (error) {
-    sendError(res, { 
-      statusCode: 400, 
-      message: error.message 
+    sendError(res, {
+      statusCode: 400,
+      message: error.message,
     });
   }
 };
@@ -380,9 +420,9 @@ exports.deleteCarImage = async (req, res) => {
 
     const car = await Car.findById(id);
     if (!car) {
-      return sendError(res, { 
-        statusCode: 404, 
-        message: "Car not found" 
+      return sendError(res, {
+        statusCode: 404,
+        message: "Car not found",
       });
     }
 
@@ -398,12 +438,12 @@ exports.deleteCarImage = async (req, res) => {
 
     sendSuccess(res, {
       message: "Image deleted successfully",
-      data: { images: car.images }
+      data: { images: car.images },
     });
   } catch (error) {
-    sendError(res, { 
-      statusCode: 400, 
-      message: error.message 
+    sendError(res, {
+      statusCode: 400,
+      message: error.message,
     });
   }
 };
@@ -425,10 +465,10 @@ exports.getReferenceData = async (req, res) => {
       engineSizes,
       vehicleTypes,
       ratings,
-      carConditions
+      carConditions,
     ] = await Promise.all([
       Make.find(),
-      Model.find().populate('make'),
+      Model.find().populate("make"),
       CarDrive.find(),
       BodyColor.find(),
       CarOption.find(),
@@ -440,7 +480,7 @@ exports.getReferenceData = async (req, res) => {
       EngineSize.find(),
       VehicleType.find(),
       Rating.find(),
-      CarCondition.find()
+      CarCondition.find(),
     ]);
 
     sendSuccess(res, {
@@ -458,10 +498,150 @@ exports.getReferenceData = async (req, res) => {
         engineSizes,
         vehicleTypes,
         ratings,
-        carConditions
-      }
+        carConditions,
+      },
     });
   } catch (error) {
     sendError(res, { message: error.message });
+  }
+};
+
+// Approve car
+exports.approveCar = async (req, res) => {
+  try {
+    const carId = req.params.id;
+    
+    const car = await Car.findById(carId);
+    
+    if (!car) {
+      return sendError(res, {
+        statusCode: 404,
+        message: "Car not found",
+      });
+    }
+    
+    // Update the car with approval information
+    car.isApproved = true;
+    car.approvedAt = Date.now();
+    car.approvedBy = req.user.id;
+    
+    await car.save();
+    
+    // Fetch the updated car with populated fields
+    const updatedCar = await Car.findById(carId)
+      .populate("approvedBy", "name email");
+    
+    sendSuccess(res, {
+      message: "Car approved successfully",
+      data: updatedCar,
+    });
+  } catch (error) {
+    sendError(res, {
+      statusCode: 400,
+      message: error.message,
+    });
+  }
+};
+
+// Reject car approval
+exports.rejectCar = async (req, res) => {
+  try {
+    const carId = req.params.id;
+    
+    const car = await Car.findById(carId);
+    
+    if (!car) {
+      return sendError(res, {
+        statusCode: 404,
+        message: "Car not found",
+      });
+    }
+    
+    // Update the car to remove approval
+    car.isApproved = false;
+    car.approvedAt = null;
+    car.approvedBy = null;
+    
+    await car.save();
+    
+    sendSuccess(res, {
+      message: "Car approval rejected successfully",
+      data: car,
+    });
+  } catch (error) {
+    sendError(res, {
+      statusCode: 400,
+      message: error.message,
+    });
+  }
+};
+
+// Archive car
+exports.archiveCar = async (req, res) => {
+  try {
+    const carId = req.params.id;
+    
+    const car = await Car.findById(carId);
+    
+    if (!car) {
+      return sendError(res, {
+        statusCode: 404,
+        message: "Car not found",
+      });
+    }
+    
+    // Update the car with archive information
+    car.isArchived = true;
+    car.archivedAt = Date.now();
+    car.archivedBy = req.user.id;
+    
+    await car.save();
+    
+    // Fetch the updated car with populated fields
+    const updatedCar = await Car.findById(carId)
+      .populate("archivedBy", "name email");
+    
+    sendSuccess(res, {
+      message: "Car archived successfully",
+      data: updatedCar,
+    });
+  } catch (error) {
+    sendError(res, {
+      statusCode: 400,
+      message: error.message,
+    });
+  }
+};
+
+// Unarchive car
+exports.unarchiveCar = async (req, res) => {
+  try {
+    const carId = req.params.id;
+    
+    const car = await Car.findById(carId);
+    
+    if (!car) {
+      return sendError(res, {
+        statusCode: 404,
+        message: "Car not found",
+      });
+    }
+    
+    // Update the car to remove archive status
+    car.isArchived = false;
+    car.archivedAt = null;
+    car.archivedBy = null;
+    
+    await car.save();
+    
+    sendSuccess(res, {
+      message: "Car unarchived successfully",
+      data: car,
+    });
+  } catch (error) {
+    sendError(res, {
+      statusCode: 400,
+      message: error.message,
+    });
   }
 };

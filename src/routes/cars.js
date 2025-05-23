@@ -23,4 +23,12 @@ router.delete('/:id', protect, carController.deleteCar);
 router.post('/:id/images', protect, uploadCarImages, carController.uploadCarImages);
 router.delete('/:id/images/:imageUrl', protect, carController.deleteCarImage);
 
+// Car approval routes
+router.put('/:id/approve', protect, carController.approveCar);
+router.put('/:id/reject', protect, carController.rejectCar);
+
+// Car archive routes
+router.put('/:id/archive', protect, carController.archiveCar);
+router.put('/:id/unarchive', protect, carController.unarchiveCar);
+
 module.exports = router; 
