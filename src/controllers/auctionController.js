@@ -3,7 +3,7 @@ const Bid = require("../models/Bid");
 const Car = require("../models/cars/Car");
 const asyncHandler = require("../middleware/asyncHandler");
 const ErrorResponse = require("../utils/errorResponse");
-const { sendSuccess, sendError } = require('../utils/responseHandler');
+const { sendSuccess, sendError } = require("../utils/responseHandler");
 
 // @desc    Create a new auction
 // @route   POST /api/auctions
@@ -30,8 +30,8 @@ exports.createAuction = asyncHandler(async (req, res, next) => {
 
   sendSuccess(res, {
     statusCode: 201,
-    message: 'Auction created successfully',
-    data: auction
+    message: "Auction created successfully",
+    data: auction,
   });
 });
 
@@ -60,8 +60,8 @@ exports.getAuctions = asyncHandler(async (req, res, next) => {
   sendSuccess(res, {
     data: auctions,
     meta: {
-      count: auctions.length
-    }
+      count: auctions.length,
+    },
   });
 });
 
@@ -70,7 +70,55 @@ exports.getAuctions = asyncHandler(async (req, res, next) => {
 // @access  Public
 exports.getAuction = asyncHandler(async (req, res, next) => {
   const auction = await Auction.findById(req.params.id)
-    .populate("car")
+    .populate({
+      path: "car",
+      populate: [
+        {
+          path: "make"
+        },
+        {
+          path: "model"
+        },
+        {
+          path: "carDrive"
+        },
+        {
+          path: "bodyColor"
+        },
+        {
+          path: "carOptions"
+        },
+        {
+          path: "fuelType"
+        },
+        {
+          path: "cylinder"
+        },
+        {
+          path: "serviceHistory"
+        },
+        {
+          path: "country"
+        },
+        {
+          path: "transmission"
+        },
+        {
+          path: "componentSummary",
+          populate: {
+            path: "engine steering centralLock centralLocking interiorButtons gearbox dashLight audioSystem windowControl electricComponents acHeating dashboard roof breaks suspension gloveBox frontSeats exhaust clutch backSeat driveTrain",
+            model: "Rating"
+          }
+        },
+        {
+          path: "interiorAndExterior",
+          populate: {
+            path: "frontBumber bonnet roof reerBumber driverSideFrontWing driverSideFrontDoor driverSideRearDoor driverRearQuarter passengerSideFrontWing passengerSideFrontDoor passengerSideRearDoor passengerRearQuarter driverSideFrontTyre driverSideRearTyre passengerSideFrontTyre passengerSideRearTyre trunk frontGlass rearGlass leftGlass rightGlass",
+            model: "CarCondition"
+          }
+        }
+      ]
+    })
     .populate("createdBy", "firstName lastName")
     .populate("winner", "firstName lastName");
 
@@ -89,7 +137,7 @@ exports.getAuction = asyncHandler(async (req, res, next) => {
     data: {
       ...auction._doc,
       bids,
-    }
+    },
   });
 });
 
@@ -136,8 +184,8 @@ exports.updateAuction = asyncHandler(async (req, res, next) => {
   });
 
   sendSuccess(res, {
-    message: 'Auction updated successfully',
-    data: auction
+    message: "Auction updated successfully",
+    data: auction,
   });
 });
 
@@ -174,7 +222,7 @@ exports.deleteAuction = asyncHandler(async (req, res, next) => {
   await auction.deleteOne();
 
   sendSuccess(res, {
-    message: 'Auction deleted successfully'
+    message: "Auction deleted successfully",
   });
 });
 
@@ -256,11 +304,11 @@ exports.placeBid = asyncHandler(async (req, res, next) => {
   await auction.save();
 
   sendSuccess(res, {
-    message: 'Bid placed successfully',
+    message: "Bid placed successfully",
     data: {
       auction,
       bid,
-    }
+    },
   });
 });
 
@@ -276,8 +324,8 @@ exports.getUserAuctions = asyncHandler(async (req, res, next) => {
   sendSuccess(res, {
     data: auctions,
     meta: {
-      count: auctions.length
-    }
+      count: auctions.length,
+    },
   });
 });
 
@@ -314,8 +362,8 @@ exports.getUserBids = asyncHandler(async (req, res, next) => {
       bids,
     },
     meta: {
-      count: auctions.length
-    }
+      count: auctions.length,
+    },
   });
 });
 
@@ -338,8 +386,8 @@ exports.getAuctionBids = asyncHandler(async (req, res, next) => {
   sendSuccess(res, {
     data: bids,
     meta: {
-      count: bids.length
-    }
+      count: bids.length,
+    },
   });
 });
 
@@ -359,15 +407,32 @@ exports.getAuctionsByType = asyncHandler(async (req, res, next) => {
     status: "active",
     endTime: { $gt: new Date() },
   })
-    .populate("car", "make model year price")
+    .populate({
+      path: "car",
+      select: "make model year price images mileage carOptions",
+      populate: [
+        {
+          path: "make",
+          select: "name country logo",
+        },
+        {
+          path: "model",
+          select: "name startYear endYear image",
+        },
+        {
+          path: "carOptions",
+          select: "name category description",
+        },
+      ],
+    })
     .populate("createdBy", "firstName lastName")
     .sort({ startTime: -1 });
 
   sendSuccess(res, {
     data: auctions,
     meta: {
-      count: auctions.length
-    }
+      count: auctions.length,
+    },
   });
 });
 
@@ -392,17 +457,17 @@ exports.getNewLiveAuctions = asyncHandler(async (req, res, next) => {
       populate: [
         {
           path: "make",
-          select: "name country logo"
+          select: "name country logo",
         },
         {
           path: "model",
-          select: "name startYear endYear image"
+          select: "name startYear endYear image",
         },
         {
           path: "carOptions",
-          select: "name category description"
-        }
-      ]
+          select: "name category description",
+        },
+      ],
     })
     .populate("createdBy", "firstName lastName")
     .sort({ startTime: -1 })
@@ -411,8 +476,8 @@ exports.getNewLiveAuctions = asyncHandler(async (req, res, next) => {
   sendSuccess(res, {
     data: auctions,
     meta: {
-      count: auctions.length
-    }
+      count: auctions.length,
+    },
   });
 });
 
@@ -436,17 +501,17 @@ exports.getEndingSoonAuctions = asyncHandler(async (req, res, next) => {
       populate: [
         {
           path: "make",
-          select: "name country logo"
+          select: "name country logo",
         },
         {
           path: "model",
-          select: "name startYear endYear image"
+          select: "name startYear endYear image",
         },
         {
           path: "carOptions",
-          select: "name category description"
-        }
-      ]
+          select: "name category description",
+        },
+      ],
     })
     .populate("createdBy", "firstName lastName")
     .sort({ endTime: 1 }); // Sort by closest to ending
@@ -454,8 +519,8 @@ exports.getEndingSoonAuctions = asyncHandler(async (req, res, next) => {
   sendSuccess(res, {
     data: auctions,
     meta: {
-      count: auctions.length
-    }
+      count: auctions.length,
+    },
   });
 });
 
@@ -485,17 +550,17 @@ exports.getDashboardData = asyncHandler(async (req, res, next) => {
       populate: [
         {
           path: "make",
-          select: "name country logo"
+          select: "name country logo",
         },
         {
           path: "model",
-          select: "name startYear endYear image"
+          select: "name startYear endYear image",
         },
         {
           path: "carOptions",
-          select: "name category description"
-        }
-      ]
+          select: "name category description",
+        },
+      ],
     })
     .populate("createdBy", "firstName lastName")
     .sort({ startTime: -1 })
@@ -512,17 +577,17 @@ exports.getDashboardData = asyncHandler(async (req, res, next) => {
       populate: [
         {
           path: "make",
-          select: "name country logo"
+          select: "name country logo",
         },
         {
           path: "model",
-          select: "name startYear endYear image"
+          select: "name startYear endYear image",
         },
         {
           path: "carOptions",
-          select: "name category description"
-        }
-      ]
+          select: "name category description",
+        },
+      ],
     })
     .populate("createdBy", "firstName lastName")
     .sort({ endTime: 1 })
@@ -539,17 +604,17 @@ exports.getDashboardData = asyncHandler(async (req, res, next) => {
       populate: [
         {
           path: "make",
-          select: "name country logo"
+          select: "name country logo",
         },
         {
           path: "model",
-          select: "name startYear endYear image"
+          select: "name startYear endYear image",
         },
         {
           path: "carOptions",
-          select: "name category description"
-        }
-      ]
+          select: "name category description",
+        },
+      ],
     })
     .sort({ endTime: -1 });
 
@@ -557,7 +622,7 @@ exports.getDashboardData = asyncHandler(async (req, res, next) => {
     data: {
       newLiveAuctions,
       endingSoonAuctions,
-      wonAuctions
-    }
+      wonAuctions,
+    },
   });
 });
