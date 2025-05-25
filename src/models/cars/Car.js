@@ -145,6 +145,11 @@ const carSchema = new mongoose.Schema({
     ref: "Transmission",
     required: true,
   },
+  type: {
+    type: String,
+    enum: ["FWD", "RWD", "AWD"],
+    required: true,
+  },
   firstOwner: {
     type: Boolean,
     required: false,
@@ -249,7 +254,7 @@ const carSchema = new mongoose.Schema({
   },
   approvedBy: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+    ref: "User",
     default: null,
   },
   archivedAt: {
@@ -258,7 +263,7 @@ const carSchema = new mongoose.Schema({
   },
   archivedBy: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+    ref: "User",
     default: null,
   },
   createdAt: {

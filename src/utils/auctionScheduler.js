@@ -1,5 +1,6 @@
 const Auction = require('../models/Auction');
 const Bid = require('../models/Bid');
+const { emitAuctionCompleted, emitAuctionUpdate } = require('./socketEvents');
 
 /**
  * Check for completed auctions and update their status
@@ -23,7 +24,8 @@ const checkCompletedAuctions = async () => {
       // Find the highest bid for this auction
       const highestBid = await Bid.findOne({ auction: auction._id })
         .sort({ amount: -1 })
-        .limit(1);
+        .limit(1)
+        .populate("bidder", "firstName lastName");
       
       // Set the winner as the highest bidder if there are bids
       if (highestBid) {
@@ -33,12 +35,22 @@ const checkCompletedAuctions = async () => {
         highestBid.isWinningBid = true;
         await highestBid.save();
         
-        console.log(`Auction ${auction._id} winner: ${highestBid.bidder}`);
+        console.log(`Auction ${auction._id} winner: ${highestBid.bidder._id}`);
+        
+        // Emit auction completion event
+        emitAuctionCompleted(auction._id.toString(), {
+          winner: highestBid.bidder,
+          finalBid: highestBid,
+          auction: auction
+        });
       }
       
       // Update status to completed
       auction.status = 'completed';
       await auction.save();
+      
+      // Emit auction update event
+      emitAuctionUpdate(auction._id.toString(), auction);
       
       console.log(`Auction ${auction._id} marked as completed`);
     }

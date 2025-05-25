@@ -3,14 +3,49 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const path = require('path');
+const http = require('http');
+const socketIo = require('socket.io');
 const config = require('./config/config');
 const connectDB = require('./config/db');
 const { sendError, sendSuccess } = require('./utils/responseHandler');
 
-
-
 // Initialize Express app
 const app = express();
+
+// Create HTTP server and Socket.IO instance
+const server = http.createServer(app);
+const io = socketIo(server, {
+  cors: {
+    origin: true,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Authorization', 'Content-Type', 'Accept', 'Access-Control-Allow-Origin', 'Access-Control-Allow-Headers', 'Access-Control-Allow-Methods', 'ngrok-skip-browser-warning'],
+  }
+});
+
+// Make io available globally
+global.io = io;
+
+// Socket.IO connection handling
+io.on('connection', (socket) => {
+  console.log('Client connected:', socket.id);
+
+  // Join auction room for real-time updates
+  socket.on('join-auction', (auctionId) => {
+    socket.join(`auction-${auctionId}`);
+    console.log(`Client ${socket.id} joined auction room: auction-${auctionId}`);
+  });
+
+  // Leave auction room
+  socket.on('leave-auction', (auctionId) => {
+    socket.leave(`auction-${auctionId}`);
+    console.log(`Client ${socket.id} left auction room: auction-${auctionId}`);
+  });
+
+  socket.on('disconnect', () => {
+    console.log('Client disconnected:', socket.id);
+  });
+});
 
 // Middleware
 app.use(cors({
@@ -66,6 +101,7 @@ app.use((err, req, res, next) => {
 
 // Start server
 const PORT = config.PORT;
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+  console.log('Socket.IO enabled for real-time communications');
 }); 

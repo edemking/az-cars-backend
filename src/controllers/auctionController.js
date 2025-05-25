@@ -4,6 +4,7 @@ const Car = require("../models/cars/Car");
 const asyncHandler = require("../middleware/asyncHandler");
 const ErrorResponse = require("../utils/errorResponse");
 const { sendSuccess, sendError } = require("../utils/responseHandler");
+const { emitNewBid, emitAuctionUpdate, emitAuctionCompleted, getAuctionRoomClients } = require("../utils/socketEvents");
 
 // @desc    Create a new auction
 // @route   POST /api/auctions
@@ -289,6 +290,9 @@ exports.placeBid = asyncHandler(async (req, res, next) => {
     time: new Date(),
   });
 
+  // Populate the bid with bidder information for real-time updates
+  await bid.populate("bidder", "firstName lastName");
+
   // Update auction with new highest bid
   auction.currentHighestBid = amount;
   auction.totalBids += 1;
@@ -299,9 +303,33 @@ exports.placeBid = asyncHandler(async (req, res, next) => {
     auction.winner = req.user.id;
     bid.isWinningBid = true;
     await bid.save();
+    
+    // Emit auction completion event
+    emitAuctionCompleted(auction._id.toString(), {
+      winner: req.user,
+      finalBid: bid,
+      auction: auction
+    });
   }
 
   await auction.save();
+
+  // Emit real-time bid update to all clients watching this auction
+  emitNewBid(auction._id.toString(), {
+    bid: bid,
+    auction: {
+      _id: auction._id,
+      currentHighestBid: auction.currentHighestBid,
+      totalBids: auction.totalBids,
+      status: auction.status,
+      winner: auction.winner
+    }
+  });
+
+  // If auction status changed, emit auction update
+  if (auction.status === "completed") {
+    emitAuctionUpdate(auction._id.toString(), auction);
+  }
 
   sendSuccess(res, {
     message: "Bid placed successfully",
@@ -623,6 +651,47 @@ exports.getDashboardData = asyncHandler(async (req, res, next) => {
       newLiveAuctions,
       endingSoonAuctions,
       wonAuctions,
+    },
+  });
+});
+
+// @desc    Get real-time auction statistics
+// @route   GET /api/auctions/:id/stats
+// @access  Public
+exports.getAuctionStats = asyncHandler(async (req, res, next) => {
+  const auction = await Auction.findById(req.params.id);
+
+  if (!auction) {
+    return next(
+      new ErrorResponse(`Auction not found with id of ${req.params.id}`, 404)
+    );
+  }
+
+  // Get connected clients count
+  const connectedClients = await getAuctionRoomClients(req.params.id);
+
+  // Get recent bids (last 5)
+  const recentBids = await Bid.find({ auction: req.params.id })
+    .populate("bidder", "firstName lastName")
+    .sort({ createdAt: -1 })
+    .limit(5);
+
+  // Calculate time remaining
+  const now = new Date();
+  const timeRemaining = auction.endTime > now ? auction.endTime - now : 0;
+
+  sendSuccess(res, {
+    data: {
+      auctionId: auction._id,
+      status: auction.status,
+      currentHighestBid: auction.currentHighestBid,
+      totalBids: auction.totalBids,
+      timeRemaining: timeRemaining,
+      connectedClients: connectedClients,
+      recentBids: recentBids,
+      nextMinimumBid: auction.currentHighestBid > 0 
+        ? auction.currentHighestBid + auction.bidIncrement 
+        : auction.startingPrice
     },
   });
 });
