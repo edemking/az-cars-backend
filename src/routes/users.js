@@ -1,15 +1,19 @@
 const express = require("express");
 const router = express.Router();
 const userController = require("../controllers/userController");
-const { protect, admin, hasPermission } = require("../middleware/auth");
+const { protect, admin, hasPermission, ownerOrAdmin, checkAccountStatus } = require("../middleware/auth");
 const { PERMISSIONS } = require("../models/Role");
 const { upload } = require("../utils/fileUpload");
 
-// File upload middleware for user ID documents
+// File upload middleware for user ID documents and profile picture
 const uploadUserDocs = upload.fields([
   { name: 'idFront', maxCount: 1 },
-  { name: 'idBack', maxCount: 1 }
+  { name: 'idBack', maxCount: 1 },
+  { name: 'profilePicture', maxCount: 1 }
 ]);
+
+// File upload middleware for profile picture
+const uploadProfilePicture = upload.single('profilePicture');
 
 // User management routes - require appropriate permissions
 router.post(
@@ -47,6 +51,46 @@ router.delete(
   protect,
   hasPermission(PERMISSIONS.USER_ROLES_MANAGEMENT),
   userController.deleteUser
+);
+
+// New routes for the requested features
+
+// Change profile picture - users can update their own profile picture or admins can update any user's
+router.put(
+  "/:id/profile-picture",
+  protect,
+  checkAccountStatus,
+  ownerOrAdmin,
+  uploadProfilePicture,
+  userController.changeProfilePicture
+);
+
+// Suspend user account - requires user management permission
+router.put(
+  "/:id/suspend",
+  protect,
+  checkAccountStatus,
+  hasPermission(PERMISSIONS.USER_ROLES_MANAGEMENT),
+  userController.suspendUser
+);
+
+// Activate user account - requires user management permission
+router.put(
+  "/:id/activate",
+  protect,
+  checkAccountStatus,
+  hasPermission(PERMISSIONS.USER_ROLES_MANAGEMENT),
+  userController.activateUser
+);
+
+// Update ID documents - users can update their own or admins can update any user's
+router.put(
+  "/:id/id-documents",
+  protect,
+  checkAccountStatus,
+  ownerOrAdmin,
+  uploadUserDocs,
+  userController.updateIdDocuments
 );
 
 module.exports = router;

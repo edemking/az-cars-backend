@@ -34,6 +34,9 @@ function getFileType(fieldname) {
   if (fieldname.includes('id')) {
     return 'ids';
   }
+  if (fieldname.includes('profile') || fieldname === 'profilePicture') {
+    return 'profiles';
+  }
   if (fieldname.includes('car') || fieldname === 'images') {
     return 'cars';
   }

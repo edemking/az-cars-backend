@@ -105,8 +105,13 @@ exports.updateUser = async (req, res) => {
       delete updates.password;
     }
     
-    // Handle file uploads for ID documents
+    // Handle file uploads
     if (req.files) {
+      // Process profile picture
+      if (req.files.profilePicture && req.files.profilePicture.length > 0) {
+        updates.profilePicture = getFileUrl(req, req.files.profilePicture[0]);
+      }
+      
       // Process ID Front
       if (req.files.idFront && req.files.idFront.length > 0) {
         updates.idFront = getFileUrl(req, req.files.idFront[0]);
@@ -157,5 +162,151 @@ exports.deleteUser = async (req, res) => {
     });
   } catch (error) {
     sendError(res, { message: error.message });
+  }
+};
+
+// Change profile picture
+exports.changeProfilePicture = async (req, res) => {
+  try {
+    // Check if file is uploaded
+    if (!req.file) {
+      return sendError(res, {
+        statusCode: 400,
+        message: 'Profile picture file is required'
+      });
+    }
+
+    const profilePictureUrl = getFileUrl(req, req.file);
+    
+    // Update user's profile picture
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      { profilePicture: profilePictureUrl },
+      { new: true, runValidators: true }
+    ).select('-password').populate('role');
+
+    if (!user) {
+      return sendError(res, {
+        statusCode: 404,
+        message: 'User not found'
+      });
+    }
+
+    sendSuccess(res, {
+      message: 'Profile picture updated successfully',
+      data: user
+    });
+  } catch (error) {
+    sendError(res, {
+      statusCode: 400,
+      message: error.message
+    });
+  }
+};
+
+// Suspend user account
+exports.suspendUser = async (req, res) => {
+  try {
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      { status: 'suspended' },
+      { new: true, runValidators: true }
+    ).select('-password').populate('role');
+
+    if (!user) {
+      return sendError(res, {
+        statusCode: 404,
+        message: 'User not found'
+      });
+    }
+
+    sendSuccess(res, {
+      message: 'User account suspended successfully',
+      data: user
+    });
+  } catch (error) {
+    sendError(res, {
+      statusCode: 400,
+      message: error.message
+    });
+  }
+};
+
+// Activate user account
+exports.activateUser = async (req, res) => {
+  try {
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      { status: 'active' },
+      { new: true, runValidators: true }
+    ).select('-password').populate('role');
+
+    if (!user) {
+      return sendError(res, {
+        statusCode: 404,
+        message: 'User not found'
+      });
+    }
+
+    sendSuccess(res, {
+      message: 'User account activated successfully',
+      data: user
+    });
+  } catch (error) {
+    sendError(res, {
+      statusCode: 400,
+      message: error.message
+    });
+  }
+};
+
+// Update ID documents (front and back)
+exports.updateIdDocuments = async (req, res) => {
+  try {
+    const updates = {};
+    
+    // Handle file uploads for ID documents
+    if (req.files) {
+      // Process ID Front
+      if (req.files.idFront && req.files.idFront.length > 0) {
+        updates.idFront = getFileUrl(req, req.files.idFront[0]);
+      }
+      
+      // Process ID Back
+      if (req.files.idBack && req.files.idBack.length > 0) {
+        updates.idBack = getFileUrl(req, req.files.idBack[0]);
+      }
+    }
+
+    // Check if at least one ID document is being updated
+    if (!updates.idFront && !updates.idBack) {
+      return sendError(res, {
+        statusCode: 400,
+        message: 'At least one ID document (front or back) must be provided'
+      });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      updates,
+      { new: true, runValidators: true }
+    ).select('-password').populate('role');
+
+    if (!user) {
+      return sendError(res, {
+        statusCode: 404,
+        message: 'User not found'
+      });
+    }
+
+    sendSuccess(res, {
+      message: 'ID documents updated successfully',
+      data: user
+    });
+  } catch (error) {
+    sendError(res, {
+      statusCode: 400,
+      message: error.message
+    });
   }
 }; 

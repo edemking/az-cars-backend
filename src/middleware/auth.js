@@ -81,3 +81,66 @@ exports.hasPermission = (permission) => {
   };
 };
 
+// Middleware to check if user is accessing their own resource or is an admin
+exports.ownerOrAdmin = async (req, res, next) => {
+  try {
+    const userId = req.params.id;
+    const currentUser = req.user;
+
+    // Allow if user is accessing their own resource
+    if (currentUser._id.toString() === userId) {
+      return next();
+    }
+
+    // Allow if user has USER_ROLES_MANAGEMENT permission (admin)
+    if (currentUser.role && currentUser.role.permissions.includes('User & Roles Management')) {
+      return next();
+    }
+
+    return sendError(res, {
+      statusCode: 403,
+      message: "Access denied: You can only access your own resources"
+    });
+  } catch (error) {
+    return sendError(res, {
+      statusCode: 500,
+      message: "Error checking authorization",
+      errors: error.message
+    });
+  }
+};
+
+// Middleware to check if user account is active
+exports.checkAccountStatus = async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return sendError(res, {
+        statusCode: 401,
+        message: "Authentication required"
+      });
+    }
+
+    if (req.user.status === 'suspended') {
+      return sendError(res, {
+        statusCode: 403,
+        message: "Account suspended: Please contact administrator"
+      });
+    }
+
+    if (req.user.status === 'inactive') {
+      return sendError(res, {
+        statusCode: 403,
+        message: "Account inactive: Please activate your account"
+      });
+    }
+
+    next();
+  } catch (error) {
+    return sendError(res, {
+      statusCode: 500,
+      message: "Error checking account status",
+      errors: error.message
+    });
+  }
+};
+

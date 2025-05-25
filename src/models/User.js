@@ -39,6 +39,10 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  profilePicture: {
+    type: String,
+    required: false,
+  },
   idFront: {
     type: String,
     required: false,
@@ -46,6 +50,11 @@ const userSchema = new mongoose.Schema({
   idBack: {
     type: String,
     required: false,
+  },
+  status: {
+    type: String,
+    enum: ['active', 'suspended', 'inactive'],
+    default: 'active'
   },
   createdAt: {
     type: Date,
