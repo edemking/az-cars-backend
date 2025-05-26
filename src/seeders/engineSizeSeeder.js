@@ -1,6 +1,18 @@
+require('dotenv').config();
 const mongoose = require('mongoose');
-const EngineSize = require('../models/EngineSize');
-const connectDB = require('../config/db');
+const EngineSize = require('../models/cars/EngineSize');
+const config = require('../config/config');
+
+// Connect to MongoDB
+const connectDB = async () => {
+  try {
+    const conn = await mongoose.connect(config.MONGO_URI);
+    console.log(`MongoDB Connected: ${conn.connection.host}`);
+  } catch (error) {
+    console.error(`Error: ${error.message}`);
+    process.exit(1);
+  }
+};
 
 const engineSizes = [
   { value: 1.0, unit: 'L', description: '1.0L 3-cylinder' },
@@ -34,33 +46,32 @@ const engineSizes = [
 
 const seedEngineSizes = async () => {
   try {
-    await connectDB();
+    // Only connect if running this file directly
+    if (require.main === module) {
+      await connectDB();
+    }
     
     // Clear existing data
     await EngineSize.deleteMany({});
+    console.log('Existing engine sizes deleted');
     
     // Insert new data
     const createdEngineSizes = await EngineSize.insertMany(engineSizes);
     
     console.log(`${createdEngineSizes.length} engine sizes have been seeded.`);
     
-    // If running this file directly
+    // Only close connection and exit if running this file directly
     if (require.main === module) {
-      mongoose.connection.close();
+      await mongoose.connection.close();
       console.log('Database connection closed.');
+      process.exit(0);
     }
-    
-    return createdEngineSizes;
   } catch (error) {
     console.error(`Error seeding engine sizes: ${error.message}`);
-    
-    // If running this file directly
     if (require.main === module) {
-      mongoose.connection.close();
-      console.log('Database connection closed due to error.');
+      process.exit(1);
     }
-    
-    process.exit(1);
+    throw error;
   }
 };
 

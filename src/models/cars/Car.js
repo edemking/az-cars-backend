@@ -150,7 +150,7 @@ const carSchema = new mongoose.Schema({
   vehicleType: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "VehicleType",
-    required: true,
+    required: false,
   },
   type: {
     type: String,

@@ -1,7 +1,19 @@
+require('dotenv').config();
 const mongoose = require('mongoose');
 const VehicleType = require('../models/cars/VehicleType');
-const connectDB = require('../config/db');
+const config = require('../config/config');
 const { VEHICLE_TYPES } = require('./constants');
+
+// Connect to MongoDB
+const connectDB = async () => {
+  try {
+    const conn = await mongoose.connect(config.MONGO_URI);
+    console.log(`MongoDB Connected: ${conn.connection.host}`);
+  } catch (error) {
+    console.error(`Error: ${error.message}`);
+    process.exit(1);
+  }
+};
 
 const vehicleTypes = [
   {
@@ -58,33 +70,32 @@ const vehicleTypes = [
 
 const seedVehicleTypes = async () => {
   try {
-    await connectDB();
+    // Only connect if running this file directly
+    if (require.main === module) {
+      await connectDB();
+    }
     
     // Clear existing data
     await VehicleType.deleteMany({});
+    console.log('Existing vehicle types deleted');
     
     // Insert new data
     const createdVehicleTypes = await VehicleType.insertMany(vehicleTypes);
     
     console.log(`${createdVehicleTypes.length} vehicle types have been seeded.`);
     
-    // If running this file directly
+    // Only close connection and exit if running this file directly
     if (require.main === module) {
-      mongoose.connection.close();
+      await mongoose.connection.close();
       console.log('Database connection closed.');
+      process.exit(0);
     }
-    
-    return createdVehicleTypes;
   } catch (error) {
     console.error(`Error seeding vehicle types: ${error.message}`);
-    
-    // If running this file directly
     if (require.main === module) {
-      mongoose.connection.close();
-      console.log('Database connection closed due to error.');
+      process.exit(1);
     }
-    
-    process.exit(1);
+    throw error;
   }
 };
 

@@ -8,6 +8,9 @@
     "seed": "node src/seeders/index.js",
     "seed:admin": "node src/seeders/adminSeeder.js",
     "seed:roles": "node src/seeders/roleSeeder.js",
+    "seed:reference": "node src/seeders/masterSeeder.js",
+    "seed:vehicle-types": "node src/seeders/vehicleTypeSeeder.js",
+    "seed:engine-sizes": "node src/seeders/engineSizeSeeder.js",
     "build": "echo 'Build step completed'",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
