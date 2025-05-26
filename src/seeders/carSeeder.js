@@ -12,7 +12,8 @@ const {
   TRANSMISSIONS,
   COUNTRIES,
   RATINGS,
-  CAR_CONDITIONS
+  CAR_CONDITIONS,
+  VEHICLE_TYPES
 } = require('./constants');
 
 // Helper function to generate a random rating based on car age and mileage
@@ -56,6 +57,7 @@ const cars = [
     make: MAKES.TOYOTA,
     model: MODELS.CAMRY,
     carDrive: CAR_DRIVES.FWD,
+    vehicleType: VEHICLE_TYPES.SEDAN,
     year: 2020,
     price: 25000,
     bodyColor: BODY_COLORS.SILVER,
@@ -70,6 +72,7 @@ const cars = [
     warranty: true,
     engineSize: 2.5,
     transmission: TRANSMISSIONS.AUTO_8,
+    type: "FWD",
     firstOwner: true,
     componentSummary: {
       engine: RATINGS.GOOD,
@@ -123,6 +126,7 @@ const cars = [
     make: MAKES.HONDA,
     model: MODELS.CIVIC,
     carDrive: CAR_DRIVES.FWD,
+    vehicleType: VEHICLE_TYPES.SEDAN,
     year: 2019,
     price: 22000,
     bodyColor: BODY_COLORS.BLUE,
@@ -137,6 +141,7 @@ const cars = [
     warranty: true,
     engineSize: 1.5,
     transmission: TRANSMISSIONS.CVT,
+    type: "FWD",
     firstOwner: true,
     componentSummary: {
       engine: RATINGS.GOOD,

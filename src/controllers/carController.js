@@ -45,6 +45,7 @@ exports.getCars = async (req, res) => {
       .populate("serviceHistory")
       .populate("country")
       .populate("transmission")
+      .populate("vehicleType")
       .populate({
         path: "componentSummary",
         populate: {
@@ -82,6 +83,7 @@ exports.getCar = async (req, res) => {
       .populate("serviceHistory")
       .populate("country")
       .populate("transmission")
+      .populate("vehicleType")
       .populate({
         path: "componentSummary",
         populate: {
@@ -268,6 +270,7 @@ exports.createCar = async (req, res) => {
       .populate("serviceHistory")
       .populate("country")
       .populate("transmission")
+      .populate("vehicleType")
       .populate({
         path: "componentSummary",
         populate: {

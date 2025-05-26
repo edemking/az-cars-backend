@@ -13,6 +13,7 @@ const Country = require("./Country");
 const Rating = require("./Rating");
 const CarCondition = require("./CarCondition");
 const CarDrive = require("./CarDrive");
+const VehicleType = require("./VehicleType");
 
 // Reference the schemas from the imported models
 const makeSchema = Make.schema;
@@ -23,6 +24,7 @@ const serviceHistorySchema = ServiceHistory.schema;
 const bodyColorSchema = BodyColor.schema;
 const carOptionsSchema = CarOption.schema;
 const transmissionSchema = Transmission.schema;
+const vehicleTypeSchema = VehicleType.schema;
 
 // Define country schema (assuming it's not in a separate file)
 const countrySchema = new mongoose.Schema(
@@ -143,6 +145,11 @@ const carSchema = new mongoose.Schema({
   transmission: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Transmission",
+    required: true,
+  },
+  vehicleType: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "VehicleType",
     required: true,
   },
   type: {

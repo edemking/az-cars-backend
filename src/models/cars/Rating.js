@@ -3,13 +3,13 @@ const mongoose = require('mongoose');
 const ratingSchema = new mongoose.Schema({
   name: {
     type: String,
-    required: true,
+    required: false,
     unique: true
   },
   value: {
     type: String,
     enum: ["Good", "Average", "Above Average"],
-    required: true
+    required: false
   }
 });
 
