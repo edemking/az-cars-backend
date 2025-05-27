@@ -53,6 +53,19 @@ const validateCarData = async (carData) => {
     }
   }
 
+  ['year', 'price', 'mileage', 'numberOfKeys', 'engineSize'].forEach(field => {
+    if (carData[field] !== undefined && carData[field] !== null && carData[field] !== '') {
+      if (typeof carData[field] === 'string') {
+        const numValue = Number(carData[field]);
+        if (!isNaN(numValue)) {
+          carData[field] = numValue;
+        } else {
+          errors.push(`${field} must be a valid number, received: "${carData[field]}"`);
+        }
+      }
+    }
+  });
+
   // Optional validation for data types
   if (carData.year && (typeof carData.year !== 'number' || carData.year < 1900 || carData.year > new Date().getFullYear() + 1)) {
     errors.push(`year must be a valid number between 1900 and ${new Date().getFullYear() + 1}`);
