@@ -11,6 +11,7 @@ const uploadCarImages = upload.fields([
 
 // Public routes - anyone can view cars
 router.get('/', carController.getCars);
+router.get('/search', carController.searchCars);
 router.get('/reference/data', carController.getReferenceData);
 router.get('/:id', carController.getCar);
 

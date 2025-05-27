@@ -705,6 +705,288 @@ exports.unarchiveCar = async (req, res) => {
   }
 };
 
+// Search cars with flexible matching
+exports.searchCars = async (req, res) => {
+  try {
+    const {
+      search,        // General text search
+      make,          // Brand/Make name (partial match)
+      model,         // Model name (partial match)
+      minYear,       // Minimum year
+      maxYear,       // Maximum year
+      minPrice,      // Minimum price
+      maxPrice,      // Maximum price
+      minMileage,    // Minimum mileage
+      maxMileage,    // Maximum mileage
+      bodyColor,     // Body color name (partial match)
+      fuelType,      // Fuel type name (partial match)
+      transmission,  // Transmission name (partial match)
+      carDrive,      // Car drive type (partial match)
+      vehicleType,   // Vehicle type (partial match)
+      approved,      // Approval status
+      includeArchived, // Include archived cars
+      limit = 50,    // Results limit (default 50)
+      page = 1       // Page number (default 1)
+    } = req.query;
+
+    // Build the main filter
+    const filter = {};
+    
+    // Exclude archived cars by default
+    if (includeArchived !== 'true') {
+      filter.isArchived = false;
+    }
+    
+    // Filter by approval status
+    if (approved === 'true') {
+      filter.isApproved = true;
+    } else if (approved === 'false') {
+      filter.isApproved = false;
+    }
+
+    // Year range filter
+    if (minYear || maxYear) {
+      filter.year = {};
+      if (minYear) filter.year.$gte = parseInt(minYear);
+      if (maxYear) filter.year.$lte = parseInt(maxYear);
+    }
+
+    // Price range filter
+    if (minPrice || maxPrice) {
+      filter.price = {};
+      if (minPrice) filter.price.$gte = parseFloat(minPrice);
+      if (maxPrice) filter.price.$lte = parseFloat(maxPrice);
+    }
+
+    // Mileage range filter
+    if (minMileage || maxMileage) {
+      filter.mileage = {};
+      if (minMileage) filter.mileage.$gte = parseInt(minMileage);
+      if (maxMileage) filter.mileage.$lte = parseInt(maxMileage);
+    }
+
+    // Build aggregation pipeline for complex searches
+    const pipeline = [
+      // First, match basic filters
+      { $match: filter },
+      
+      // Lookup and populate related collections
+      {
+        $lookup: {
+          from: 'makes',
+          localField: 'make',
+          foreignField: '_id',
+          as: 'makeData'
+        }
+      },
+      {
+        $lookup: {
+          from: 'models',
+          localField: 'model',
+          foreignField: '_id',
+          as: 'modelData'
+        }
+      },
+      {
+        $lookup: {
+          from: 'bodycolors',
+          localField: 'bodyColor',
+          foreignField: '_id',
+          as: 'bodyColorData'
+        }
+      },
+      {
+        $lookup: {
+          from: 'fueltypes',
+          localField: 'fuelType',
+          foreignField: '_id',
+          as: 'fuelTypeData'
+        }
+      },
+      {
+        $lookup: {
+          from: 'transmissions',
+          localField: 'transmission',
+          foreignField: '_id',
+          as: 'transmissionData'
+        }
+      },
+      {
+        $lookup: {
+          from: 'cardrives',
+          localField: 'carDrive',
+          foreignField: '_id',
+          as: 'carDriveData'
+        }
+      },
+      {
+        $lookup: {
+          from: 'vehicletypes',
+          localField: 'vehicleType',
+          foreignField: '_id',
+          as: 'vehicleTypeData'
+        }
+      }
+    ];
+
+    // Add text search and name matching filters
+    const textSearchConditions = [];
+
+    // General search across multiple fields
+    if (search) {
+      const searchRegex = { $regex: search, $options: 'i' };
+      textSearchConditions.push({
+        $or: [
+          { 'makeData.name': searchRegex },
+          { 'modelData.name': searchRegex },
+          { 'bodyColorData.name': searchRegex },
+          { 'fuelTypeData.name': searchRegex },
+          { 'transmissionData.name': searchRegex },
+          { 'carDriveData.name': searchRegex },
+          { 'vehicleTypeData.name': searchRegex },
+          { description: searchRegex }
+        ]
+      });
+    }
+
+    // Specific field searches
+    if (make) {
+      textSearchConditions.push({
+        'makeData.name': { $regex: make, $options: 'i' }
+      });
+    }
+
+    if (model) {
+      textSearchConditions.push({
+        'modelData.name': { $regex: model, $options: 'i' }
+      });
+    }
+
+    if (bodyColor) {
+      textSearchConditions.push({
+        'bodyColorData.name': { $regex: bodyColor, $options: 'i' }
+      });
+    }
+
+    if (fuelType) {
+      textSearchConditions.push({
+        'fuelTypeData.name': { $regex: fuelType, $options: 'i' }
+      });
+    }
+
+    if (transmission) {
+      textSearchConditions.push({
+        'transmissionData.name': { $regex: transmission, $options: 'i' }
+      });
+    }
+
+    if (carDrive) {
+      textSearchConditions.push({
+        'carDriveData.name': { $regex: carDrive, $options: 'i' }
+      });
+    }
+
+    if (vehicleType) {
+      textSearchConditions.push({
+        'vehicleTypeData.name': { $regex: vehicleType, $options: 'i' }
+      });
+    }
+
+    // Add text search conditions to pipeline
+    if (textSearchConditions.length > 0) {
+      pipeline.push({
+        $match: {
+          $and: textSearchConditions
+        }
+      });
+    }
+
+    // Add pagination
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    pipeline.push(
+      { $skip: skip },
+      { $limit: parseInt(limit) }
+    );
+
+    // Execute the aggregation
+    const cars = await Car.aggregate(pipeline);
+
+    // Get total count for pagination (without limit/skip)
+    const countPipeline = pipeline.slice(0, -2); // Remove skip and limit
+    countPipeline.push({ $count: "total" });
+    const countResult = await Car.aggregate(countPipeline);
+    const totalCount = countResult.length > 0 ? countResult[0].total : 0;
+
+    // Populate the remaining fields for the results
+    const populatedCars = await Car.populate(cars, [
+      { path: 'make', select: 'name country logo' },
+      { path: 'model', select: 'name startYear endYear image' },
+      { path: 'carDrive', select: 'name type description' },
+      { path: 'bodyColor', select: 'name hexCode type' },
+      { path: 'carOptions', select: 'name category description' },
+      { path: 'fuelType', select: 'name' },
+      { path: 'cylinder', select: 'name count' },
+      { path: 'country', select: 'name' },
+      { path: 'transmission', select: 'name type' },
+      { path: 'vehicleType', select: 'name category' },
+      {
+        path: 'componentSummary',
+        populate: {
+          path: 'engine steering centralLock centralLocking interiorButtons gearbox dashLight audioSystem windowControl electricComponents acHeating dashboard roof breaks suspension gloveBox frontSeats exhaust clutch backSeat driveTrain',
+          model: 'Rating'
+        }
+      },
+      {
+        path: 'interiorAndExterior',
+        populate: {
+          path: 'frontBumber bonnet roof reerBumber driverSideFrontWing driverSideFrontDoor driverSideRearDoor driverRearQuarter passengerSideFrontWing passengerSideFrontDoor passengerSideRearDoor passengerRearQuarter driverSideFrontTyre driverSideRearTyre passengerSideFrontTyre passengerSideRearTyre trunk frontGlass rearGlass leftGlass rightGlass',
+          model: 'CarCondition'
+        }
+      },
+      { path: 'approvedBy', select: 'name email' },
+      { path: 'archivedBy', select: 'name email' }
+    ]);
+
+    // Calculate pagination info
+    const totalPages = Math.ceil(totalCount / parseInt(limit));
+    const hasNextPage = parseInt(page) < totalPages;
+    const hasPrevPage = parseInt(page) > 1;
+
+    sendSuccess(res, {
+      data: populatedCars,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages,
+        totalCount,
+        limit: parseInt(limit),
+        hasNextPage,
+        hasPrevPage
+      },
+      searchCriteria: {
+        search,
+        make,
+        model,
+        yearRange: minYear || maxYear ? { min: minYear, max: maxYear } : null,
+        priceRange: minPrice || maxPrice ? { min: minPrice, max: maxPrice } : null,
+        mileageRange: minMileage || maxMileage ? { min: minMileage, max: maxMileage } : null,
+        bodyColor,
+        fuelType,
+        transmission,
+        carDrive,
+        vehicleType,
+        approved,
+        includeArchived
+      }
+    });
+  } catch (error) {
+    console.error('Search error:', error);
+    sendError(res, { 
+      message: 'Error searching cars',
+      error: error.message 
+    });
+  }
+};
+
 // Validate car data (debugging endpoint)
 exports.validateCarData = async (req, res) => {
   try {
