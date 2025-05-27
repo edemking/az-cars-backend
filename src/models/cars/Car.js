@@ -64,30 +64,30 @@ const carSchema = new mongoose.Schema({
   make: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Make",
-    required: true,
+    required: false,
   },
   model: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Model",
-    required: true,
+    required: false,
   },
   carDrive: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "CarDrive",
-    required: true,
+    required: false,
   },
   year: {
     type: Number,
-    required: true,
+    required: false,
   },
   price: {
     type: Number,
-    required: true,
+    required: false,
   },
   bodyColor: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "BodyColor",
-    required: true,
+    required: false,
   },
   mileage: {
     type: Number,
@@ -104,27 +104,27 @@ const carSchema = new mongoose.Schema({
   carOptions: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "CarOption",
-    required: true,
+    required: false,
   },
   fuelType: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "FuelType",
-    required: true,
+    required: false,
   },
   cylinder: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Cylinder",
-    required: true,
+    required: false,
   },
   serviceHistory: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "ServiceHistory",
-    required: true,
+    type: Boolean,
+    required: false,
+    default: false,
   },
   country: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Country",
-    required: true,
+    required: false,
   },
   warranty: {
     type: Boolean,
@@ -137,7 +137,7 @@ const carSchema = new mongoose.Schema({
   transmission: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Transmission",
-    required: true,
+    required: false,
   },
   vehicleType: {
     type: mongoose.Schema.Types.ObjectId,

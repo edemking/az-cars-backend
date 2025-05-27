@@ -23,35 +23,56 @@ const validateCarData = async (carData) => {
   const errors = [];
   const warnings = [];
 
-  // Required ObjectId fields
-  const requiredObjectIdFields = [
+  // Define optional ObjectId fields (no longer required)
+  const objectIdFields = [
     'make', 'model', 'carDrive', 'bodyColor', 'carOptions', 
-    'fuelType', 'cylinder', 'serviceHistory', 'country', 'transmission'
+    'fuelType', 'cylinder', 'country', 'transmission', 'vehicleType'
   ];
-  
-  const optionalObjectIdFields = ['vehicleType'];
 
-  // Check for empty strings and invalid values in ObjectId fields
-  [...requiredObjectIdFields, ...optionalObjectIdFields].forEach(field => {
+  // Convert empty strings to null for ObjectId fields and validate format
+  objectIdFields.forEach(field => {
     if (carData[field] === '' || carData[field] === 'null' || carData[field] === 'undefined') {
-      if (requiredObjectIdFields.includes(field)) {
-        errors.push(`${field} is required and cannot be empty`);
-      } else {
-        carData[field] = null; // Set optional fields to null
-        warnings.push(`${field} was empty, set to null`);
-      }
+      carData[field] = null;
     } else if (carData[field] && typeof carData[field] === 'string' && carData[field].length !== 24) {
       errors.push(`${field} must be a valid ObjectId (24 characters), received: "${carData[field]}" (${carData[field].length} characters)`);
     }
   });
 
-  // Validate required basic fields
-  const requiredBasicFields = ['make', 'model', 'year', 'price'];
-  requiredBasicFields.forEach(field => {
-    if (!carData[field] || carData[field] === '') {
-      errors.push(`${field} is required`);
+  // Handle serviceHistory as boolean
+  if (carData.serviceHistory !== undefined) {
+    if (typeof carData.serviceHistory === 'string') {
+      if (carData.serviceHistory.toLowerCase() === 'true') {
+        carData.serviceHistory = true;
+      } else if (carData.serviceHistory.toLowerCase() === 'false') {
+        carData.serviceHistory = false;
+      } else {
+        errors.push(`serviceHistory must be a boolean (true/false), received: "${carData.serviceHistory}"`);
+      }
+    } else if (typeof carData.serviceHistory !== 'boolean') {
+      errors.push(`serviceHistory must be a boolean, received: ${typeof carData.serviceHistory}`);
     }
-  });
+  }
+
+  // Optional validation for data types
+  if (carData.year && (typeof carData.year !== 'number' || carData.year < 1900 || carData.year > new Date().getFullYear() + 1)) {
+    errors.push(`year must be a valid number between 1900 and ${new Date().getFullYear() + 1}`);
+  }
+
+  if (carData.price && (typeof carData.price !== 'number' || carData.price < 0)) {
+    errors.push('price must be a positive number');
+  }
+
+  if (carData.mileage && (typeof carData.mileage !== 'number' || carData.mileage < 0)) {
+    errors.push('mileage must be a positive number');
+  }
+
+  if (carData.numberOfKeys && (typeof carData.numberOfKeys !== 'number' || carData.numberOfKeys < 0)) {
+    errors.push('numberOfKeys must be a positive number');
+  }
+
+  if (carData.engineSize && (typeof carData.engineSize !== 'number' || carData.engineSize < 0)) {
+    errors.push('engineSize must be a positive number');
+  }
 
   return { isValid: errors.length === 0, errors, warnings, processedData: carData };
 };
@@ -80,7 +101,6 @@ exports.getCars = async (req, res) => {
       .populate("carOptions")
       .populate("fuelType")
       .populate("cylinder")
-      .populate("serviceHistory")
       .populate("country")
       .populate("transmission")
       .populate("vehicleType")
@@ -118,7 +138,6 @@ exports.getCar = async (req, res) => {
       .populate("carOptions")
       .populate("fuelType")
       .populate("cylinder")
-      .populate("serviceHistory")
       .populate("country")
       .populate("transmission")
       .populate("vehicleType")
@@ -292,7 +311,6 @@ exports.createCar = async (req, res) => {
       .populate("carOptions")
       .populate("fuelType")
       .populate("cylinder")
-      .populate("serviceHistory")
       .populate("country")
       .populate("transmission")
       .populate("vehicleType")
