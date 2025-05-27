@@ -14,6 +14,9 @@ router.get('/', carController.getCars);
 router.get('/reference/data', carController.getReferenceData);
 router.get('/:id', carController.getCar);
 
+// Debugging route - validate car data without creating
+router.post('/validate', carController.validateCarData);
+
 // Protected routes - only authenticated users can modify
 router.post('/', protect, uploadCarImages, carController.createCar);
 router.put('/:id', protect, uploadCarImages, carController.updateCar);

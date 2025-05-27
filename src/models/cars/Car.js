@@ -60,14 +60,6 @@ const interiorAndExteriorSchema = new mongoose.Schema(
   { _id: false }
 );
 
-const carDriveSchema = new mongoose.Schema({
-  type: {
-    type: String,
-    enum: ["FWD", "RWD", "AWD"],
-    required: true,
-  },
-});
-
 const carSchema = new mongoose.Schema({
   make: {
     type: mongoose.Schema.Types.ObjectId,
@@ -151,11 +143,6 @@ const carSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "VehicleType",
     required: false,
-  },
-  type: {
-    type: String,
-    enum: ["FWD", "RWD", "AWD"],
-    required: true,
   },
   firstOwner: {
     type: Boolean,

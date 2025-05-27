@@ -18,6 +18,44 @@ const Rating = require("../models/cars/Rating");
 const CarCondition = require("../models/cars/CarCondition");
 const { sendSuccess, sendError } = require("../utils/responseHandler");
 
+// Helper function to validate and preprocess car data
+const validateCarData = async (carData) => {
+  const errors = [];
+  const warnings = [];
+
+  // Required ObjectId fields
+  const requiredObjectIdFields = [
+    'make', 'model', 'carDrive', 'bodyColor', 'carOptions', 
+    'fuelType', 'cylinder', 'serviceHistory', 'country', 'transmission'
+  ];
+  
+  const optionalObjectIdFields = ['vehicleType'];
+
+  // Check for empty strings and invalid values in ObjectId fields
+  [...requiredObjectIdFields, ...optionalObjectIdFields].forEach(field => {
+    if (carData[field] === '' || carData[field] === 'null' || carData[field] === 'undefined') {
+      if (requiredObjectIdFields.includes(field)) {
+        errors.push(`${field} is required and cannot be empty`);
+      } else {
+        carData[field] = null; // Set optional fields to null
+        warnings.push(`${field} was empty, set to null`);
+      }
+    } else if (carData[field] && typeof carData[field] === 'string' && carData[field].length !== 24) {
+      errors.push(`${field} must be a valid ObjectId (24 characters), received: "${carData[field]}" (${carData[field].length} characters)`);
+    }
+  });
+
+  // Validate required basic fields
+  const requiredBasicFields = ['make', 'model', 'year', 'price'];
+  requiredBasicFields.forEach(field => {
+    if (!carData[field] || carData[field] === '') {
+      errors.push(`${field} is required`);
+    }
+  });
+
+  return { isValid: errors.length === 0, errors, warnings, processedData: carData };
+};
+
 // Get all cars
 exports.getCars = async (req, res) => {
   try {
@@ -117,16 +155,28 @@ exports.createCar = async (req, res) => {
     // Parse form data fields that contain JSON strings
     const carData = { ...req.body };
 
+    // Data preprocessing and validation
+    const { isValid, errors, warnings, processedData } = await validateCarData(carData);
+
+    if (!isValid) {
+      return sendError(res, {
+        statusCode: 400,
+        message: "Invalid car data",
+        errors: errors,
+        warnings: warnings,
+      });
+    }
+
     // Parse nested objects from form data with better error handling
-    if (carData.componentSummary) {
+    if (processedData.componentSummary) {
       try {
         let parsedSummary;
 
         // Parse if it's a string, otherwise use as is
-        if (typeof carData.componentSummary === "string") {
-          parsedSummary = JSON.parse(carData.componentSummary);
+        if (typeof processedData.componentSummary === "string") {
+          parsedSummary = JSON.parse(processedData.componentSummary);
         } else {
-          parsedSummary = carData.componentSummary;
+          parsedSummary = processedData.componentSummary;
         }
 
         // Clean and validate each field in componentSummary
@@ -155,72 +205,47 @@ exports.createCar = async (req, res) => {
           "driveTrain",
         ];
 
-        for (const field of fields) {
+        fields.forEach((field) => {
           if (parsedSummary[field]) {
-            // If it's an array, take the first valid ObjectId
-            if (Array.isArray(parsedSummary[field])) {
-              // Filter out any template literals or invalid values
-              const validIds = parsedSummary[field].filter(
-                (id) =>
-                  typeof id === "string" &&
-                  !id.includes("{{") &&
-                  !id.includes("}}") &&
-                  /^[0-9a-fA-F]{24}$/.test(id)
-              );
-
-              if (validIds.length > 0) {
-                cleanedSummary[field] = validIds[0]; // Take the first valid ObjectId
-              }
+            // Handle empty strings or invalid values
+            if (parsedSummary[field] === "" || parsedSummary[field] === "null") {
+              // Skip empty values - they're optional
+              return;
             }
-            // If it's a string and a valid ObjectId, use it
-            else if (
-              typeof parsedSummary[field] === "string" &&
-              !parsedSummary[field].includes("{{") &&
-              !parsedSummary[field].includes("}}") &&
-              /^[0-9a-fA-F]{24}$/.test(parsedSummary[field])
-            ) {
-              cleanedSummary[field] = parsedSummary[field];
-            }
+            cleanedSummary[field] = parsedSummary[field];
           }
-        }
+        });
 
-        // Validate that we have at least one valid field
-        if (Object.keys(cleanedSummary).length === 0) {
-          throw new Error("No valid component ratings provided");
-        }
-
-        carData.componentSummary = cleanedSummary;
-
-        console.log("Cleaned componentSummary:", cleanedSummary);
+        processedData.componentSummary = cleanedSummary;
       } catch (e) {
-        console.error("Error processing componentSummary:", e);
+        console.error("Error parsing componentSummary:", e);
         return sendError(res, {
           statusCode: 400,
           message: "Invalid componentSummary format",
           errors: {
             details: e.message,
             received:
-              typeof carData.componentSummary === "string"
-                ? carData.componentSummary.substring(0, 100) + "..."
-                : typeof carData.componentSummary,
+              typeof processedData.componentSummary === "string"
+                ? processedData.componentSummary.substring(0, 100) + "..."
+                : typeof processedData.componentSummary,
           },
         });
       }
     }
 
-    if (carData.interiorAndExterior) {
+    if (processedData.interiorAndExterior) {
       try {
         // First check if it's already an object
-        if (typeof carData.interiorAndExterior === "object") {
+        if (typeof processedData.interiorAndExterior === "object") {
           // If it's already an object, use it as is
           console.log("interiorAndExterior is already an object");
         } else {
           // Try to parse it as JSON
-          const parsed = JSON.parse(carData.interiorAndExterior);
+          const parsed = JSON.parse(processedData.interiorAndExterior);
           if (typeof parsed !== "object") {
             throw new Error("interiorAndExterior must be an object");
           }
-          carData.interiorAndExterior = parsed;
+          processedData.interiorAndExterior = parsed;
         }
       } catch (e) {
         console.error("Error parsing interiorAndExterior:", e);
@@ -230,9 +255,9 @@ exports.createCar = async (req, res) => {
           errors: {
             details: e.message,
             received:
-              typeof carData.interiorAndExterior === "string"
-                ? carData.interiorAndExterior.substring(0, 100) + "..."
-                : typeof carData.interiorAndExterior,
+              typeof processedData.interiorAndExterior === "string"
+                ? processedData.interiorAndExterior.substring(0, 100) + "..."
+                : typeof processedData.interiorAndExterior,
           },
         });
       }
@@ -240,22 +265,22 @@ exports.createCar = async (req, res) => {
 
     // Handle image uploads if present
     if (req.files && req.files.images) {
-      carData.images = req.files.images.map((file) => getFileUrl(req, file));
+      processedData.images = req.files.images.map((file) => getFileUrl(req, file));
     }
 
     // Log the processed data before saving
     console.log("Processed car data:", {
-      ...carData,
-      componentSummary: carData.componentSummary
+      ...processedData,
+      componentSummary: processedData.componentSummary
         ? "Present (cleaned)"
         : "Not present",
-      interiorAndExterior: carData.interiorAndExterior
+      interiorAndExterior: processedData.interiorAndExterior
         ? "Present (parsed)"
         : "Not present",
-      images: carData.images ? `${carData.images.length} images` : "No images",
+      images: processedData.images ? `${processedData.images.length} images` : "No images",
     });
 
-    const car = new Car(carData);
+    const car = new Car(processedData);
     const newCar = await car.save();
 
     // Populate references before sending response
@@ -645,6 +670,42 @@ exports.unarchiveCar = async (req, res) => {
     sendError(res, {
       statusCode: 400,
       message: error.message,
+    });
+  }
+};
+
+// Validate car data (debugging endpoint)
+exports.validateCarData = async (req, res) => {
+  try {
+    const carData = { ...req.body };
+    
+    console.log("Raw car data received:", carData);
+    
+    const { isValid, errors, warnings, processedData } = await validateCarData(carData);
+    
+    sendSuccess(res, {
+      message: isValid ? "Car data is valid" : "Car data validation failed",
+      data: {
+        isValid,
+        errors,
+        warnings,
+        originalData: carData,
+        processedData: processedData,
+        summary: {
+          totalFields: Object.keys(carData).length,
+          emptyFields: Object.keys(carData).filter(key => carData[key] === '' || carData[key] === null || carData[key] === undefined),
+          objectIdFields: Object.keys(carData).filter(key => typeof carData[key] === 'string' && carData[key].length === 24),
+        }
+      }
+    });
+  } catch (error) {
+    console.error("Error validating car data:", error);
+    sendError(res, {
+      statusCode: 400,
+      message: "Error validating car data",
+      errors: {
+        details: error.message,
+      },
     });
   }
 };
