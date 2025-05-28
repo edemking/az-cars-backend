@@ -55,7 +55,24 @@ exports.getAuctions = asyncHandler(async (req, res, next) => {
 
   // Find auctions
   const auctions = await Auction.find(query)
-    .populate("car", "make model year price")
+    .populate({
+      path: "car",
+      select: "make model year price images mileage carOptions",
+      populate: [
+        {
+          path: "make",
+          select: "name country logo",
+        },
+        {
+          path: "model",
+          select: "name startYear endYear image",
+        },
+        {
+          path: "carOptions",
+          select: "name category description",
+        },
+      ],
+    })
     .populate("createdBy", "firstName lastName");
 
   sendSuccess(res, {
@@ -344,10 +361,24 @@ exports.placeBid = asyncHandler(async (req, res, next) => {
 // @route   GET /api/auctions/user
 // @access  Private
 exports.getUserAuctions = asyncHandler(async (req, res, next) => {
-  const auctions = await Auction.find({ createdBy: req.user.id }).populate(
-    "car",
-    "make model year price"
-  );
+  const auctions = await Auction.find({ createdBy: req.user.id }).populate({
+    path: "car",
+    select: "make model year price images mileage carOptions",
+    populate: [
+      {
+        path: "make",
+        select: "name country logo",
+      },
+      {
+        path: "model",
+        select: "name startYear endYear image",
+      },
+      {
+        path: "carOptions",
+        select: "name category description",
+      },
+    ],
+  });
 
   sendSuccess(res, {
     data: auctions,
@@ -368,7 +399,21 @@ exports.getUserBids = asyncHandler(async (req, res, next) => {
       select: "auctionTitle startingPrice currentHighestBid endTime status",
       populate: {
         path: "car",
-        select: "make model year",
+        select: "make model year images mileage carOptions",
+        populate: [
+          {
+            path: "make",
+            select: "name country logo",
+          },
+          {
+            path: "model",
+            select: "name startYear endYear image",
+          },
+          {
+            path: "carOptions",
+            select: "name category description",
+          },
+        ],
       },
     })
     .sort({ createdAt: -1 });
@@ -379,10 +424,24 @@ exports.getUserBids = asyncHandler(async (req, res, next) => {
   ];
 
   // Get the auctions
-  const auctions = await Auction.find({ _id: { $in: auctionIds } }).populate(
-    "car",
-    "make model year price"
-  );
+  const auctions = await Auction.find({ _id: { $in: auctionIds } }).populate({
+    path: "car",
+    select: "make model year price images mileage carOptions",
+    populate: [
+      {
+        path: "make",
+        select: "name country logo",
+      },
+      {
+        path: "model",
+        select: "name startYear endYear image",
+      },
+      {
+        path: "carOptions",
+        select: "name category description",
+      },
+    ],
+  });
 
   sendSuccess(res, {
     data: {
