@@ -202,4 +202,75 @@ exports.verifyOTP = async (req, res) => {
       errors: error.message 
     });
   }
+};
+
+// Change password for logged in user
+exports.changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword, confirmPassword } = req.body;
+
+    // Validate required fields
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      return sendError(res, { 
+        statusCode: 400, 
+        message: 'Please provide current password, new password, and confirm password' 
+      });
+    }
+
+    // Check if new password and confirm password match
+    if (newPassword !== confirmPassword) {
+      return sendError(res, { 
+        statusCode: 400, 
+        message: 'New password and confirm password do not match' 
+      });
+    }
+
+    // Validate new password strength (optional - you can customize these rules)
+    if (newPassword.length < 6) {
+      return sendError(res, { 
+        statusCode: 400, 
+        message: 'New password must be at least 6 characters long' 
+      });
+    }
+
+    // Check if new password is different from current password
+    if (currentPassword === newPassword) {
+      return sendError(res, { 
+        statusCode: 400, 
+        message: 'New password must be different from current password' 
+      });
+    }
+
+    // Get the current user with password field
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return sendError(res, { 
+        statusCode: 404, 
+        message: 'User not found' 
+      });
+    }
+
+    // Verify current password
+    const isCurrentPasswordValid = await user.matchPassword(currentPassword);
+    if (!isCurrentPasswordValid) {
+      return sendError(res, { 
+        statusCode: 400, 
+        message: 'Current password is incorrect' 
+      });
+    }
+
+    // Update password (the pre-save hook will hash it automatically)
+    user.password = newPassword;
+    await user.save();
+
+    sendSuccess(res, {
+      message: 'Password changed successfully'
+    });
+  } catch (error) {
+    console.error('Change password error:', error);
+    sendError(res, { 
+      message: 'Error changing password', 
+      errors: error.message 
+    });
+  }
 }; 

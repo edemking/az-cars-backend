@@ -1034,3 +1034,288 @@ exports.getAuctionStats = asyncHandler(async (req, res, next) => {
     },
   });
 });
+
+// @desc    Get auction results with complete details
+// @route   GET /api/auctions/:id/results
+// @access  Public
+exports.getAuctionResults = asyncHandler(async (req, res, next) => {
+  // Find the auction with complete car details
+  const auction = await Auction.findById(req.params.id)
+    .populate({
+      path: "car",
+      populate: [
+        {
+          path: "make",
+          select: "name country logo"
+        },
+        {
+          path: "model", 
+          select: "name startYear endYear image"
+        },
+        {
+          path: "carDrive",
+          select: "name type description"
+        },
+        {
+          path: "bodyColor",
+          select: "name hexCode type"
+        },
+        {
+          path: "carOptions",
+          select: "name category description"
+        },
+        {
+          path: "fuelType",
+          select: "name category description"
+        },
+        {
+          path: "cylinder",
+          select: "count configuration description"
+        },
+        {
+          path: "country",
+          select: "name"
+        },
+        {
+          path: "transmission",
+          select: "name type gears description"
+        },
+        {
+          path: "vehicleType",
+          select: "name description"
+        },
+        {
+          path: "componentSummary.engine",
+          model: "Rating",
+          select: "rating"
+        },
+        {
+          path: "componentSummary.steering",
+          model: "Rating", 
+          select: "rating"
+        },
+        {
+          path: "componentSummary.centralLock",
+          model: "Rating",
+          select: "rating"
+        },
+        {
+          path: "componentSummary.centralLocking",
+          model: "Rating",
+          select: "rating"
+        },
+        {
+          path: "componentSummary.interiorButtons",
+          model: "Rating",
+          select: "rating"
+        },
+        {
+          path: "componentSummary.gearbox",
+          model: "Rating",
+          select: "rating"
+        },
+        {
+          path: "componentSummary.dashLight",
+          model: "Rating",
+          select: "rating"
+        },
+        {
+          path: "componentSummary.audioSystem",
+          model: "Rating",
+          select: "rating"
+        },
+        {
+          path: "componentSummary.windowControl",
+          model: "Rating",
+          select: "rating"
+        },
+        {
+          path: "componentSummary.electricComponents",
+          model: "Rating",
+          select: "rating"
+        },
+        {
+          path: "componentSummary.acHeating",
+          model: "Rating",
+          select: "rating"
+        },
+        {
+          path: "componentSummary.dashboard",
+          model: "Rating",
+          select: "rating"
+        },
+        {
+          path: "componentSummary.roof",
+          model: "Rating",
+          select: "rating"
+        },
+        {
+          path: "componentSummary.breaks",
+          model: "Rating",
+          select: "rating"
+        },
+        {
+          path: "componentSummary.suspension",
+          model: "Rating",
+          select: "rating"
+        },
+        {
+          path: "componentSummary.gloveBox",
+          model: "Rating",
+          select: "rating"
+        },
+        {
+          path: "componentSummary.frontSeats",
+          model: "Rating",
+          select: "rating"
+        },
+        {
+          path: "componentSummary.exhaust",
+          model: "Rating",
+          select: "rating"
+        },
+        {
+          path: "componentSummary.clutch",
+          model: "Rating",
+          select: "rating"
+        },
+        {
+          path: "componentSummary.backSeat",
+          model: "Rating",
+          select: "rating"
+        },
+        {
+          path: "componentSummary.driveTrain",
+          model: "Rating",
+          select: "rating"
+        },
+        {
+          path: "interiorAndExterior.frontBumber",
+          model: "CarCondition",
+          select: "condition"
+        },
+        {
+          path: "interiorAndExterior.bonnet",
+          model: "CarCondition",
+          select: "condition"
+        },
+        {
+          path: "interiorAndExterior.roof",
+          model: "CarCondition",
+          select: "condition"
+        },
+        {
+          path: "interiorAndExterior.reerBumber",
+          model: "CarCondition",
+          select: "condition"
+        },
+        {
+          path: "interiorAndExterior.driverSideFrontWing",
+          model: "CarCondition",
+          select: "condition"
+        },
+        {
+          path: "interiorAndExterior.driverSideFrontDoor",
+          model: "CarCondition",
+          select: "condition"
+        },
+        {
+          path: "interiorAndExterior.driverSideRearDoor",
+          model: "CarCondition",
+          select: "condition"
+        },
+        {
+          path: "interiorAndExterior.driverRearQuarter",
+          model: "CarCondition",
+          select: "condition"
+        },
+        {
+          path: "interiorAndExterior.passengerSideFrontWing",
+          model: "CarCondition",
+          select: "condition"
+        },
+        {
+          path: "interiorAndExterior.passengerSideFrontDoor",
+          model: "CarCondition",
+          select: "condition"
+        },
+        {
+          path: "interiorAndExterior.passengerSideRearDoor",
+          model: "CarCondition",
+          select: "condition"
+        },
+        {
+          path: "interiorAndExterior.passengerRearQuarter",
+          model: "CarCondition",
+          select: "condition"
+        }
+      ]
+    })
+    .populate("createdBy", "firstName lastName email")
+    .populate("winner", "firstName lastName email");
+
+  if (!auction) {
+    return next(
+      new ErrorResponse(`Auction not found with id of ${req.params.id}`, 404)
+    );
+  }
+
+  // Get all bids for this auction, sorted by amount (highest first)
+  const allBids = await Bid.find({ auction: req.params.id })
+    .populate("bidder", "firstName lastName email")
+    .sort({ amount: -1, createdAt: 1 });
+
+  // Get the winning bid (highest bid)
+  const winningBid = allBids.length > 0 ? allBids[0] : null;
+
+  // Get the bid winner details (same as auction.winner but with bid details)
+  const bidWinner = winningBid ? {
+    user: winningBid.bidder,
+    winningAmount: winningBid.amount,
+    bidTime: winningBid.createdAt,
+    isWinningBid: winningBid.isWinningBid
+  } : null;
+
+  // Calculate auction statistics
+  const auctionStats = {
+    totalBids: allBids.length,
+    uniqueBidders: [...new Set(allBids.map(bid => bid.bidder._id.toString()))].length,
+    startingPrice: auction.startingPrice,
+    finalPrice: winningBid ? winningBid.amount : auction.startingPrice,
+    priceIncrease: winningBid ? winningBid.amount - auction.startingPrice : 0,
+    auctionDuration: {
+      start: auction.startTime,
+      end: auction.endTime,
+      durationMs: auction.endTime - auction.startTime
+    }
+  };
+
+  sendSuccess(res, {
+    message: "Auction results retrieved successfully",
+    data: {
+      auction: {
+        id: auction._id,
+        type: auction.type,
+        auctionTitle: auction.auctionTitle,
+        auctionDescription: auction.auctionDescription,
+        status: auction.status,
+        startTime: auction.startTime,
+        endTime: auction.endTime,
+        startingPrice: auction.startingPrice,
+        bidIncrement: auction.bidIncrement,
+        buyNowPrice: auction.buyNowPrice,
+        currentHighestBid: auction.currentHighestBid,
+        totalBids: auction.totalBids,
+        createdBy: auction.createdBy,
+        winner: auction.winner,
+        createdAt: auction.createdAt,
+        updatedAt: auction.updatedAt
+      },
+      carDetails: auction.car,
+      bids: allBids,
+      winningBid: winningBid,
+      bidWinner: bidWinner,
+      auctionStats: auctionStats
+    }
+  });
+});

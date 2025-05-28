@@ -42,7 +42,7 @@ router.get("/:id", protect, userController.getUser);
 router.put(
   "/:id",
   protect,
-  hasPermission(PERMISSIONS.USER_ROLES_MANAGEMENT),
+  // hasPermission(PERMISSIONS.USER_ROLES_MANAGEMENT),
   uploadUserDocs,
   userController.updateUser
 );

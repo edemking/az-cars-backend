@@ -13,7 +13,8 @@ const {
   getNewLiveAuctions,
   getEndingSoonAuctions,
   getDashboardData,
-  getAuctionStats
+  getAuctionStats,
+  getAuctionResults
 } = require('../controllers/auctionController');
 
 // Import the auction scheduler
@@ -71,5 +72,8 @@ router.route('/:id/bids')
 
 router.route('/:id/stats')
   .get(getAuctionStats);
+
+router.route('/:id/results')
+  .get(getAuctionResults);
 
 module.exports = router; 

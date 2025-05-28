@@ -18,4 +18,7 @@ router.post('/verify-otp', authController.verifyOTP);
 // Reset password with OTP
 router.post('/reset-password', authController.resetPassword);
 
+// Change password for logged in user
+router.post('/change-password', protect, authController.changePassword);
+
 module.exports = router; 
