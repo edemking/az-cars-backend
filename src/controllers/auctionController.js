@@ -57,7 +57,7 @@ exports.getAuctions = asyncHandler(async (req, res, next) => {
   const auctions = await Auction.find(query)
     .populate({
       path: "car",
-      select: "make model year price images mileage carOptions",
+      select: "make model year price images mileage carOptions bodyColor cylinder fuelType transmission carDrive country vehicleType",
       populate: [
         {
           path: "make",
@@ -70,6 +70,34 @@ exports.getAuctions = asyncHandler(async (req, res, next) => {
         {
           path: "carOptions",
           select: "name category description",
+        },
+        {
+          path: "bodyColor",
+          select: "name hexCode type",
+        },
+        {
+          path: "cylinder",
+          select: "count configuration description",
+        },
+        {
+          path: "fuelType",
+          select: "name category description",
+        },
+        {
+          path: "transmission",
+          select: "name type gears description",
+        },
+        {
+          path: "carDrive",
+          select: "name type description",
+        },
+        {
+          path: "country",
+          select: "name",
+        },
+        {
+          path: "vehicleType",
+          select: "name description",
         },
       ],
     })
@@ -363,7 +391,7 @@ exports.placeBid = asyncHandler(async (req, res, next) => {
 exports.getUserAuctions = asyncHandler(async (req, res, next) => {
   const auctions = await Auction.find({ createdBy: req.user.id }).populate({
     path: "car",
-    select: "make model year price images mileage carOptions",
+    select: "make model year price images mileage carOptions bodyColor cylinder fuelType transmission carDrive country vehicleType",
     populate: [
       {
         path: "make",
@@ -376,6 +404,34 @@ exports.getUserAuctions = asyncHandler(async (req, res, next) => {
       {
         path: "carOptions",
         select: "name category description",
+      },
+      {
+        path: "bodyColor",
+        select: "name hexCode type",
+      },
+      {
+        path: "cylinder",
+        select: "count configuration description",
+      },
+      {
+        path: "fuelType",
+        select: "name category description",
+      },
+      {
+        path: "transmission",
+        select: "name type gears description",
+      },
+      {
+        path: "carDrive",
+        select: "name type description",
+      },
+      {
+        path: "country",
+        select: "name",
+      },
+      {
+        path: "vehicleType",
+        select: "name description",
       },
     ],
   });
@@ -399,7 +455,7 @@ exports.getUserBids = asyncHandler(async (req, res, next) => {
       select: "auctionTitle startingPrice currentHighestBid endTime status",
       populate: {
         path: "car",
-        select: "make model year images mileage carOptions",
+        select: "make model year images mileage carOptions bodyColor cylinder fuelType transmission carDrive country vehicleType",
         populate: [
           {
             path: "make",
@@ -412,6 +468,34 @@ exports.getUserBids = asyncHandler(async (req, res, next) => {
           {
             path: "carOptions",
             select: "name category description",
+          },
+          {
+            path: "bodyColor",
+            select: "name hexCode type",
+          },
+          {
+            path: "cylinder",
+            select: "count configuration description",
+          },
+          {
+            path: "fuelType",
+            select: "name category description",
+          },
+          {
+            path: "transmission",
+            select: "name type gears description",
+          },
+          {
+            path: "carDrive",
+            select: "name type description",
+          },
+          {
+            path: "country",
+            select: "name",
+          },
+          {
+            path: "vehicleType",
+            select: "name description",
           },
         ],
       },
@@ -426,7 +510,7 @@ exports.getUserBids = asyncHandler(async (req, res, next) => {
   // Get the auctions
   const auctions = await Auction.find({ _id: { $in: auctionIds } }).populate({
     path: "car",
-    select: "make model year price images mileage carOptions",
+    select: "make model year price images mileage carOptions bodyColor cylinder fuelType transmission carDrive country vehicleType",
     populate: [
       {
         path: "make",
@@ -439,6 +523,34 @@ exports.getUserBids = asyncHandler(async (req, res, next) => {
       {
         path: "carOptions",
         select: "name category description",
+      },
+      {
+        path: "bodyColor",
+        select: "name hexCode type",
+      },
+      {
+        path: "cylinder",
+        select: "count configuration description",
+      },
+      {
+        path: "fuelType",
+        select: "name category description",
+      },
+      {
+        path: "transmission",
+        select: "name type gears description",
+      },
+      {
+        path: "carDrive",
+        select: "name type description",
+      },
+      {
+        path: "country",
+        select: "name",
+      },
+      {
+        path: "vehicleType",
+        select: "name description",
       },
     ],
   });
@@ -496,7 +608,7 @@ exports.getAuctionsByType = asyncHandler(async (req, res, next) => {
   })
     .populate({
       path: "car",
-      select: "make model year price images mileage carOptions",
+      select: "make model year price images mileage carOptions bodyColor cylinder fuelType transmission carDrive country vehicleType",
       populate: [
         {
           path: "make",
@@ -509,6 +621,34 @@ exports.getAuctionsByType = asyncHandler(async (req, res, next) => {
         {
           path: "carOptions",
           select: "name category description",
+        },
+        {
+          path: "bodyColor",
+          select: "name hexCode type",
+        },
+        {
+          path: "cylinder",
+          select: "count configuration description",
+        },
+        {
+          path: "fuelType",
+          select: "name category description",
+        },
+        {
+          path: "transmission",
+          select: "name type gears description",
+        },
+        {
+          path: "carDrive",
+          select: "name type description",
+        },
+        {
+          path: "country",
+          select: "name",
+        },
+        {
+          path: "vehicleType",
+          select: "name description",
         },
       ],
     })
@@ -540,7 +680,7 @@ exports.getNewLiveAuctions = asyncHandler(async (req, res, next) => {
   })
     .populate({
       path: "car",
-      select: "make model year price images mileage carOptions",
+      select: "make model year price images mileage carOptions bodyColor cylinder fuelType transmission carDrive country vehicleType",
       populate: [
         {
           path: "make",
@@ -553,6 +693,34 @@ exports.getNewLiveAuctions = asyncHandler(async (req, res, next) => {
         {
           path: "carOptions",
           select: "name category description",
+        },
+        {
+          path: "bodyColor",
+          select: "name hexCode type",
+        },
+        {
+          path: "cylinder",
+          select: "count configuration description",
+        },
+        {
+          path: "fuelType",
+          select: "name category description",
+        },
+        {
+          path: "transmission",
+          select: "name type gears description",
+        },
+        {
+          path: "carDrive",
+          select: "name type description",
+        },
+        {
+          path: "country",
+          select: "name",
+        },
+        {
+          path: "vehicleType",
+          select: "name description",
         },
       ],
     })
@@ -584,7 +752,7 @@ exports.getEndingSoonAuctions = asyncHandler(async (req, res, next) => {
   })
     .populate({
       path: "car",
-      select: "make model year price images mileage carOptions",
+      select: "make model year price images mileage carOptions bodyColor cylinder fuelType transmission carDrive country vehicleType",
       populate: [
         {
           path: "make",
@@ -597,6 +765,34 @@ exports.getEndingSoonAuctions = asyncHandler(async (req, res, next) => {
         {
           path: "carOptions",
           select: "name category description",
+        },
+        {
+          path: "bodyColor",
+          select: "name hexCode type",
+        },
+        {
+          path: "cylinder",
+          select: "count configuration description",
+        },
+        {
+          path: "fuelType",
+          select: "name category description",
+        },
+        {
+          path: "transmission",
+          select: "name type gears description",
+        },
+        {
+          path: "carDrive",
+          select: "name type description",
+        },
+        {
+          path: "country",
+          select: "name",
+        },
+        {
+          path: "vehicleType",
+          select: "name description",
         },
       ],
     })
@@ -633,7 +829,7 @@ exports.getDashboardData = asyncHandler(async (req, res, next) => {
   })
     .populate({
       path: "car",
-      select: "make model year price images mileage carOptions",
+      select: "make model year price images mileage carOptions bodyColor cylinder fuelType transmission carDrive country vehicleType",
       populate: [
         {
           path: "make",
@@ -646,6 +842,34 @@ exports.getDashboardData = asyncHandler(async (req, res, next) => {
         {
           path: "carOptions",
           select: "name category description",
+        },
+        {
+          path: "bodyColor",
+          select: "name hexCode type",
+        },
+        {
+          path: "cylinder",
+          select: "count configuration description",
+        },
+        {
+          path: "fuelType",
+          select: "name category description",
+        },
+        {
+          path: "transmission",
+          select: "name type gears description",
+        },
+        {
+          path: "carDrive",
+          select: "name type description",
+        },
+        {
+          path: "country",
+          select: "name",
+        },
+        {
+          path: "vehicleType",
+          select: "name description",
         },
       ],
     })
@@ -660,7 +884,7 @@ exports.getDashboardData = asyncHandler(async (req, res, next) => {
   })
     .populate({
       path: "car",
-      select: "make model year price images mileage carOptions",
+      select: "make model year price images mileage carOptions bodyColor cylinder fuelType transmission carDrive country vehicleType",
       populate: [
         {
           path: "make",
@@ -673,6 +897,34 @@ exports.getDashboardData = asyncHandler(async (req, res, next) => {
         {
           path: "carOptions",
           select: "name category description",
+        },
+        {
+          path: "bodyColor",
+          select: "name hexCode type",
+        },
+        {
+          path: "cylinder",
+          select: "count configuration description",
+        },
+        {
+          path: "fuelType",
+          select: "name category description",
+        },
+        {
+          path: "transmission",
+          select: "name type gears description",
+        },
+        {
+          path: "carDrive",
+          select: "name type description",
+        },
+        {
+          path: "country",
+          select: "name",
+        },
+        {
+          path: "vehicleType",
+          select: "name description",
         },
       ],
     })
@@ -687,7 +939,7 @@ exports.getDashboardData = asyncHandler(async (req, res, next) => {
   })
     .populate({
       path: "car",
-      select: "make model year price images mileage carOptions",
+      select: "make model year price images mileage carOptions bodyColor cylinder fuelType transmission carDrive country vehicleType",
       populate: [
         {
           path: "make",
@@ -700,6 +952,34 @@ exports.getDashboardData = asyncHandler(async (req, res, next) => {
         {
           path: "carOptions",
           select: "name category description",
+        },
+        {
+          path: "bodyColor",
+          select: "name hexCode type",
+        },
+        {
+          path: "cylinder",
+          select: "count configuration description",
+        },
+        {
+          path: "fuelType",
+          select: "name category description",
+        },
+        {
+          path: "transmission",
+          select: "name type gears description",
+        },
+        {
+          path: "carDrive",
+          select: "name type description",
+        },
+        {
+          path: "country",
+          select: "name",
+        },
+        {
+          path: "vehicleType",
+          select: "name description",
         },
       ],
     })
