@@ -1,6 +1,10 @@
 const Auction = require('../models/Auction');
 const Bid = require('../models/Bid');
 const { emitAuctionCompleted, emitAuctionUpdate } = require('./socketEvents');
+const {
+  createAuctionWonNotification,
+  createAuctionLostNotifications
+} = require('./notificationService');
 
 /**
  * Check for completed auctions and update their status
@@ -43,6 +47,19 @@ const checkCompletedAuctions = async () => {
           finalBid: highestBid,
           auction: auction
         });
+
+        // Create notifications for auction completion
+        try {
+          // Create auction won notification
+          await createAuctionWonNotification(auction, highestBid);
+          
+          // Create auction lost notifications for other bidders
+          await createAuctionLostNotifications(auction, highestBid);
+          
+          console.log(`Notifications created for auction ${auction._id} completion`);
+        } catch (notificationError) {
+          console.error(`Error creating notifications for auction ${auction._id}:`, notificationError);
+        }
       }
       
       // Update status to completed

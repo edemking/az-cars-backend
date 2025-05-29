@@ -93,4 +93,32 @@ router.put(
   userController.updateIdDocuments
 );
 
+// Notification token management routes
+// Get user's notification token - users can get their own or admins can get any user's
+router.get(
+  "/:id/notification-token",
+  protect,
+  checkAccountStatus,
+  ownerOrAdmin,
+  userController.getNotificationToken
+);
+
+// Update user's notification token - users can update their own or admins can update any user's
+router.put(
+  "/:id/notification-token",
+  protect,
+  checkAccountStatus,
+  ownerOrAdmin,
+  userController.updateNotificationToken
+);
+
+// Remove user's notification token - users can remove their own or admins can remove any user's
+router.delete(
+  "/:id/notification-token",
+  protect,
+  checkAccountStatus,
+  ownerOrAdmin,
+  userController.removeNotificationToken
+);
+
 module.exports = router;

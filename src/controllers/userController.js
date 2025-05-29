@@ -309,4 +309,99 @@ exports.updateIdDocuments = async (req, res) => {
       message: error.message
     });
   }
+};
+
+// Get user's notification token
+exports.getNotificationToken = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id).select('notificationToken');
+    
+    if (!user) {
+      return sendError(res, {
+        statusCode: 404,
+        message: 'User not found'
+      });
+    }
+
+    sendSuccess(res, {
+      message: 'Notification token retrieved successfully',
+      data: {
+        notificationToken: user.notificationToken || null
+      }
+    });
+  } catch (error) {
+    sendError(res, {
+      statusCode: 400,
+      message: error.message
+    });
+  }
+};
+
+// Update user's notification token
+exports.updateNotificationToken = async (req, res) => {
+  try {
+    const { notificationToken } = req.body;
+
+    if (!notificationToken) {
+      return sendError(res, {
+        statusCode: 400,
+        message: 'Notification token is required'
+      });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      { notificationToken },
+      { new: true, runValidators: true }
+    ).select('notificationToken');
+
+    if (!user) {
+      return sendError(res, {
+        statusCode: 404,
+        message: 'User not found'
+      });
+    }
+
+    sendSuccess(res, {
+      message: 'Notification token updated successfully',
+      data: {
+        notificationToken: user.notificationToken
+      }
+    });
+  } catch (error) {
+    sendError(res, {
+      statusCode: 400,
+      message: error.message
+    });
+  }
+};
+
+// Remove user's notification token
+exports.removeNotificationToken = async (req, res) => {
+  try {
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      { $unset: { notificationToken: 1 } },
+      { new: true, runValidators: true }
+    ).select('notificationToken');
+
+    if (!user) {
+      return sendError(res, {
+        statusCode: 404,
+        message: 'User not found'
+      });
+    }
+
+    sendSuccess(res, {
+      message: 'Notification token removed successfully',
+      data: {
+        notificationToken: null
+      }
+    });
+  } catch (error) {
+    sendError(res, {
+      statusCode: 400,
+      message: error.message
+    });
+  }
 }; 

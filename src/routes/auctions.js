@@ -14,7 +14,10 @@ const {
   getEndingSoonAuctions,
   getDashboardData,
   getAuctionStats,
-  getAuctionResults
+  getAuctionResults,
+  getSoldAuctions,
+  getUnsoldAuctions,
+  getCompletedAuctions
 } = require('../controllers/auctionController');
 
 // Import the auction scheduler
@@ -54,6 +57,15 @@ router.route('/new-live')
 
 router.route('/ending-soon')
   .get(getEndingSoonAuctions);
+
+router.route('/sold')
+  .get(getSoldAuctions);
+
+router.route('/unsold')
+  .get(getUnsoldAuctions);
+
+router.route('/completed')
+  .get(getCompletedAuctions);
 
 router.route('/dashboard')
   .get(protect, getDashboardData);

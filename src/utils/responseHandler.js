@@ -11,12 +11,22 @@
  * @param {object} meta - Additional metadata (pagination, etc.)
  */
 const sendSuccess = (res, { statusCode = 200, message = '', data = null, meta = {} }) => {
-  return res.status(statusCode).json({
+  const response = {
     success: true,
-    // message,
-    data,
-    // meta
-  });
+    data
+  };
+
+  // Only include message if it's provided
+  if (message) {
+    response.message = message;
+  }
+
+  // Only include meta if it's provided and not empty
+  if (meta && Object.keys(meta).length > 0) {
+    response.meta = meta;
+  }
+
+  return res.status(statusCode).json(response);
 };
 
 /**

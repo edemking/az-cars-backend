@@ -5,6 +5,13 @@ const asyncHandler = require("../middleware/asyncHandler");
 const ErrorResponse = require("../utils/errorResponse");
 const { sendSuccess, sendError } = require("../utils/responseHandler");
 const { emitNewBid, emitAuctionUpdate, emitAuctionCompleted, getAuctionRoomClients } = require("../utils/socketEvents");
+const {
+  createBidPlacedNotification,
+  createOutbidNotifications,
+  createAuctionWonNotification,
+  createAuctionLostNotifications,
+  createNewBidOnAuctionNotification
+} = require("../utils/notificationService");
 
 // @desc    Create a new auction
 // @route   POST /api/auctions
@@ -374,6 +381,27 @@ exports.placeBid = asyncHandler(async (req, res, next) => {
   // If auction status changed, emit auction update
   if (auction.status === "completed") {
     emitAuctionUpdate(auction._id.toString(), auction);
+  }
+
+  // Create notifications
+  try {
+    // Create bid placed notification
+    await createBidPlacedNotification(bid, auction);
+
+    // Create outbid notifications for other bidders
+    await createOutbidNotifications(bid, auction);
+
+    // Create new bid notification for auction creator
+    await createNewBidOnAuctionNotification(bid, auction);
+
+    // If auction completed, create win/loss notifications
+    if (auction.status === "completed") {
+      await createAuctionWonNotification(auction, bid);
+      await createAuctionLostNotifications(auction, bid);
+    }
+  } catch (notificationError) {
+    console.error('Error creating notifications:', notificationError);
+    // Don't fail the bid placement if notifications fail
   }
 
   sendSuccess(res, {
@@ -1317,5 +1345,219 @@ exports.getAuctionResults = asyncHandler(async (req, res, next) => {
       bidWinner: bidWinner,
       auctionStats: auctionStats
     }
+  });
+});
+
+// @desc    Get sold auctions (completed auctions with winners)
+// @route   GET /api/auctions/sold
+// @access  Public
+exports.getSoldAuctions = asyncHandler(async (req, res, next) => {
+  // Find completed auctions that have winners (sold cars)
+  const soldAuctions = await Auction.find({
+    status: "completed",
+    winner: { $exists: true, $ne: null }
+  })
+    .populate({
+      path: "car",
+      select: "make model year price images mileage carOptions bodyColor cylinder fuelType transmission carDrive country vehicleType",
+      populate: [
+        {
+          path: "make",
+          select: "name country logo",
+        },
+        {
+          path: "model",
+          select: "name startYear endYear image",
+        },
+        {
+          path: "carOptions",
+          select: "name category description",
+        },
+        {
+          path: "bodyColor",
+          select: "name hexCode type",
+        },
+        {
+          path: "cylinder",
+          select: "count configuration description",
+        },
+        {
+          path: "fuelType",
+          select: "name category description",
+        },
+        {
+          path: "transmission",
+          select: "name type gears description",
+        },
+        {
+          path: "carDrive",
+          select: "name type description",
+        },
+        {
+          path: "country",
+          select: "name",
+        },
+        {
+          path: "vehicleType",
+          select: "name description",
+        },
+      ],
+    })
+    .populate("createdBy", "firstName lastName")
+    .populate("winner", "firstName lastName email")
+    .sort({ endTime: -1 }); // Sort by most recently ended
+
+  sendSuccess(res, {
+    message: "Sold auctions retrieved successfully",
+    data: soldAuctions,
+    meta: {
+      count: soldAuctions.length,
+      type: "sold"
+    },
+  });
+});
+
+// @desc    Get unsold auctions (completed auctions without winners or cancelled)
+// @route   GET /api/auctions/unsold
+// @access  Public
+exports.getUnsoldAuctions = asyncHandler(async (req, res, next) => {
+  // Find completed auctions without winners or cancelled auctions (unsold cars)
+  const unsoldAuctions = await Auction.find({
+    $or: [
+      { status: "completed", winner: { $exists: false } },
+      { status: "completed", winner: null },
+      { status: "cancelled" }
+    ]
+  })
+    .populate({
+      path: "car",
+      select: "make model year price images mileage carOptions bodyColor cylinder fuelType transmission carDrive country vehicleType",
+      populate: [
+        {
+          path: "make",
+          select: "name country logo",
+        },
+        {
+          path: "model",
+          select: "name startYear endYear image",
+        },
+        {
+          path: "carOptions",
+          select: "name category description",
+        },
+        {
+          path: "bodyColor",
+          select: "name hexCode type",
+        },
+        {
+          path: "cylinder",
+          select: "count configuration description",
+        },
+        {
+          path: "fuelType",
+          select: "name category description",
+        },
+        {
+          path: "transmission",
+          select: "name type gears description",
+        },
+        {
+          path: "carDrive",
+          select: "name type description",
+        },
+        {
+          path: "country",
+          select: "name",
+        },
+        {
+          path: "vehicleType",
+          select: "name description",
+        },
+      ],
+    })
+    .populate("createdBy", "firstName lastName")
+    .sort({ endTime: -1 }); // Sort by most recently ended
+
+  sendSuccess(res, {
+    message: "Unsold auctions retrieved successfully",
+    data: unsoldAuctions,
+    meta: {
+      count: unsoldAuctions.length,
+      type: "unsold"
+    },
+  });
+});
+
+// @desc    Get completed auctions (all auctions that have ended)
+// @route   GET /api/auctions/completed
+// @access  Public
+exports.getCompletedAuctions = asyncHandler(async (req, res, next) => {
+  // Find all completed auctions (both sold and unsold)
+  const completedAuctions = await Auction.find({
+    status: "completed"
+  })
+    .populate({
+      path: "car",
+      select: "make model year price images mileage carOptions bodyColor cylinder fuelType transmission carDrive country vehicleType",
+      populate: [
+        {
+          path: "make",
+          select: "name country logo",
+        },
+        {
+          path: "model",
+          select: "name startYear endYear image",
+        },
+        {
+          path: "carOptions",
+          select: "name category description",
+        },
+        {
+          path: "bodyColor",
+          select: "name hexCode type",
+        },
+        {
+          path: "cylinder",
+          select: "count configuration description",
+        },
+        {
+          path: "fuelType",
+          select: "name category description",
+        },
+        {
+          path: "transmission",
+          select: "name type gears description",
+        },
+        {
+          path: "carDrive",
+          select: "name type description",
+        },
+        {
+          path: "country",
+          select: "name",
+        },
+        {
+          path: "vehicleType",
+          select: "name description",
+        },
+      ],
+    })
+    .populate("createdBy", "firstName lastName")
+    .populate("winner", "firstName lastName email")
+    .sort({ endTime: -1 }); // Sort by most recently ended
+
+  // Separate sold and unsold for additional statistics
+  const soldAuctions = completedAuctions.filter(auction => auction.winner);
+  const unsoldAuctions = completedAuctions.filter(auction => !auction.winner);
+
+  sendSuccess(res, {
+    message: "Completed auctions retrieved successfully",
+    data: completedAuctions,
+    meta: {
+      count: completedAuctions.length,
+      type: "completed",
+      soldCount: soldAuctions.length,
+      unsoldCount: unsoldAuctions.length
+    },
   });
 });

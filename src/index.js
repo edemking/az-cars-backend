@@ -42,6 +42,18 @@ io.on('connection', (socket) => {
     console.log(`Client ${socket.id} left auction room: auction-${auctionId}`);
   });
 
+  // Join user room for notifications
+  socket.on('join-user', (userId) => {
+    socket.join(`user-${userId}`);
+    console.log(`Client ${socket.id} joined user room: user-${userId}`);
+  });
+
+  // Leave user room
+  socket.on('leave-user', (userId) => {
+    socket.leave(`user-${userId}`);
+    console.log(`Client ${socket.id} left user room: user-${userId}`);
+  });
+
   socket.on('disconnect', () => {
     console.log('Client disconnected:', socket.id);
   });
@@ -81,6 +93,7 @@ const userRoutes = require('./routes/users');
 const authRoutes = require('./routes/auth');
 const auctionRoutes = require('./routes/auctions');
 const roleRoutes = require('./routes/roles');
+const notificationRoutes = require('./routes/notifications');
 
 // Use routes
 app.use('/api/cars', carRoutes);
@@ -88,6 +101,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/auctions', auctionRoutes);
 app.use('/api/roles', roleRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
