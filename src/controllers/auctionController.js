@@ -108,12 +108,29 @@ exports.getAuctions = asyncHandler(async (req, res, next) => {
         },
       ],
     })
-    .populate("createdBy", "firstName lastName");
+    .populate("createdBy", "firstName lastName")
+    .populate("winner", "firstName lastName");
+
+  // Add sold/unsold status to each auction
+  const auctionsWithStatus = auctions.map(auction => {
+    const auctionObj = auction.toObject();
+    
+    // Determine sale status
+    if (auctionObj.status === 'completed') {
+      auctionObj.saleStatus = auctionObj.winner ? 'sold' : 'unsold';
+    } else if (auctionObj.status === 'cancelled') {
+      auctionObj.saleStatus = 'unsold';
+    } else {
+      auctionObj.saleStatus = 'active'; // For active auctions
+    }
+    
+    return auctionObj;
+  });
 
   sendSuccess(res, {
-    data: auctions,
+    data: auctionsWithStatus,
     meta: {
-      count: auctions.length,
+      count: auctionsWithStatus.length,
     },
   });
 });
@@ -172,8 +189,8 @@ exports.getAuction = asyncHandler(async (req, res, next) => {
         }
       ]
     })
-    .populate("createdBy", "firstName lastName")
-    .populate("winner", "firstName lastName");
+    .populate("createdBy", "firstName lastName profilePicture")
+    .populate("winner", "firstName lastName profilePicture");
 
   if (!auction) {
     return next(
@@ -183,7 +200,7 @@ exports.getAuction = asyncHandler(async (req, res, next) => {
 
   // Get bids for this auction
   const bids = await Bid.find({ auction: req.params.id })
-    .populate("bidder", "firstName lastName")
+    .populate("bidder", "firstName lastName profilePicture")
     .sort({ amount: -1 });
 
   sendSuccess(res, {
@@ -607,7 +624,7 @@ exports.getAuctionBids = asyncHandler(async (req, res, next) => {
   }
 
   const bids = await Bid.find({ auction: req.params.id })
-    .populate("bidder", "firstName lastName")
+    .populate("bidder", "firstName lastName profilePicture")
     .sort({ amount: -1 });
 
   sendSuccess(res, {
@@ -752,7 +769,7 @@ exports.getNewLiveAuctions = asyncHandler(async (req, res, next) => {
         },
       ],
     })
-    .populate("createdBy", "firstName lastName")
+    .populate("createdBy", "firstName lastName profilePicture")
     .sort({ startTime: -1 })
     .limit(3);
 
@@ -824,7 +841,7 @@ exports.getEndingSoonAuctions = asyncHandler(async (req, res, next) => {
         },
       ],
     })
-    .populate("createdBy", "firstName lastName")
+    .populate("createdBy", "firstName lastName profilePicture")
     .sort({ endTime: 1 }); // Sort by closest to ending
 
   sendSuccess(res, {
@@ -1039,7 +1056,7 @@ exports.getAuctionStats = asyncHandler(async (req, res, next) => {
 
   // Get recent bids (last 5)
   const recentBids = await Bid.find({ auction: req.params.id })
-    .populate("bidder", "firstName lastName")
+    .populate("bidder", "firstName lastName profilePicture")
     .sort({ createdAt: -1 })
     .limit(5);
 
@@ -1279,8 +1296,8 @@ exports.getAuctionResults = asyncHandler(async (req, res, next) => {
         }
       ]
     })
-    .populate("createdBy", "firstName lastName email")
-    .populate("winner", "firstName lastName email");
+    .populate("createdBy", "firstName lastName email profilePicture")
+    .populate("winner", "firstName lastName email profilePicture");
 
   if (!auction) {
     return next(
@@ -1290,7 +1307,7 @@ exports.getAuctionResults = asyncHandler(async (req, res, next) => {
 
   // Get all bids for this auction, sorted by amount (highest first)
   const allBids = await Bid.find({ auction: req.params.id })
-    .populate("bidder", "firstName lastName email")
+    .populate("bidder", "firstName lastName email profilePicture")
     .sort({ amount: -1, createdAt: 1 });
 
   // Get the winning bid (highest bid)
@@ -1403,8 +1420,8 @@ exports.getSoldAuctions = asyncHandler(async (req, res, next) => {
         },
       ],
     })
-    .populate("createdBy", "firstName lastName")
-    .populate("winner", "firstName lastName email")
+    .populate("createdBy", "firstName lastName profilePicture")
+    .populate("winner", "firstName lastName email profilePicture")
     .sort({ endTime: -1 }); // Sort by most recently ended
 
   sendSuccess(res, {
@@ -1475,7 +1492,7 @@ exports.getUnsoldAuctions = asyncHandler(async (req, res, next) => {
         },
       ],
     })
-    .populate("createdBy", "firstName lastName")
+    .populate("createdBy", "firstName lastName profilePicture")
     .sort({ endTime: -1 }); // Sort by most recently ended
 
   sendSuccess(res, {
@@ -1542,8 +1559,8 @@ exports.getCompletedAuctions = asyncHandler(async (req, res, next) => {
         },
       ],
     })
-    .populate("createdBy", "firstName lastName")
-    .populate("winner", "firstName lastName email")
+    .populate("createdBy", "firstName lastName profilePicture")
+    .populate("winner", "firstName lastName email profilePicture")
     .sort({ endTime: -1 }); // Sort by most recently ended
 
   // Separate sold and unsold for additional statistics
