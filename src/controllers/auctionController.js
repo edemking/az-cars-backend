@@ -1818,8 +1818,6 @@ exports.getAuctionResults = asyncHandler(async (req, res, next) => {
         buyNowPrice: auction.buyNowPrice,
         currentHighestBid: auction.currentHighestBid,
         totalBids: auction.totalBids,
-        createdBy: auction.createdBy,
-        winner: auction.winner,
         createdAt: auction.createdAt,
         updatedAt: auction.updatedAt
       },
@@ -2194,27 +2192,189 @@ exports.getCompletedAuctionsWithBidders = asyncHandler(async (req, res, next) =>
   });
 });
 
-// @desc    Get all bids for a completed auction
-// @route   GET /api/auctions/:id/completed-bids
+// @desc    Get all auction history (comprehensive historical data)
+// @route   GET /api/auctions/history
 // @access  Public
-exports.getCompletedAuctionBids = asyncHandler(async (req, res, next) => {
-  const auction = await Auction.findById(req.params.id)
-    .populate('createdBy', 'firstName lastName')
-    .populate('winner', 'firstName lastName')
+exports.getAllAuctionHistory = asyncHandler(async (req, res, next) => {
+  // Get pagination parameters
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 20;
+  const skip = (page - 1) * limit;
+
+  // Build query filters
+  const queryFilters = {};
+  
+  // Filter by status if provided
+  if (req.query.status) {
+    queryFilters.status = req.query.status;
+  }
+  
+  // Filter by type if provided
+  if (req.query.type) {
+    queryFilters.type = req.query.type;
+  }
+  
+  // Filter by date range if provided
+  if (req.query.startDate || req.query.endDate) {
+    queryFilters.endTime = {};
+    if (req.query.startDate) {
+      queryFilters.endTime.$gte = new Date(req.query.startDate);
+    }
+    if (req.query.endDate) {
+      queryFilters.endTime.$lte = new Date(req.query.endDate);
+    }
+  }
+
+  // Get total count for pagination
+  const total = await Auction.countDocuments(queryFilters);
+
+  // Find auctions with comprehensive historical data
+  const auctionsHistory = await Auction.find(queryFilters)
     .populate({
-      path: 'car',
-      select: 'make model year',
+      path: "car",
+      select: "make model year price images mileage bodyColor vehicleType",
       populate: [
         {
-          path: 'make',
-          select: 'name'
+          path: "make",
+          select: "name logo",
         },
         {
-          path: 'model', 
-          select: 'name'
-        }
-      ]
-    });
+          path: "model",
+          select: "name",
+        },
+        {
+          path: "bodyColor",
+          select: "name hexCode",
+        },
+        {
+          path: "vehicleType",
+          select: "name",
+        },
+      ],
+    })
+    .populate("createdBy", "firstName lastName")
+    .populate("winner", "firstName lastName")
+    .sort({ endTime: -1 })
+    .skip(skip)
+    .limit(limit);
+
+  // Get auction IDs for bid statistics
+  const auctionIds = auctionsHistory.map(auction => auction._id);
+
+  // Get bid statistics for all auctions
+  const bidStats = await Bid.aggregate([
+    { $match: { auction: { $in: auctionIds } } },
+    {
+      $group: {
+        _id: "$auction",
+        totalBids: { $sum: 1 },
+        uniqueBidders: { $addToSet: "$bidder" },
+        highestBid: { $max: "$amount" },
+        lowestBid: { $min: "$amount" },
+        averageBid: { $avg: "$amount" },
+        lastBidTime: { $max: "$time" }
+      }
+    },
+    {
+      $addFields: {
+        uniqueBiddersCount: { $size: "$uniqueBidders" }
+      }
+    }
+  ]);
+
+  // Create a map for quick lookup
+  const bidStatsMap = {};
+  bidStats.forEach(stat => {
+    bidStatsMap[stat._id.toString()] = {
+      totalBids: stat.totalBids,
+      uniqueBiddersCount: stat.uniqueBiddersCount,
+      highestBid: stat.highestBid,
+      lowestBid: stat.lowestBid,
+      averageBid: Math.round(stat.averageBid * 100) / 100, // Round to 2 decimal places
+      lastBidTime: stat.lastBidTime
+    };
+  });
+
+  // Combine auction data with bid statistics
+  const enrichedHistory = auctionsHistory.map(auction => {
+    const auctionId = auction._id.toString();
+    const stats = bidStatsMap[auctionId] || {
+      totalBids: 0,
+      uniqueBiddersCount: 0,
+      highestBid: null,
+      lowestBid: null,
+      averageBid: null,
+      lastBidTime: null
+    };
+
+    const auctionObj = auction.toObject();
+    
+    // Determine sale status and final outcome
+    let saleStatus = 'active';
+    let finalPrice = null;
+    let profitLoss = null;
+    
+    if (auctionObj.status === 'completed') {
+      saleStatus = auctionObj.winner ? 'sold' : 'unsold';
+      finalPrice = auctionObj.currentHighestBid;
+      
+      if (saleStatus === 'sold' && auctionObj.car?.price) {
+        profitLoss = finalPrice - auctionObj.car.price;
+      }
+    } else if (auctionObj.status === 'cancelled') {
+      saleStatus = 'cancelled';
+    }
+
+    return {
+      ...auctionObj,
+      saleStatus,
+      finalPrice,
+      profitLoss,
+      biddingStatistics: stats,
+      duration: auctionObj.endTime && auctionObj.startTime 
+        ? Math.round((new Date(auctionObj.endTime) - new Date(auctionObj.startTime)) / (1000 * 60 * 60 * 24)) 
+        : null // Duration in days
+    };
+  });
+
+  // Calculate summary statistics
+  const summary = {
+    totalAuctions: total,
+    completedAuctions: enrichedHistory.filter(a => a.status === 'completed').length,
+    soldAuctions: enrichedHistory.filter(a => a.saleStatus === 'sold').length,
+    unsoldAuctions: enrichedHistory.filter(a => a.saleStatus === 'unsold').length,
+    activeAuctions: enrichedHistory.filter(a => a.status === 'active').length,
+    totalRevenue: enrichedHistory
+      .filter(a => a.saleStatus === 'sold')
+      .reduce((sum, a) => sum + (a.finalPrice || 0), 0),
+    averageSalePrice: null
+  };
+
+  if (summary.soldAuctions > 0) {
+    summary.averageSalePrice = Math.round(summary.totalRevenue / summary.soldAuctions);
+  }
+
+  sendSuccess(res, {
+    message: "Auction history retrieved successfully",
+    data: enrichedHistory,
+    meta: {
+      count: enrichedHistory.length,
+      totalCount: total,
+      currentPage: page,
+      totalPages: Math.ceil(total / limit),
+      hasNextPage: page < Math.ceil(total / limit),
+      hasPrevPage: page > 1,
+      summary
+    }
+  });
+});
+
+// @desc    Get completed bids for a particular auction
+// @route   GET /api/auctions/:id/completed-bids
+// @access  Public
+exports.getCompletedBidsForAuction = asyncHandler(async (req, res, next) => {
+  // Check if auction exists
+  const auction = await Auction.findById(req.params.id);
 
   if (!auction) {
     return next(
@@ -2222,141 +2382,100 @@ exports.getCompletedAuctionBids = asyncHandler(async (req, res, next) => {
     );
   }
 
-  // Check if auction is completed
-  if (auction.status !== 'completed') {
+  // Only return bids for completed or cancelled auctions
+  if (auction.status !== 'completed' && auction.status !== 'cancelled') {
     return next(
-      new ErrorResponse(`Auction with id ${req.params.id} is not completed yet. Current status: ${auction.status}`, 400)
+      new ErrorResponse(`Cannot retrieve completed bids for an active auction. Auction status: ${auction.status}`, 400)
     );
   }
 
-  const bids = await Bid.find({ auction: req.params.id })
-    .populate("bidder", "firstName lastName profilePicture")
-    .sort({ amount: -1 });
+  // Get all bids for this completed auction
+  const completedBids = await Bid.find({ auction: req.params.id })
+    .populate("bidder", "firstName lastName email profilePicture")
+    .sort({ amount: -1, time: 1 }); // Sort by highest amount first, then by time
 
-  // Identify the winning bid
-  const winningBid = bids.find(bid => bid.isWinningBid) || 
-                     (bids.length > 0 ? bids[0] : null); // Highest bid if no explicit winner
+  // Calculate bidding statistics
+  const biddingStats = {
+    totalBids: completedBids.length,
+    uniqueBidders: [...new Set(completedBids.map(bid => bid.bidder._id.toString()))].length,
+    highestBid: completedBids.length > 0 ? Math.max(...completedBids.map(b => b.amount)) : null,
+    lowestBid: completedBids.length > 0 ? Math.min(...completedBids.map(b => b.amount)) : null,
+    averageBid: completedBids.length > 0 ? 
+      Math.round((completedBids.reduce((sum, b) => sum + b.amount, 0) / completedBids.length) * 100) / 100 : null,
+    biddingTimespan: null,
+    winningBid: completedBids.find(bid => bid.isWinningBid) || null
+  };
 
-  sendSuccess(res, {
-    data: {
-      auction: {
-        _id: auction._id,
-        auctionTitle: auction.auctionTitle,
-        startingPrice: auction.startingPrice,
-        currentHighestBid: auction.currentHighestBid,
-        endTime: auction.endTime,
-        status: auction.status,
-        type: auction.type,
-        winner: auction.winner,
-        car: auction.car
-      },
-      bids,
-      winningBid,
-      statistics: {
-        totalBids: bids.length,
-        highestBid: bids.length > 0 ? bids[0].amount : auction.startingPrice,
-        uniqueBidders: [...new Set(bids.map(bid => bid.bidder._id.toString()))].length,
-        averageBid: bids.length > 0 ? Math.round(bids.reduce((sum, bid) => sum + bid.amount, 0) / bids.length) : 0
-      }
-    },
-    meta: {
-      count: bids.length,
-    },
-  });
-});
-
-// @desc    Get all completed bids for a particular vehicle
-// @route   GET /api/auctions/vehicle/:vehicleId/completed-bids
-// @access  Public
-exports.getCompletedBidsForVehicle = asyncHandler(async (req, res, next) => {
-  const { vehicleId } = req.params;
-
-  // Check if vehicle (car) exists
-  const car = await Car.findById(vehicleId);
-  if (!car) {
-    return next(
-      new ErrorResponse(`Vehicle not found with id of ${vehicleId}`, 404)
-    );
-  }
-
-  // Find all completed auctions for this vehicle
-  const completedAuctions = await Auction.find({
-    car: vehicleId,
-    status: 'completed'
-  })
-    .populate('createdBy', 'firstName lastName')
-    .populate('winner', 'firstName lastName')
-    .sort({ endTime: -1 });
-
-  if (completedAuctions.length === 0) {
-    return sendSuccess(res, {
-      data: [],
-      meta: {
-        count: 0,
-        message: 'No completed auctions found for this vehicle'
-      },
-    });
-  }
-
-  // Get all auction IDs
-  const auctionIds = completedAuctions.map(auction => auction._id);
-
-  // Find all bids for these completed auctions
-  const completedBids = await Bid.find({
-    auction: { $in: auctionIds }
-  })
-    .populate('bidder', 'firstName lastName profilePicture')
-    .populate({
-      path: 'auction',
-      select: 'auctionTitle startingPrice currentHighestBid endTime type winner',
-      populate: {
-        path: 'winner',
-        select: 'firstName lastName'
-      }
-    })
-    .sort({ time: -1 });
-
-  // Group bids by auction for better organization
-  const bidsByAuction = completedAuctions.map(auction => {
-    const auctionBids = completedBids.filter(bid => 
-      bid.auction._id.toString() === auction._id.toString()
-    );
-    
-    return {
-      auction: {
-        _id: auction._id,
-        auctionTitle: auction.auctionTitle,
-        startingPrice: auction.startingPrice,
-        currentHighestBid: auction.currentHighestBid,
-        endTime: auction.endTime,
-        type: auction.type,
-        winner: auction.winner,
-        totalBids: auctionBids.length,
-        status: auction.status
-      },
-      bids: auctionBids
+  // Calculate bidding timespan
+  if (completedBids.length > 0) {
+    const firstBidTime = new Date(Math.min(...completedBids.map(b => new Date(b.time))));
+    const lastBidTime = new Date(Math.max(...completedBids.map(b => new Date(b.time))));
+    biddingStats.biddingTimespan = {
+      firstBid: firstBidTime,
+      lastBid: lastBidTime,
+      durationMinutes: Math.round((lastBidTime - firstBidTime) / (1000 * 60))
     };
+  }
+
+  // Group bids by bidder for additional insights
+  const bidderActivity = {};
+  completedBids.forEach(bid => {
+    const bidderId = bid.bidder._id.toString();
+    if (!bidderActivity[bidderId]) {
+      bidderActivity[bidderId] = {
+        bidder: bid.bidder,
+        bids: [],
+        totalBids: 0,
+        highestBid: 0,
+        firstBidTime: bid.time,
+        lastBidTime: bid.time
+      };
+    }
+    
+    bidderActivity[bidderId].bids.push({
+      _id: bid._id,
+      amount: bid.amount,
+      time: bid.time,
+      isWinningBid: bid.isWinningBid
+    });
+    bidderActivity[bidderId].totalBids++;
+    bidderActivity[bidderId].highestBid = Math.max(bidderActivity[bidderId].highestBid, bid.amount);
+    
+    if (new Date(bid.time) < new Date(bidderActivity[bidderId].firstBidTime)) {
+      bidderActivity[bidderId].firstBidTime = bid.time;
+    }
+    if (new Date(bid.time) > new Date(bidderActivity[bidderId].lastBidTime)) {
+      bidderActivity[bidderId].lastBidTime = bid.time;
+    }
   });
 
-  // Also provide a flat list of all bids
-  const totalBidsCount = completedBids.length;
-  const totalAuctionsCount = completedAuctions.length;
+  // Convert bidder activity to array and sort by highest bid
+  const bidderActivityArray = Object.values(bidderActivity)
+    .sort((a, b) => b.highestBid - a.highestBid);
 
   sendSuccess(res, {
+    message: "Completed bids retrieved successfully",
     data: {
-      vehicle: {
-        _id: car._id,
-        make: car.make,
-        model: car.model,
-        year: car.year
+      auction: {
+        _id: auction._id,
+        auctionTitle: auction.auctionTitle,
+        status: auction.status,
+        startTime: auction.startTime,
+        endTime: auction.endTime,
+        startingPrice: auction.startingPrice,
+        currentHighestBid: auction.currentHighestBid,
+        winner: auction.winner,
+        type: auction.type
       },
-      bidsByAuction,
-      allBids: completedBids
+      bids: completedBids,
+      biddingStatistics: biddingStats,
+      bidderActivity: bidderActivityArray
     },
     meta: {
-      totalBids: totalBidsCount,
-      totalAuctions: totalAuctionsCount,
-      averageBidsPerAuction: totalAuctionsCount > 0 ? Math.round(totalBidsCount / totalAuctionsCount) : 0
-    },
+      totalBids: completedBids.length,
+      auctionStatus: auction.status,
+      isCompleted: auction.status === 'completed',
+      hasBids: completedBids.length > 0
+    }
   });
 });
