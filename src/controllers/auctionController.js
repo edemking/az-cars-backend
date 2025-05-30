@@ -2033,3 +2033,151 @@ exports.getCompletedAuctions = asyncHandler(async (req, res, next) => {
     },
   });
 });
+
+// @desc    Get completed auctions with all bidders populated
+// @route   GET /api/auctions/completed-with-bidders
+// @access  Public
+exports.getCompletedAuctionsWithBidders = asyncHandler(async (req, res, next) => {
+  // Find all completed auctions (both sold and unsold)
+  const completedAuctions = await Auction.find({
+    status: "completed"
+  })
+    .populate({
+      path: "car",
+      select: "make model year price images mileage carOptions bodyColor cylinder fuelType transmission carDrive country vehicleType",
+      populate: [
+        {
+          path: "make",
+          select: "name country logo",
+        },
+        {
+          path: "model",
+          select: "name startYear endYear image",
+        },
+        {
+          path: "carOptions",
+          select: "name category description",
+        },
+        {
+          path: "bodyColor",
+          select: "name hexCode type",
+        },
+        {
+          path: "cylinder",
+          select: "count configuration description",
+        },
+        {
+          path: "fuelType",
+          select: "name category description",
+        },
+        {
+          path: "transmission",
+          select: "name type gears description",
+        },
+        {
+          path: "carDrive",
+          select: "name type description",
+        },
+        {
+          path: "country",
+          select: "name",
+        },
+        {
+          path: "vehicleType",
+          select: "name description",
+        },
+      ],
+    })
+    .populate("createdBy", "firstName lastName profilePicture")
+    .populate("winner", "firstName lastName email profilePicture")
+    .sort({ endTime: -1 });
+
+  // Get auction IDs for bid lookup
+  const auctionIds = completedAuctions.map(auction => auction._id);
+
+  // Get all bids for these auctions
+  const allBids = await Bid.find({ 
+    auction: { $in: auctionIds } 
+  })
+    .populate("bidder", "firstName lastName email profilePicture")
+    .sort({ auction: 1, amount: -1 }); // Sort by auction, then highest bid first
+
+  // Group bids by auction
+  const bidsByAuction = {};
+  allBids.forEach(bid => {
+    const auctionId = bid.auction.toString();
+    if (!bidsByAuction[auctionId]) {
+      bidsByAuction[auctionId] = [];
+    }
+    bidsByAuction[auctionId].push({
+      _id: bid._id,
+      amount: bid.amount,
+      bidTime: bid.time,
+      createdAt: bid.createdAt,
+      isWinningBid: bid.isWinningBid,
+      bidder: bid.bidder
+    });
+  });
+
+  // Combine auctions with their bidders
+  const auctionsWithBidders = completedAuctions.map(auction => {
+    const auctionId = auction._id.toString();
+    const auctionBids = bidsByAuction[auctionId] || [];
+    
+    // Calculate bidder statistics
+    const uniqueBidders = [...new Set(auctionBids.map(bid => bid.bidder._id.toString()))];
+    const winningBid = auctionBids.find(bid => bid.isWinningBid);
+
+    return {
+      _id: auction._id,
+      auctionTitle: auction.auctionTitle,
+      auctionDescription: auction.auctionDescription,
+      type: auction.type,
+      status: auction.status,
+      startTime: auction.startTime,
+      endTime: auction.endTime,
+      startingPrice: auction.startingPrice,
+      bidIncrement: auction.bidIncrement,
+      buyNowPrice: auction.buyNowPrice,
+      currentHighestBid: auction.currentHighestBid,
+      totalBids: auction.totalBids,
+      createdAt: auction.createdAt,
+      updatedAt: auction.updatedAt,
+      car: auction.car,
+      createdBy: auction.createdBy,
+      winner: auction.winner,
+      
+      // Bidder information
+      allBidders: auctionBids,
+      bidderStats: {
+        totalBids: auctionBids.length,
+        uniqueBidders: uniqueBidders.length,
+        winningBid: winningBid,
+        highestBid: auctionBids.length > 0 ? auctionBids[0].amount : null,
+        bidRange: auctionBids.length > 0 ? {
+          highest: Math.max(...auctionBids.map(b => b.amount)),
+          lowest: Math.min(...auctionBids.map(b => b.amount))
+        } : null
+      }
+    };
+  });
+
+  // Overall statistics
+  const soldAuctions = auctionsWithBidders.filter(auction => auction.winner);
+  const unsoldAuctions = auctionsWithBidders.filter(auction => !auction.winner);
+  const totalBids = auctionsWithBidders.reduce((sum, auction) => sum + auction.bidderStats.totalBids, 0);
+  const totalUniqueBidders = [...new Set(allBids.map(bid => bid.bidder._id.toString()))].length;
+
+  sendSuccess(res, {
+    message: "Completed auctions with bidders retrieved successfully",
+    data: auctionsWithBidders,
+    meta: {
+      count: auctionsWithBidders.length,
+      type: "completed_with_bidders",
+      soldCount: soldAuctions.length,
+      unsoldCount: unsoldAuctions.length,
+      totalBids: totalBids,
+      totalUniqueBidders: totalUniqueBidders
+    },
+  });
+});

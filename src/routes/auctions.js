@@ -20,7 +20,8 @@ const {
   getAuctionResults,
   getSoldAuctions,
   getUnsoldAuctions,
-  getCompletedAuctions
+  getCompletedAuctions,
+  getCompletedAuctionsWithBidders
 } = require('../controllers/auctionController');
 
 // Import the auction scheduler
@@ -72,6 +73,9 @@ router.route('/unsold')
 
 router.route('/completed')
   .get(getCompletedAuctions);
+
+router.route('/completed-with-bidders')
+  .get(getCompletedAuctionsWithBidders);
 
 router.route('/dashboard')
   .get(protect, getDashboardData);
