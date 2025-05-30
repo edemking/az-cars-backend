@@ -6,13 +6,16 @@ const {
   updateAuction,
   deleteAuction,
   placeBid,
+  buyNowAuction,
   getUserAuctions,
   getUserBids,
+  getUserWonBids,
   getAuctionBids,
   getAuctionsByType,
   getNewLiveAuctions,
   getEndingSoonAuctions,
   getDashboardData,
+  getAdminDashboardData,
   getAuctionStats,
   getAuctionResults,
   getSoldAuctions,
@@ -39,6 +42,9 @@ router.route('/user')
 
 router.route('/mybids')
   .get(protect, getUserBids);
+
+router.route('/won-bids')
+  .get(protect, getUserWonBids);
 
 // Admin route to manually check completed auctions
 router.route('/check-completed')
@@ -70,6 +76,9 @@ router.route('/completed')
 router.route('/dashboard')
   .get(protect, getDashboardData);
 
+router.route('/admin-dashboard')
+  .get(protect, getAdminDashboardData);
+
 // Parameterized routes should come AFTER specific routes
 router.route('/:id')
   .get(getAuction)
@@ -78,6 +87,9 @@ router.route('/:id')
 
 router.route('/:id/bid')
   .post(protect, placeBid);
+
+router.route('/:id/buy-now')
+  .post(protect, buyNowAuction);
 
 router.route('/:id/bids')
   .get(getAuctionBids);

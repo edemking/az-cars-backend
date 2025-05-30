@@ -430,6 +430,96 @@ exports.placeBid = asyncHandler(async (req, res, next) => {
   });
 });
 
+// @desc    Buy now - immediately win auction at buyNow price
+// @route   POST /api/auctions/:id/buy-now
+// @access  Private
+exports.buyNowAuction = asyncHandler(async (req, res, next) => {
+  const auction = await Auction.findById(req.params.id);
+
+  if (!auction) {
+    return next(
+      new ErrorResponse(`Auction not found with id of ${req.params.id}`, 404)
+    );
+  }
+
+  // Check if auction is active
+  if (auction.status !== "active") {
+    return next(new ErrorResponse("This auction is no longer active", 400));
+  }
+
+  // Check if auction has ended
+  if (new Date() > auction.endTime) {
+    return next(new ErrorResponse("This auction has ended", 400));
+  }
+
+  // Check if user is the creator of the auction
+  if (auction.createdBy.toString() === req.user.id) {
+    return next(new ErrorResponse("You cannot buy your own auction", 400));
+  }
+
+  // Check if buyNowPrice is set
+  if (!auction.buyNowPrice || auction.buyNowPrice <= 0) {
+    return next(new ErrorResponse("This auction does not have a buy now price set", 400));
+  }
+
+  const buyNowAmount = auction.buyNowPrice;
+
+  // Create new bid at buy now price
+  const bid = await Bid.create({
+    auction: auction._id,
+    bidder: req.user.id,
+    amount: buyNowAmount,
+    time: new Date(),
+    isWinningBid: true
+  });
+
+  // Populate the bid with bidder information for real-time updates
+  await bid.populate("bidder", "firstName lastName");
+
+  // Complete the auction immediately
+  auction.status = "completed";
+  auction.winner = req.user.id;
+  auction.currentHighestBid = buyNowAmount;
+  auction.totalBids += 1;
+
+  await auction.save();
+
+  // Emit auction completion event
+  emitAuctionCompleted(auction._id.toString(), {
+    winner: req.user,
+    finalBid: bid,
+    auction: auction
+  });
+
+  // Create notifications
+  try {
+    // Create bid placed notification
+    await createBidPlacedNotification(bid, auction);
+
+    // Create outbid notifications for other bidders
+    await createOutbidNotifications(bid, auction);
+
+    // Create new bid notification for auction creator
+    await createNewBidOnAuctionNotification(bid, auction);
+
+    // Create win/loss notifications
+    await createAuctionWonNotification(auction, bid);
+    await createAuctionLostNotifications(auction, bid);
+  } catch (notificationError) {
+    console.error('Error creating notifications:', notificationError);
+    // Don't fail the buy now if notifications fail
+  }
+
+  sendSuccess(res, {
+    message: "Auction purchased successfully",
+    data: {
+      auction,
+      bid,
+      purchaseAmount: buyNowAmount
+    },
+  });
+});
+
 // @desc    Get auctions created by user
 // @route   GET /api/auctions/user
 // @access  Private
@@ -631,6 +721,107 @@ exports.getAuctionBids = asyncHandler(async (req, res, next) => {
     data: bids,
     meta: {
       count: bids.length,
+    },
+  });
+});
+
+// @desc    Get user's won bids with car information
+// @route   GET /api/auctions/won-bids
+// @access  Private
+exports.getUserWonBids = asyncHandler(async (req, res, next) => {
+  // Find all completed auctions where the user is the winner (same as dashboard logic)
+  const wonAuctions = await Auction.find({ 
+    winner: req.user.id,
+    status: "completed" 
+  })
+    .populate({
+      path: "car",
+      select: "make model year price images mileage carOptions bodyColor cylinder fuelType transmission carDrive country vehicleType description numberOfKeys warranty engineSize firstOwner",
+      populate: [
+        {
+          path: "make",
+          select: "name country logo",
+        },
+        {
+          path: "model",
+          select: "name startYear endYear image",
+        },
+        {
+          path: "carOptions",
+          select: "name category description",
+        },
+        {
+          path: "bodyColor",
+          select: "name hexCode type",
+        },
+        {
+          path: "cylinder",
+          select: "count configuration description",
+        },
+        {
+          path: "fuelType",
+          select: "name category description",
+        },
+        {
+          path: "transmission",
+          select: "name type gears description",
+        },
+        {
+          path: "carDrive",
+          select: "name type description",
+        },
+        {
+          path: "country",
+          select: "name",
+        },
+        {
+          path: "vehicleType",
+          select: "name description",
+        },
+      ],
+    })
+    .sort({ endTime: -1 });
+
+  // Get the winning bids for these auctions
+  const auctionIds = wonAuctions.map(auction => auction._id);
+  const winningBids = await Bid.find({
+    auction: { $in: auctionIds },
+    bidder: req.user.id,
+    isWinningBid: true
+  }).sort({ createdAt: -1 });
+
+  // Format the response to include win date and winning amount
+  const formattedWonBids = wonAuctions.map(auction => {
+    const correspondingBid = winningBids.find(bid => 
+      bid.auction.toString() === auction._id.toString()
+    );
+    
+    return {
+      bidId: correspondingBid?._id,
+      winningAmount: correspondingBid?.amount || auction.currentHighestBid,
+      bidTime: correspondingBid?.time,
+      winDate: auction.updatedAt, // When auction was completed
+      auction: {
+        _id: auction._id,
+        auctionTitle: auction.auctionTitle,
+        startingPrice: auction.startingPrice,
+        currentHighestBid: auction.currentHighestBid,
+        endTime: auction.endTime,
+        status: auction.status,
+        type: auction.type,
+        createdAt: auction.createdAt,
+        car: auction.car
+      },
+    };
+  });
+
+  sendSuccess(res, {
+    data: {
+      wonBids: formattedWonBids,
+    },
+    meta: {
+      count: wonAuctions.length,
+      totalWinnings: winningBids.reduce((total, bid) => total + bid.amount, 0),
     },
   });
 });
@@ -1036,6 +1227,270 @@ exports.getDashboardData = asyncHandler(async (req, res, next) => {
       endingSoonAuctions,
       wonAuctions,
     },
+  });
+});
+
+// @desc    Get admin dashboard analytics data
+// @route   GET /api/auctions/admin-dashboard
+// @access  Private (Admin only)
+exports.getAdminDashboardData = asyncHandler(async (req, res, next) => {
+  const now = new Date();
+  const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+  // 1. Overall Statistics
+  const [
+    totalListedCars,
+    totalBidders,
+    liveAuctions,
+    endedAuctions,
+    totalAuctions
+  ] = await Promise.all([
+    // Total cars in the system
+    Car.countDocuments(),
+    
+    // Total unique bidders
+    Bid.distinct('bidder').then(bidders => bidders.length),
+    
+    // Live auctions count
+    Auction.countDocuments({ status: 'active', endTime: { $gt: now } }),
+    
+    // Ended auctions count
+    Auction.countDocuments({ status: 'completed' }),
+    
+    // Total auctions
+    Auction.countDocuments()
+  ]);
+
+  // 2. Daily auction activity for last 7 days
+  const dailyAuctionActivity = await Auction.aggregate([
+    {
+      $match: {
+        createdAt: { $gte: sevenDaysAgo }
+      }
+    },
+    {
+      $group: {
+        _id: {
+          $dateToString: { format: "%Y-%m-%d", date: "$createdAt" }
+        },
+        count: { $sum: 1 }
+      }
+    },
+    {
+      $sort: { "_id": 1 }
+    }
+  ]);
+
+  // 3. Top performing auctions (by views and bids)
+  const topPerformingAuctions = await Auction.find({
+    createdAt: { $gte: thirtyDaysAgo }
+  })
+    .populate({
+      path: 'car',
+      select: 'make model year images',
+      populate: {
+        path: 'make',
+        select: 'name'
+      }
+    })
+    .sort({ totalBids: -1, currentHighestBid: -1 })
+    .limit(10)
+    .select('auctionTitle currentHighestBid totalBids status car createdAt');
+
+  // 4. Top bidders analysis
+  const topBidders = await Bid.aggregate([
+    {
+      $group: {
+        _id: "$bidder",
+        totalBids: { $sum: 1 },
+        highestBid: { $max: "$amount" },
+        totalBidAmount: { $sum: "$amount" },
+        auctionsWon: { 
+          $sum: { $cond: [{ $eq: ["$isWinningBid", true] }, 1, 0] } 
+        }
+      }
+    },
+    {
+      $lookup: {
+        from: "users",
+        localField: "_id",
+        foreignField: "_id",
+        as: "bidder"
+      }
+    },
+    {
+      $unwind: "$bidder"
+    },
+    {
+      $project: {
+        bidder: {
+          _id: "$bidder._id",
+          firstName: "$bidder.firstName",
+          lastName: "$bidder.lastName",
+          email: "$bidder.email",
+          profilePicture: "$bidder.profilePicture"
+        },
+        totalBids: 1,
+        highestBid: 1,
+        totalBidAmount: 1,
+        auctionsWon: 1
+      }
+    },
+    {
+      $sort: { auctionsWon: -1, totalBids: -1, highestBid: -1 }
+    },
+    {
+      $limit: 10
+    }
+  ]);
+
+  // 5. Daily sales data for last 7 days
+  const dailySalesData = await Auction.aggregate([
+    {
+      $match: {
+        status: 'completed',
+        winner: { $exists: true },
+        updatedAt: { $gte: sevenDaysAgo }
+      }
+    },
+    {
+      $group: {
+        _id: {
+          $dateToString: { format: "%Y-%m-%d", date: "$updatedAt" }
+        },
+        totalSales: { $sum: "$currentHighestBid" },
+        salesCount: { $sum: 1 }
+      }
+    },
+    {
+      $sort: { "_id": 1 }
+    }
+  ]);
+
+  // 6. Recent auction activity
+  const recentAuctions = await Auction.find()
+    .populate({
+      path: 'car',
+      select: 'make model year images',
+      populate: {
+        path: 'make',
+        select: 'name'
+      }
+    })
+    .populate('createdBy', 'firstName lastName')
+    .populate('winner', 'firstName lastName')
+    .sort({ createdAt: -1 })
+    .limit(5)
+    .select('auctionTitle status currentHighestBid totalBids startTime endTime car createdBy winner');
+
+  // 7. Revenue analytics
+  const totalRevenue = await Auction.aggregate([
+    {
+      $match: {
+        status: 'completed',
+        winner: { $exists: true }
+      }
+    },
+    {
+      $group: {
+        _id: null,
+        total: { $sum: "$currentHighestBid" }
+      }
+    }
+  ]);
+
+  const monthlyRevenue = await Auction.aggregate([
+    {
+      $match: {
+        status: 'completed',
+        winner: { $exists: true },
+        updatedAt: { $gte: thirtyDaysAgo }
+      }
+    },
+    {
+      $group: {
+        _id: null,
+        total: { $sum: "$currentHighestBid" }
+      }
+    }
+  ]);
+
+  // Format response data
+  const dashboardData = {
+    // Overview statistics
+    statistics: {
+      totalListedCars,
+      totalBidders,
+      liveAuctions,
+      endedAuctions,
+      totalAuctions,
+      totalRevenue: totalRevenue[0]?.total || 0,
+      monthlyRevenue: monthlyRevenue[0]?.total || 0
+    },
+
+    // Charts data
+    charts: {
+      dailyAuctionActivity: dailyAuctionActivity.map(item => ({
+        date: item._id,
+        count: item.count
+      })),
+      dailySalesData: dailySalesData.map(item => ({
+        date: item._id,
+        totalSales: item.totalSales,
+        salesCount: item.salesCount
+      }))
+    },
+
+    // Performance data
+    topPerformingAuctions: topPerformingAuctions.map(auction => ({
+      id: auction._id,
+      title: auction.auctionTitle,
+      carInfo: auction.car ? {
+        make: auction.car.make?.name,
+        model: auction.car.model,
+        year: auction.car.year,
+        image: auction.car.images?.[0]
+      } : null,
+      currentHighestBid: auction.currentHighestBid,
+      totalBids: auction.totalBids,
+      status: auction.status,
+      createdAt: auction.createdAt
+    })),
+
+    // Top bidders
+    topBidders: topBidders.map((bidder, index) => ({
+      rank: index + 1,
+      user: bidder.bidder,
+      totalBids: bidder.totalBids,
+      highestBid: bidder.highestBid,
+      totalBidAmount: bidder.totalBidAmount,
+      auctionsWon: bidder.auctionsWon
+    })),
+
+    // Recent activity
+    recentAuctions: recentAuctions.map(auction => ({
+      id: auction._id,
+      title: auction.auctionTitle,
+      status: auction.status,
+      currentHighestBid: auction.currentHighestBid,
+      totalBids: auction.totalBids,
+      startTime: auction.startTime,
+      endTime: auction.endTime,
+      carInfo: auction.car ? {
+        make: auction.car.make?.name,
+        model: auction.car.model,
+        year: auction.car.year,
+        image: auction.car.images?.[0]
+      } : null,
+      createdBy: auction.createdBy,
+      winner: auction.winner
+    }))
+  };
+
+  sendSuccess(res, {
+    message: "Admin dashboard data retrieved successfully",
+    data: dashboardData
   });
 });
 
