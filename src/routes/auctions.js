@@ -21,7 +21,9 @@ const {
   getSoldAuctions,
   getUnsoldAuctions,
   getCompletedAuctions,
-  getCompletedAuctionsWithBidders
+  getCompletedAuctionsWithBidders,
+  getCompletedBidsForVehicle,
+  getCompletedAuctionBids
 } = require('../controllers/auctionController');
 
 // Import the auction scheduler
@@ -83,6 +85,10 @@ router.route('/dashboard')
 router.route('/admin-dashboard')
   .get(protect, getAdminDashboardData);
 
+// Route to get all completed bids for a particular vehicle
+router.route('/vehicle/:vehicleId/completed-bids')
+  .get(getCompletedBidsForVehicle);
+
 // Parameterized routes should come AFTER specific routes
 router.route('/:id')
   .get(getAuction)
@@ -97,6 +103,9 @@ router.route('/:id/buy-now')
 
 router.route('/:id/bids')
   .get(getAuctionBids);
+
+router.route('/:id/completed-bids')
+  .get(getCompletedAuctionBids);
 
 router.route('/:id/stats')
   .get(getAuctionStats);
