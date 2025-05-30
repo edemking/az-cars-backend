@@ -309,6 +309,71 @@ const createNewBidOnAuctionNotification = async (bid, auction) => {
   }
 };
 
+/**
+ * Create notifications for new auction creation and send push notifications to all users
+ * @param {Object} auction - The newly created auction object
+ */
+const createNewAuctionNotifications = async (auction) => {
+  try {
+    // Get auction with car details populated
+    const populatedAuction = await Auction.findById(auction._id).populate({
+      path: 'car',
+      populate: [
+        { path: 'make', select: 'name' },
+        { path: 'model', select: 'name' }
+      ]
+    }).populate('createdBy', 'firstName lastName');
+
+    const carDetails = `${populatedAuction.car.make.name} ${populatedAuction.car.model.name}`;
+    const creatorName = `${populatedAuction.createdBy.firstName} ${populatedAuction.createdBy.lastName}`;
+
+    // Get all users who have notification tokens (excluding the auction creator)
+    const usersWithTokens = await User.find({
+      _id: { $ne: auction.createdBy }, // Exclude auction creator
+      notificationToken: { $exists: true, $ne: null }
+    }).select('_id firstName lastName notificationToken');
+
+    if (usersWithTokens.length === 0) {
+      console.log('No users with notification tokens found for new auction notification');
+      return;
+    }
+
+    console.log(`Creating new auction notifications for ${usersWithTokens.length} users`);
+
+    // Create in-app notifications for all users
+    const notificationPromises = usersWithTokens.map(user => 
+      createNotification({
+        user: user._id,
+        type: 'new_auction_created',
+        title: 'New Auction Available!',
+        description: `A new auction for ${auction.auctionTitle} (${carDetails}) has started. Starting price: $${auction.startingPrice.toLocaleString()}`,
+        auction: auction._id,
+        metadata: {
+          auctionTitle: auction.auctionTitle,
+          carDetails: carDetails,
+          startingPrice: auction.startingPrice,
+          creatorName: creatorName
+        }
+      })
+    );
+
+    await Promise.all(notificationPromises);
+
+    // Send push notifications in the background
+    setImmediate(async () => {
+      try {
+        const { sendPushNotificationToUsersForNewAuction } = require('./pushNotificationService');
+        await sendPushNotificationToUsersForNewAuction(auction, populatedAuction, carDetails, usersWithTokens);
+      } catch (pushError) {
+        console.error('Error sending push notifications for new auction:', pushError);
+      }
+    });
+
+  } catch (error) {
+    console.error('Error creating new auction notifications:', error);
+  }
+};
+
 module.exports = {
   createNotification,
   createBidPlacedNotification,
@@ -316,5 +381,6 @@ module.exports = {
   createAuctionWonNotification,
   createAuctionLostNotifications,
   createAuctionEndingSoonNotifications,
-  createNewBidOnAuctionNotification
+  createNewBidOnAuctionNotification,
+  createNewAuctionNotifications
 }; 

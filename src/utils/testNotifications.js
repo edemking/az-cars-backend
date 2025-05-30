@@ -4,7 +4,8 @@ const {
   createOutbidNotifications,
   createAuctionWonNotification,
   createAuctionLostNotifications,
-  createNewBidOnAuctionNotification
+  createNewBidOnAuctionNotification,
+  createNewAuctionNotifications
 } = require('./notificationService');
 
 // Mock data for testing
@@ -64,6 +65,19 @@ const testNotifications = async () => {
     console.log('5. Testing auction lost notifications...');
     await createAuctionLostNotifications(completedAuction, mockBid);
     console.log('✓ Auction lost notifications created');
+
+    // Test new auction notifications
+    console.log('6. Testing new auction notifications...');
+    const newAuction = {
+      _id: new mongoose.Types.ObjectId(),
+      auctionTitle: 'New 2023 BMW X5 Auction',
+      createdBy: new mongoose.Types.ObjectId(),
+      startingPrice: 25000,
+      endTime: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours from now
+      type: 'timedAuction'
+    };
+    await createNewAuctionNotifications(newAuction);
+    console.log('✓ New auction notifications created');
 
     console.log('\n✅ All notification tests completed successfully!');
   } catch (error) {

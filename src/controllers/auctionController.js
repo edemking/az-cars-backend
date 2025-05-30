@@ -10,7 +10,8 @@ const {
   createOutbidNotifications,
   createAuctionWonNotification,
   createAuctionLostNotifications,
-  createNewBidOnAuctionNotification
+  createNewBidOnAuctionNotification,
+  createNewAuctionNotifications
 } = require("../utils/notificationService");
 
 // @desc    Create a new auction
@@ -35,6 +36,17 @@ exports.createAuction = asyncHandler(async (req, res, next) => {
 
   // Create auction
   const auction = await Auction.create(req.body);
+
+  // Send new auction notifications in the background
+  setImmediate(async () => {
+    try {
+      await createNewAuctionNotifications(auction);
+      console.log(`New auction notifications triggered for auction ${auction._id}`);
+    } catch (notificationError) {
+      console.error('Error creating new auction notifications:', notificationError);
+      // Don't fail auction creation if notifications fail
+    }
+  });
 
   sendSuccess(res, {
     statusCode: 201,

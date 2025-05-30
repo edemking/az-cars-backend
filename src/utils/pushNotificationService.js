@@ -217,8 +217,63 @@ const sendPushNotificationToAuctionBidders = async (auctionId, newBidderId, noti
   }
 };
 
+/**
+ * Send push notifications to users about a new auction
+ * @param {Object} auction - The auction object
+ * @param {Object} populatedAuction - The auction with populated car details
+ * @param {string} carDetails - The car details string
+ * @param {Array} usersWithTokens - Array of users with notification tokens
+ * @returns {Promise<Array>} Array of results for each user
+ */
+const sendPushNotificationToUsersForNewAuction = async (auction, populatedAuction, carDetails, usersWithTokens) => {
+  try {
+    if (usersWithTokens.length === 0) {
+      console.log('No users with notification tokens found for new auction push notification');
+      return [];
+    }
+
+    console.log(`Sending push notifications about new auction to ${usersWithTokens.length} users`);
+
+    // Calculate auction end time for better description
+    const endTime = new Date(auction.endTime);
+    const now = new Date();
+    const durationHours = Math.ceil((endTime - now) / (1000 * 60 * 60));
+
+    // Prepare notification data
+    const notificationData = {
+      title: 'New Auction Available! 🚗',
+      body: `${carDetails} auction just started! Starting bid: $${auction.startingPrice.toLocaleString()}. Auction ends in ${durationHours}h.`,
+      sound: 'default',
+      data: {
+        type: 'new_auction_created',
+        auctionId: auction._id.toString(),
+        auctionTitle: auction.auctionTitle,
+        carDetails: carDetails,
+        startingPrice: auction.startingPrice,
+        endTime: auction.endTime.toISOString(),
+        auctionType: auction.type
+      }
+    };
+
+    // Extract user IDs from users with tokens
+    const userIds = usersWithTokens.map(user => user._id.toString());
+
+    // Send push notifications to all users
+    const results = await sendPushNotificationsToUsers(userIds, notificationData);
+
+    console.log(`Push notifications sent for new auction. Success: ${results.filter(r => r.success).length}, Failed: ${results.filter(r => !r.success).length}`);
+
+    return results;
+
+  } catch (error) {
+    console.error('Error sending push notifications for new auction:', error);
+    throw error;
+  }
+};
+
 module.exports = {
   sendPushNotificationToUser,
   sendPushNotificationsToUsers,
-  sendPushNotificationToAuctionBidders
+  sendPushNotificationToAuctionBidders,
+  sendPushNotificationToUsersForNewAuction
 }; 

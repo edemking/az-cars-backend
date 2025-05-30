@@ -10,8 +10,13 @@ A comprehensive real-time notification system for the AZ Cars auction platform t
 - Auction win/loss notifications
 - New bids on user's auctions
 - Auction ending soon alerts
+- New auction creation announcements
 
 ✅ **Real-time Delivery** - Instant notification delivery via Socket.IO
+
+✅ **Push Notifications** - Expo push notifications sent automatically to users' mobile devices
+
+✅ **Background Processing** - Notifications and push messages sent in the background without affecting API response times
 
 ✅ **Complete CRUD Operations** - Full notification management:
 - Get user notifications (with pagination and filtering)
@@ -87,6 +92,7 @@ console.log(`${data.length} notifications, ${meta.unreadCount} unread`);
 | `auction_lost` | Auction ends | Losing bidders | Auction ended notification |
 | `new_bid_on_auction` | Bid on user's auction | Auction creator | New bid alert |
 | `auction_ending_soon` | Auction about to end | All bidders | Ending soon warning |
+| `new_auction_created` | New auction is created | All users with tokens | New auction announcement |
 
 ## Database Schema
 
@@ -120,6 +126,9 @@ The notification system is integrated into the auction bidding process:
 await createBidPlacedNotification(bid, auction);
 await createOutbidNotifications(bid, auction);
 await createNewBidOnAuctionNotification(bid, auction);
+
+// In createAuction function
+await createNewAuctionNotifications(auction);
 ```
 
 ### Auction Scheduler

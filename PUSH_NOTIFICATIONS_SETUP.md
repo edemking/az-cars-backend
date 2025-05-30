@@ -9,6 +9,7 @@ The push notification system sends real-time notifications to users when:
 - They've been outbid
 - An auction they're participating in is ending soon
 - They win or lose an auction
+- A new auction is created (sent to all users with notification tokens)
 
 ## Setup
 
@@ -114,8 +115,9 @@ Notifications.addNotificationResponseReceivedListener(response => {
 
 ## Push Notification Data Structure
 
-Each push notification includes:
+Each push notification includes relevant data based on the notification type:
 
+**For Bid-related Notifications:**
 ```json
 {
   "title": "New Bid Alert!",
@@ -127,6 +129,23 @@ Each push notification includes:
     "bidAmount": 15000,
     "auctionTitle": "2020 Toyota Camry Auction",
     "carDetails": "Toyota Camry"
+  }
+}
+```
+
+**For New Auction Notifications:**
+```json
+{
+  "title": "New Auction Available! 🚗",
+  "body": "Toyota Camry auction just started! Starting bid: $10,000. Auction ends in 24h.",
+  "data": {
+    "type": "new_auction_created",
+    "auctionId": "64a1b2c3d4e5f6789012345",
+    "auctionTitle": "2020 Toyota Camry Auction",
+    "carDetails": "Toyota Camry",
+    "startingPrice": 10000,
+    "endTime": "2023-12-25T12:00:00.000Z",
+    "auctionType": "timedAuction"
   }
 }
 ```
