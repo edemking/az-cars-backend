@@ -13,6 +13,8 @@ const uploadCarImages = upload.fields([
 router.get('/', carController.getCars);
 router.get('/search', carController.searchCars);
 router.get('/reference/data', carController.getReferenceData);
+router.get('/brand/model/:modelId', carController.getBrandByModel);
+router.get('/models/brand/:brandId', carController.getModelsByBrand);
 router.get('/:id', carController.getCar);
 
 // Debugging route - validate car data without creating

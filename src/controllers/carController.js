@@ -565,6 +565,91 @@ exports.getReferenceData = async (req, res) => {
   }
 };
 
+// Get brand (make) by model ID
+exports.getBrandByModel = async (req, res) => {
+  try {
+    const { modelId } = req.params;
+
+    // Find the model and populate the make information
+    const model = await Model.findById(modelId).populate("make");
+
+    if (!model) {
+      return sendError(res, {
+        statusCode: 404,
+        message: "Model not found",
+      });
+    }
+
+    if (!model.make) {
+      return sendError(res, {
+        statusCode: 404,
+        message: "Brand (make) not found for this model",
+      });
+    }
+
+    sendSuccess(res, {
+      message: "Brand retrieved successfully",
+      data: {
+        model: {
+          _id: model._id,
+          name: model.name,
+          startYear: model.startYear,
+          endYear: model.endYear,
+          image: model.image,
+        },
+        brand: model.make,
+      },
+    });
+  } catch (error) {
+    // Check if it's a valid ObjectId error
+    if (error.name === "CastError") {
+      return sendError(res, {
+        statusCode: 400,
+        message: "Invalid model ID format",
+      });
+    }
+    sendError(res, { message: error.message });
+  }
+};
+
+// Get models by brand (make) ID
+exports.getModelsByBrand = async (req, res) => {
+  try {
+    const { brandId } = req.params;
+
+    // First, verify that the brand exists
+    const brand = await Make.findById(brandId);
+
+    if (!brand) {
+      return sendError(res, {
+        statusCode: 404,
+        message: "Brand (make) not found",
+      });
+    }
+
+    // Find all models for this brand
+    const models = await Model.find({ make: brandId }).populate("make");
+
+    sendSuccess(res, {
+      message: "Models retrieved successfully",
+      data: {
+        brand: brand,
+        models: models,
+        count: models.length,
+      },
+    });
+  } catch (error) {
+    // Check if it's a valid ObjectId error
+    if (error.name === "CastError") {
+      return sendError(res, {
+        statusCode: 400,
+        message: "Invalid brand ID format",
+      });
+    }
+    sendError(res, { message: error.message });
+  }
+};
+
 // Approve car
 exports.approveCar = async (req, res) => {
   try {
