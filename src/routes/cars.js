@@ -38,3 +38,4 @@ router.put('/:id/archive', protect, carController.archiveCar);
 router.put('/:id/unarchive', protect, carController.unarchiveCar);
 
 module.exports = router; 
+

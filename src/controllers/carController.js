@@ -628,7 +628,7 @@ exports.getModelsByBrand = async (req, res) => {
     }
 
     // Find all models for this brand
-    const models = await Model.find({ make: brandId }).populate("make");
+    const models = await Model.find({ make: brandId });
 
     sendSuccess(res, {
       message: "Models retrieved successfully",
