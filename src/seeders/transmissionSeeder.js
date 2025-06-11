@@ -44,28 +44,6 @@ const transmissions = [
     type: 'Automatic',
     gears: 10,
     description: 'Advanced 10-speed automatic transmission'
-  },
-  {
-    name: 'CVT',
-    type: 'CVT',
-    description: 'Continuously Variable Transmission'
-  },
-  {
-    name: '7-Speed DSG',
-    type: 'Dual-Clutch',
-    gears: 7,
-    description: 'Dual-clutch automated manual transmission'
-  },
-  {
-    name: '8-Speed DCT',
-    type: 'Dual-Clutch',
-    gears: 8,
-    description: 'Dual-clutch transmission with 8 gears'
-  },
-  {
-    name: 'AMT',
-    type: 'Semi-Automatic',
-    description: 'Automated Manual Transmission'
   }
 ];
 

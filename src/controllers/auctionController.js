@@ -95,10 +95,6 @@ exports.getAuctions = asyncHandler(async (req, res, next) => {
           select: "name hexCode type",
         },
         {
-          path: "cylinder",
-          select: "count configuration description",
-        },
-        {
           path: "fuelType",
           select: "name category description",
         },
@@ -172,9 +168,6 @@ exports.getAuction = asyncHandler(async (req, res, next) => {
         },
         {
           path: "fuelType"
-        },
-        {
-          path: "cylinder"
         },
         {
           path: "serviceHistory"
@@ -557,10 +550,6 @@ exports.getUserAuctions = asyncHandler(async (req, res, next) => {
         select: "name hexCode type",
       },
       {
-        path: "cylinder",
-        select: "count configuration description",
-      },
-      {
         path: "fuelType",
         select: "name category description",
       },
@@ -676,10 +665,6 @@ exports.getUserBids = asyncHandler(async (req, res, next) => {
         select: "name hexCode type",
       },
       {
-        path: "cylinder",
-        select: "count configuration description",
-      },
-      {
         path: "fuelType",
         select: "name category description",
       },
@@ -748,7 +733,7 @@ exports.getUserWonBids = asyncHandler(async (req, res, next) => {
   })
     .populate({
       path: "car",
-      select: "make model year price images mileage carOptions bodyColor cylinder fuelType transmission carDrive country vehicleType description numberOfKeys warranty engineSize firstOwner",
+      select: "make model year price images mileage carOptions bodyColor cylinder fuelType transmission carDrive country vehicleType description numberOfKeys warranty engineSize owner",
       populate: [
         {
           path: "make",
@@ -765,10 +750,6 @@ exports.getUserWonBids = asyncHandler(async (req, res, next) => {
         {
           path: "bodyColor",
           select: "name hexCode type",
-        },
-        {
-          path: "cylinder",
-          select: "count configuration description",
         },
         {
           path: "fuelType",
@@ -875,10 +856,6 @@ exports.getAuctionsByType = asyncHandler(async (req, res, next) => {
           select: "name hexCode type",
         },
         {
-          path: "cylinder",
-          select: "count configuration description",
-        },
-        {
           path: "fuelType",
           select: "name category description",
         },
@@ -947,10 +924,6 @@ exports.getNewLiveAuctions = asyncHandler(async (req, res, next) => {
           select: "name hexCode type",
         },
         {
-          path: "cylinder",
-          select: "count configuration description",
-        },
-        {
           path: "fuelType",
           select: "name category description",
         },
@@ -1017,10 +990,6 @@ exports.getEndingSoonAuctions = asyncHandler(async (req, res, next) => {
         {
           path: "bodyColor",
           select: "name hexCode type",
-        },
-        {
-          path: "cylinder",
-          select: "count configuration description",
         },
         {
           path: "fuelType",
@@ -1096,10 +1065,6 @@ exports.getDashboardData = asyncHandler(async (req, res, next) => {
           select: "name hexCode type",
         },
         {
-          path: "cylinder",
-          select: "count configuration description",
-        },
-        {
           path: "fuelType",
           select: "name category description",
         },
@@ -1151,10 +1116,6 @@ exports.getDashboardData = asyncHandler(async (req, res, next) => {
           select: "name hexCode type",
         },
         {
-          path: "cylinder",
-          select: "count configuration description",
-        },
-        {
           path: "fuelType",
           select: "name category description",
         },
@@ -1204,10 +1165,6 @@ exports.getDashboardData = asyncHandler(async (req, res, next) => {
         {
           path: "bodyColor",
           select: "name hexCode type",
-        },
-        {
-          path: "cylinder",
-          select: "count configuration description",
         },
         {
           path: "fuelType",
@@ -1581,8 +1538,7 @@ exports.getAuctionResults = asyncHandler(async (req, res, next) => {
           select: "name category description"
         },
         {
-          path: "cylinder",
-          select: "count configuration description"
+          path: "serviceHistory"
         },
         {
           path: "country",
@@ -1860,10 +1816,6 @@ exports.getSoldAuctions = asyncHandler(async (req, res, next) => {
           select: "name hexCode type",
         },
         {
-          path: "cylinder",
-          select: "count configuration description",
-        },
-        {
           path: "fuelType",
           select: "name category description",
         },
@@ -1932,10 +1884,6 @@ exports.getUnsoldAuctions = asyncHandler(async (req, res, next) => {
           select: "name hexCode type",
         },
         {
-          path: "cylinder",
-          select: "count configuration description",
-        },
-        {
           path: "fuelType",
           select: "name category description",
         },
@@ -1997,10 +1945,6 @@ exports.getCompletedAuctions = asyncHandler(async (req, res, next) => {
         {
           path: "bodyColor",
           select: "name hexCode type",
-        },
-        {
-          path: "cylinder",
-          select: "count configuration description",
         },
         {
           path: "fuelType",
@@ -2071,10 +2015,6 @@ exports.getCompletedAuctionsWithBidders = asyncHandler(async (req, res, next) =>
         {
           path: "bodyColor",
           select: "name hexCode type",
-        },
-        {
-          path: "cylinder",
-          select: "count configuration description",
         },
         {
           path: "fuelType",

@@ -94,9 +94,29 @@ const carOptions = [
     description: 'Automatic temperature control'
   },
   {
-    name: 'Sunroof/Moonroof',
+    name: 'Panoramic Roof',
     category: 'Comfort',
-    description: 'Opening roof panel'
+    description: 'Large panoramic glass roof'
+  },
+  {
+    name: 'Moon Roof',
+    category: 'Comfort',
+    description: 'Traditional moon roof'
+  },
+  {
+    name: 'Double Sunroof',
+    category: 'Comfort',
+    description: 'Double sunroof panels'
+  },
+  {
+    name: 'Convertible Roof',
+    category: 'Comfort',
+    description: 'Convertible soft or hard top'
+  },
+  {
+    name: 'Hard Top',
+    category: 'Comfort',
+    description: 'Removable hard top roof'
   },
   
   // Performance options
@@ -126,11 +146,6 @@ const carOptions = [
     name: 'Alloy Wheels',
     category: 'Exterior',
     description: 'Lightweight alloy wheel rims'
-  },
-  {
-    name: 'Panoramic Roof',
-    category: 'Exterior',
-    description: 'Large glass roof panel'
   },
   {
     name: 'LED Headlights',

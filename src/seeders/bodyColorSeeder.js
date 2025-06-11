@@ -92,6 +92,11 @@ const bodyColors = [
     name: 'Electric Blue',
     hexCode: '#7DF9FF',
     type: 'Metallic'
+  },
+  {
+    name: 'Beige',
+    hexCode: '#F5F5DC',
+    type: 'Solid'
   }
 ];
 

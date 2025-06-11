@@ -1,8 +1,21 @@
+require('dotenv').config();
 const mongoose = require('mongoose');
 const Model = require('../models/cars/Model');
 const Make = require('../models/cars/Make');
-const connectDB = require('../config/db');
+const config = require('../config/config');
 const seedMakes = require('./makeSeeder');
+const modelsData = require('./data/models.json');
+
+// Connect to MongoDB
+const connectDB = async () => {
+  try {
+    const conn = await mongoose.connect(config.MONGO_URI);
+    console.log(`MongoDB Connected: ${conn.connection.host}`);
+  } catch (error) {
+    console.error(`Error: ${error.message}`);
+    process.exit(1);
+  }
+};
 
 const seedModels = async () => {
   try {
@@ -24,56 +37,16 @@ const seedModels = async () => {
       makeMap[make.name] = make._id;
     });
     
-    // Define models with their corresponding makes
-    const models = [
-      // Toyota Models
-      { name: 'Camry', make: makeMap['Toyota'], startYear: 1982 },
-      { name: 'Corolla', make: makeMap['Toyota'], startYear: 1966 },
-      { name: 'RAV4', make: makeMap['Toyota'], startYear: 1994 },
-      { name: 'Highlander', make: makeMap['Toyota'], startYear: 2000 },
-      
-      // Honda Models
-      { name: 'Civic', make: makeMap['Honda'], startYear: 1972 },
-      { name: 'Accord', make: makeMap['Honda'], startYear: 1976 },
-      { name: 'CR-V', make: makeMap['Honda'], startYear: 1995 },
-      { name: 'Pilot', make: makeMap['Honda'], startYear: 2002 },
-      
-      // Ford Models
-      { name: 'F-150', make: makeMap['Ford'], startYear: 1975 },
-      { name: 'Mustang', make: makeMap['Ford'], startYear: 1964 },
-      { name: 'Explorer', make: makeMap['Ford'], startYear: 1990 },
-      { name: 'Escape', make: makeMap['Ford'], startYear: 2000 },
-      
-      // Chevrolet Models
-      { name: 'Silverado', make: makeMap['Chevrolet'], startYear: 1999 },
-      { name: 'Equinox', make: makeMap['Chevrolet'], startYear: 2004 },
-      { name: 'Malibu', make: makeMap['Chevrolet'], startYear: 1964 },
-      { name: 'Camaro', make: makeMap['Chevrolet'], startYear: 1967 },
-      
-      // BMW Models
-      { name: '3 Series', make: makeMap['BMW'], startYear: 1975 },
-      { name: '5 Series', make: makeMap['BMW'], startYear: 1972 },
-      { name: 'X3', make: makeMap['BMW'], startYear: 2003 },
-      { name: 'X5', make: makeMap['BMW'], startYear: 1999 },
-      
-      // Mercedes-Benz Models
-      { name: 'C-Class', make: makeMap['Mercedes-Benz'], startYear: 1993 },
-      { name: 'E-Class', make: makeMap['Mercedes-Benz'], startYear: 1953 },
-      { name: 'GLC', make: makeMap['Mercedes-Benz'], startYear: 2015 },
-      { name: 'S-Class', make: makeMap['Mercedes-Benz'], startYear: 1972 },
-      
-      // Audi Models
-      { name: 'A4', make: makeMap['Audi'], startYear: 1994 },
-      { name: 'A6', make: makeMap['Audi'], startYear: 1994 },
-      { name: 'Q5', make: makeMap['Audi'], startYear: 2008 },
-      { name: 'Q7', make: makeMap['Audi'], startYear: 2005 },
-      
-      // Volkswagen Models
-      { name: 'Golf', make: makeMap['Volkswagen'], startYear: 1974 },
-      { name: 'Jetta', make: makeMap['Volkswagen'], startYear: 1979 },
-      { name: 'Passat', make: makeMap['Volkswagen'], startYear: 1973 },
-      { name: 'Tiguan', make: makeMap['Volkswagen'], startYear: 2007 }
-    ];
+    // Map the models data to include make IDs instead of make names
+    const models = modelsData
+      .filter(model => makeMap[model.make]) // Only include models whose make exists
+      .map(model => ({
+        name: model.name,
+        make: makeMap[model.make],
+        startYear: model.startYear
+      }));
+    
+    console.log(`Filtering models: ${modelsData.length} total, ${models.length} valid models for existing makes`);
     
     // Insert models
     const createdModels = await Model.insertMany(models);

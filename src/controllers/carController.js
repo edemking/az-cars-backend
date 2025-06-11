@@ -8,7 +8,6 @@ const CarDrive = require("../models/cars/CarDrive");
 const BodyColor = require("../models/cars/BodyColor");
 const CarOption = require("../models/cars/CarOption");
 const FuelType = require("../models/cars/FuelType");
-const Cylinder = require("../models/cars/Cylinder");
 const ServiceHistory = require("../models/cars/ServiceHistory");
 const Country = require("../models/cars/Country");
 const Transmission = require("../models/cars/Transmission");
@@ -26,7 +25,7 @@ const validateCarData = async (carData) => {
   // Define optional ObjectId fields (no longer required)
   const objectIdFields = [
     'make', 'model', 'carDrive', 'bodyColor', 'carOptions', 
-    'fuelType', 'cylinder', 'country', 'transmission', 'vehicleType'
+    'fuelType', 'country', 'transmission', 'vehicleType'
   ];
 
   // Convert empty strings to null for ObjectId fields and validate format
@@ -53,7 +52,7 @@ const validateCarData = async (carData) => {
     }
   }
 
-  ['year', 'price', 'mileage', 'numberOfKeys', 'engineSize'].forEach(field => {
+  ['year', 'price', 'mileage', 'numberOfKeys', 'engineSize', 'cylinder'].forEach(field => {
     if (carData[field] !== undefined && carData[field] !== null && carData[field] !== '') {
       if (typeof carData[field] === 'string') {
         const numValue = Number(carData[field]);
@@ -87,6 +86,10 @@ const validateCarData = async (carData) => {
     errors.push('engineSize must be a positive number');
   }
 
+  if (carData.cylinder && (typeof carData.cylinder !== 'number' || carData.cylinder < 1 || carData.cylinder > 16)) {
+    errors.push('cylinder must be a number between 1 and 16');
+  }
+
   return { isValid: errors.length === 0, errors, warnings, processedData: carData };
 };
 
@@ -113,7 +116,6 @@ exports.getCars = async (req, res) => {
       .populate("bodyColor")
       .populate("carOptions")
       .populate("fuelType")
-      .populate("cylinder")
       .populate("country")
       .populate("transmission")
       .populate("vehicleType")
@@ -150,7 +152,6 @@ exports.getCar = async (req, res) => {
       .populate("bodyColor")
       .populate("carOptions")
       .populate("fuelType")
-      .populate("cylinder")
       .populate("country")
       .populate("transmission")
       .populate("vehicleType")
@@ -323,7 +324,6 @@ exports.createCar = async (req, res) => {
       .populate("bodyColor")
       .populate("carOptions")
       .populate("fuelType")
-      .populate("cylinder")
       .populate("country")
       .populate("transmission")
       .populate("vehicleType")
@@ -517,7 +517,6 @@ exports.getReferenceData = async (req, res) => {
       bodyColors,
       carOptions,
       fuelTypes,
-      cylinders,
       serviceHistories,
       countries,
       transmissions,
@@ -532,7 +531,6 @@ exports.getReferenceData = async (req, res) => {
       BodyColor.find(),
       CarOption.find(),
       FuelType.find(),
-      Cylinder.find(),
       ServiceHistory.find(),
       Country.find(),
       Transmission.find(),
@@ -550,7 +548,6 @@ exports.getReferenceData = async (req, res) => {
         bodyColors,
         carOptions,
         fuelTypes,
-        cylinders,
         serviceHistories,
         countries,
         transmissions,
@@ -1010,7 +1007,6 @@ exports.searchCars = async (req, res) => {
       { path: 'bodyColor', select: 'name hexCode type' },
       { path: 'carOptions', select: 'name category description' },
       { path: 'fuelType', select: 'name' },
-      { path: 'cylinder', select: 'name count' },
       { path: 'country', select: 'name' },
       { path: 'transmission', select: 'name type' },
       { path: 'vehicleType', select: 'name category' },

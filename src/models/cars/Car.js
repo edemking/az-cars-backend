@@ -4,7 +4,6 @@ const mongoose = require("mongoose");
 const Make = require("./Make");
 const Model = require("./Model");
 const FuelType = require("./FuelType");
-const Cylinder = require("./Cylinder");
 const ServiceHistory = require("./ServiceHistory");
 const BodyColor = require("./BodyColor");
 const CarOption = require("./CarOption");
@@ -19,7 +18,6 @@ const VehicleType = require("./VehicleType");
 const makeSchema = Make.schema;
 const modelSchema = Model.schema;
 const fuelTypeSchema = FuelType.schema;
-const cylinderSchema = Cylinder.schema;
 const serviceHistorySchema = ServiceHistory.schema;
 const bodyColorSchema = BodyColor.schema;
 const carOptionsSchema = CarOption.schema;
@@ -112,9 +110,10 @@ const carSchema = new mongoose.Schema({
     required: false,
   },
   cylinder: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Cylinder",
+    type: Number,
     required: false,
+    min: 1,
+    max: 16
   },
   serviceHistory: {
     type: Boolean,
@@ -127,7 +126,7 @@ const carSchema = new mongoose.Schema({
     required: false,
   },
   warranty: {
-    type: Boolean,
+    type: String,
     required: false,
   },
   engineSize: {
@@ -144,8 +143,9 @@ const carSchema = new mongoose.Schema({
     ref: "VehicleType",
     required: false,
   },
-  firstOwner: {
-    type: Boolean,
+  owner: {
+    type: String,
+    enum: ['First Owner', 'Second Owner'],
     required: false,
   },
   componentSummary: {

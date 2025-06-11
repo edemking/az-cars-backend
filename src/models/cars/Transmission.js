@@ -9,7 +9,7 @@ const transmissionSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['Automatic', 'Manual', 'CVT', 'Semi-Automatic', 'Dual-Clutch'],
+    enum: ['Automatic', 'Manual'],
     required: true
   },
   gears: {

@@ -8,7 +8,7 @@ const carConditionSchema = new mongoose.Schema({
   },
   value: {
     type: String,
-    enum: ["Scratched", "Painted", "Damaged", "Smart Repaint", "Repaired"],
+    enum: ["Scratched", "Painted", "Damaged", "Smart Repaint", "Repaired", "Paint", "Scratch", "Dent"],
     required: true
   }
 });

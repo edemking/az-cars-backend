@@ -1,69 +1,19 @@
+require('dotenv').config();
 const mongoose = require('mongoose');
 const Make = require('../models/cars/Make');
-const connectDB = require('../config/db');
+const config = require('../config/config');
+const makes = require('./data/makes.json');
 
-const makes = [
-  {
-    name: 'Toyota',
-    country: 'Japan'
-  },
-  {
-    name: 'Honda',
-    country: 'Japan'
-  },
-  {
-    name: 'Ford',
-    country: 'USA'
-  },
-  {
-    name: 'Chevrolet',
-    country: 'USA'
-  },
-  {
-    name: 'BMW',
-    country: 'Germany'
-  },
-  {
-    name: 'Mercedes-Benz',
-    country: 'Germany'
-  },
-  {
-    name: 'Audi',
-    country: 'Germany'
-  },
-  {
-    name: 'Volkswagen',
-    country: 'Germany'
-  },
-  {
-    name: 'Hyundai',
-    country: 'South Korea'
-  },
-  {
-    name: 'Kia',
-    country: 'South Korea'
-  },
-  {
-    name: 'Nissan',
-    country: 'Japan'
-  },
-  {
-    name: 'Mazda',
-    country: 'Japan'
-  },
-  {
-    name: 'Subaru',
-    country: 'Japan'
-  },
-  {
-    name: 'Lexus',
-    country: 'Japan'
-  },
-  {
-    name: 'Volvo',
-    country: 'Sweden'
+// Connect to MongoDB
+const connectDB = async () => {
+  try {
+    const conn = await mongoose.connect(config.MONGO_URI);
+    console.log(`MongoDB Connected: ${conn.connection.host}`);
+  } catch (error) {
+    console.error(`Error: ${error.message}`);
+    process.exit(1);
   }
-];
+};
 
 const seedMakes = async () => {
   try {

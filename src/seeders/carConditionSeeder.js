@@ -5,7 +5,10 @@ const conditions = [
   { name: 'Fresh Paint', value: 'Painted' },
   { name: 'Damage Present', value: 'Damaged' },
   { name: 'Smart Paint Repair', value: 'Smart Repaint' },
-  { name: 'Repaired Component', value: 'Repaired' }
+  { name: 'Repaired Component', value: 'Repaired' },
+  { name: 'Paint Condition', value: 'Paint' },
+  { name: 'Scratch Condition', value: 'Scratch' },
+  { name: 'Dent Condition', value: 'Dent' }
 ];
 
 const seedCarConditions = async () => {
