@@ -10,7 +10,6 @@ const CarOption = require("../models/cars/CarOption");
 const FuelType = require("../models/cars/FuelType");
 const ServiceHistory = require("../models/cars/ServiceHistory");
 const Country = require("../models/cars/Country");
-const Transmission = require("../models/cars/Transmission");
 const EngineSize = require("../models/cars/EngineSize");
 const VehicleType = require("../models/cars/VehicleType");
 const Rating = require("../models/cars/Rating");
@@ -25,7 +24,7 @@ const validateCarData = async (carData) => {
   // Define optional ObjectId fields (no longer required)
   const objectIdFields = [
     'make', 'model', 'carDrive', 'bodyColor', 'carOptions', 
-    'fuelType', 'country', 'transmission', 'vehicleType'
+    'fuelType', 'country', 'vehicleType'
   ];
 
   // Convert empty strings to null for ObjectId fields and validate format
@@ -90,6 +89,10 @@ const validateCarData = async (carData) => {
     errors.push('cylinder must be a number between 1 and 16');
   }
 
+  if (carData.transmission && !['Automatic', 'Manual'].includes(carData.transmission)) {
+    errors.push('transmission must be either "Automatic" or "Manual"');
+  }
+
   return { isValid: errors.length === 0, errors, warnings, processedData: carData };
 };
 
@@ -117,7 +120,6 @@ exports.getCars = async (req, res) => {
       .populate("carOptions")
       .populate("fuelType")
       .populate("country")
-      .populate("transmission")
       .populate("vehicleType")
       .populate({
         path: "componentSummary",
@@ -153,7 +155,6 @@ exports.getCar = async (req, res) => {
       .populate("carOptions")
       .populate("fuelType")
       .populate("country")
-      .populate("transmission")
       .populate("vehicleType")
       .populate({
         path: "componentSummary",
@@ -325,7 +326,6 @@ exports.createCar = async (req, res) => {
       .populate("carOptions")
       .populate("fuelType")
       .populate("country")
-      .populate("transmission")
       .populate("vehicleType")
       .populate({
         path: "componentSummary",
@@ -519,7 +519,6 @@ exports.getReferenceData = async (req, res) => {
       fuelTypes,
       serviceHistories,
       countries,
-      transmissions,
       engineSizes,
       vehicleTypes,
       ratings,
@@ -533,7 +532,6 @@ exports.getReferenceData = async (req, res) => {
       FuelType.find(),
       ServiceHistory.find(),
       Country.find(),
-      Transmission.find(),
       EngineSize.find(),
       VehicleType.find(),
       Rating.find(),
@@ -550,7 +548,6 @@ exports.getReferenceData = async (req, res) => {
         fuelTypes,
         serviceHistories,
         countries,
-        transmissions,
         engineSizes,
         vehicleTypes,
         ratings,
@@ -802,8 +799,6 @@ exports.searchCars = async (req, res) => {
       maxMileage,    // Maximum mileage
       bodyColor,     // Body color name (partial match)
       fuelType,      // Fuel type name (partial match)
-      transmission,  // Transmission name (partial match)
-      carDrive,      // Car drive type (partial match)
       vehicleType,   // Vehicle type (partial match)
       approved,      // Approval status
       includeArchived, // Include archived cars
@@ -887,22 +882,6 @@ exports.searchCars = async (req, res) => {
       },
       {
         $lookup: {
-          from: 'transmissions',
-          localField: 'transmission',
-          foreignField: '_id',
-          as: 'transmissionData'
-        }
-      },
-      {
-        $lookup: {
-          from: 'cardrives',
-          localField: 'carDrive',
-          foreignField: '_id',
-          as: 'carDriveData'
-        }
-      },
-      {
-        $lookup: {
           from: 'vehicletypes',
           localField: 'vehicleType',
           foreignField: '_id',
@@ -923,8 +902,6 @@ exports.searchCars = async (req, res) => {
           { 'modelData.name': searchRegex },
           { 'bodyColorData.name': searchRegex },
           { 'fuelTypeData.name': searchRegex },
-          { 'transmissionData.name': searchRegex },
-          { 'carDriveData.name': searchRegex },
           { 'vehicleTypeData.name': searchRegex },
           { description: searchRegex }
         ]
@@ -953,18 +930,6 @@ exports.searchCars = async (req, res) => {
     if (fuelType) {
       textSearchConditions.push({
         'fuelTypeData.name': { $regex: fuelType, $options: 'i' }
-      });
-    }
-
-    if (transmission) {
-      textSearchConditions.push({
-        'transmissionData.name': { $regex: transmission, $options: 'i' }
-      });
-    }
-
-    if (carDrive) {
-      textSearchConditions.push({
-        'carDriveData.name': { $regex: carDrive, $options: 'i' }
       });
     }
 
@@ -1008,7 +973,6 @@ exports.searchCars = async (req, res) => {
       { path: 'carOptions', select: 'name category description' },
       { path: 'fuelType', select: 'name' },
       { path: 'country', select: 'name' },
-      { path: 'transmission', select: 'name type' },
       { path: 'vehicleType', select: 'name category' },
       {
         path: 'componentSummary',
@@ -1052,8 +1016,6 @@ exports.searchCars = async (req, res) => {
         mileageRange: minMileage || maxMileage ? { min: minMileage, max: maxMileage } : null,
         bodyColor,
         fuelType,
-        transmission,
-        carDrive,
         vehicleType,
         approved,
         includeArchived

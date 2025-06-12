@@ -99,10 +99,6 @@ exports.getAuctions = asyncHandler(async (req, res, next) => {
           select: "name category description",
         },
         {
-          path: "transmission",
-          select: "name type gears description",
-        },
-        {
           path: "carDrive",
           select: "name type description",
         },
@@ -1067,10 +1063,6 @@ exports.getDashboardData = asyncHandler(async (req, res, next) => {
       {
         path: "fuelType",
         select: "name category description",
-      },
-      {
-        path: "transmission",
-        select: "name type gears description",
       },
       {
         path: "carDrive",

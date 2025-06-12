@@ -7,7 +7,6 @@ const FuelType = require("./FuelType");
 const ServiceHistory = require("./ServiceHistory");
 const BodyColor = require("./BodyColor");
 const CarOption = require("./CarOption");
-const Transmission = require("./Transmission");
 const Country = require("./Country");
 const Rating = require("./Rating");
 const CarCondition = require("./CarCondition");
@@ -21,7 +20,6 @@ const fuelTypeSchema = FuelType.schema;
 const serviceHistorySchema = ServiceHistory.schema;
 const bodyColorSchema = BodyColor.schema;
 const carOptionsSchema = CarOption.schema;
-const transmissionSchema = Transmission.schema;
 const vehicleTypeSchema = VehicleType.schema;
 
 // Define country schema (assuming it's not in a separate file)
@@ -134,8 +132,8 @@ const carSchema = new mongoose.Schema({
     required: false,
   },
   transmission: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Transmission",
+    type: String,
+    enum: ['Automatic', 'Manual'],
     required: false,
   },
   vehicleType: {
