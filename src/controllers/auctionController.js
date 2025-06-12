@@ -755,7 +755,8 @@ exports.getUserWonBids = asyncHandler(async (req, res, next) => {
   // Find all completed auctions where the user has winning bids
   const wonAuctions = await Auction.find({ 
     _id: { $in: winningAuctionIds },
-    status: "completed" 
+    endTime: { $lt: new Date() },
+    status: { $ne: "cancelled" }
   })
     .populate({
       path: "car",
@@ -1167,7 +1168,8 @@ exports.getDashboardData = asyncHandler(async (req, res, next) => {
 
   const wonAuctions = await Auction.find({
     _id: { $in: winningAuctionIds },
-    status: "completed",
+    endTime: { $lt: now },
+    status: { $ne: "cancelled" }
   })
     .populate(carPopulateConfig)
     .sort({ endTime: -1 });
