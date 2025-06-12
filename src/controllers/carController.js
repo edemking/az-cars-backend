@@ -93,6 +93,35 @@ const validateCarData = async (carData) => {
     errors.push('transmission must be either "Automatic" or "Manual"');
   }
 
+  // Validate interiorAndExterior nested fields
+  if (carData.interiorAndExterior && typeof carData.interiorAndExterior === 'object') {
+    const interiorAndExterior = carData.interiorAndExterior;
+    
+    // Validate interior nested object
+    if (interiorAndExterior.interior && typeof interiorAndExterior.interior === 'object') {
+      const interior = interiorAndExterior.interior;
+      
+      // Validate navigation as boolean
+      if (interior.navigation !== undefined && typeof interior.navigation !== 'boolean') {
+        errors.push(`interiorAndExterior.interior.navigation must be a boolean, received: ${typeof interior.navigation}`);
+      }
+      
+      // Validate sunroof as boolean
+      if (interior.sunroof !== undefined && typeof interior.sunroof !== 'boolean') {
+        errors.push(`interiorAndExterior.interior.sunroof must be a boolean, received: ${typeof interior.sunroof}`);
+      }
+      
+      // seatType and interiorColor are strings, no specific validation needed beyond type checking
+      if (interior.seatType && typeof interior.seatType !== 'string') {
+        errors.push('interiorAndExterior.interior.seatType must be a string');
+      }
+      
+      if (interior.interiorColor && typeof interior.interiorColor !== 'string') {
+        errors.push('interiorAndExterior.interior.interiorColor must be a string');
+      }
+    }
+  }
+
   return { isValid: errors.length === 0, errors, warnings, processedData: carData };
 };
 

@@ -238,6 +238,24 @@ const carSchema = new mongoose.Schema({
     rearGlass: { type: mongoose.Schema.Types.ObjectId, ref: "CarCondition" },
     leftGlass: { type: mongoose.Schema.Types.ObjectId, ref: "CarCondition" },
     rightGlass: { type: mongoose.Schema.Types.ObjectId, ref: "CarCondition" },
+    interior: {
+      navigation: {
+        type: Boolean,
+        required: false,
+      },
+      sunroof: {
+        type: Boolean,
+        required: false,
+      },
+      seatType: {
+        type: String,
+        required: false,
+      },
+      interiorColor: {
+        type: String,
+        required: false,
+      },
+    },
   },
   images: {
     type: [String],
