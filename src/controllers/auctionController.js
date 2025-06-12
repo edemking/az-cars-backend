@@ -744,9 +744,17 @@ exports.getAuctionBids = asyncHandler(async (req, res, next) => {
 // @route   GET /api/auctions/won-bids
 // @access  Private
 exports.getUserWonBids = asyncHandler(async (req, res, next) => {
-  // Find all completed auctions where the user is the winner (same as dashboard logic)
+  // Find all winning bids by the user first
+  const userWinningBids = await Bid.find({
+    bidder: req.user.id,
+    isWinningBid: true
+  }).select('auction');
+
+  const winningAuctionIds = userWinningBids.map(bid => bid.auction);
+
+  // Find all completed auctions where the user has winning bids
   const wonAuctions = await Auction.find({ 
-    winner: req.user.id,
+    _id: { $in: winningAuctionIds },
     status: "completed" 
   })
     .populate({
@@ -1149,9 +1157,16 @@ exports.getDashboardData = asyncHandler(async (req, res, next) => {
       .limit(3);
   }
 
-  // Get user's won auctions
+  // Get user's won auctions based on winning bids
+  const userWinningBids = await Bid.find({
+    bidder: req.user.id,
+    isWinningBid: true
+  }).select('auction');
+
+  const winningAuctionIds = userWinningBids.map(bid => bid.auction);
+
   const wonAuctions = await Auction.find({
-    winner: req.user.id,
+    _id: { $in: winningAuctionIds },
     status: "completed",
   })
     .populate(carPopulateConfig)
