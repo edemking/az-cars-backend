@@ -310,6 +310,47 @@ exports.createCar = async (req, res) => {
           }
           processedData.interiorAndExterior = parsed;
         }
+
+        // Transform flat interior fields to nested structure
+        const interiorAndExterior = processedData.interiorAndExterior;
+        
+        // Check if we have interior fields at the top level that need to be nested
+        const interiorFields = {
+          navigation: interiorAndExterior.navigationSystem,
+          sunroof: interiorAndExterior.sunroof,
+          seatType: interiorAndExterior.seatsType,
+          interiorColor: interiorAndExterior.interiorColor
+        };
+        
+        // Only create interior object if we have interior fields
+        const hasInteriorFields = Object.values(interiorFields).some(value => value !== undefined);
+        
+        if (hasInteriorFields) {
+          // Create the nested interior object
+          interiorAndExterior.interior = {};
+          
+          // Move fields to interior object and remove from top level
+          if (interiorFields.navigation !== undefined) {
+            interiorAndExterior.interior.navigation = interiorFields.navigation;
+            delete interiorAndExterior.navigationSystem;
+          }
+          
+          if (interiorFields.sunroof !== undefined) {
+            interiorAndExterior.interior.sunroof = interiorFields.sunroof;
+            delete interiorAndExterior.sunroof;
+          }
+          
+          if (interiorFields.seatType !== undefined) {
+            interiorAndExterior.interior.seatType = interiorFields.seatType;
+            delete interiorAndExterior.seatsType;
+          }
+          
+          if (interiorFields.interiorColor !== undefined) {
+            interiorAndExterior.interior.interiorColor = interiorFields.interiorColor;
+            delete interiorAndExterior.interiorColor;
+          }
+        }
+        
       } catch (e) {
         console.error("Error parsing interiorAndExterior:", e);
         return sendError(res, {
