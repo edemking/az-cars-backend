@@ -1038,156 +1038,104 @@ exports.getDashboardData = asyncHandler(async (req, res, next) => {
 
   const now = new Date();
 
+  // Common populate structure
+  const carPopulateConfig = {
+    path: "car",
+    select: "make model year price images mileage carOptions bodyColor cylinder fuelType transmission carDrive country vehicleType",
+    populate: [
+      {
+        path: "make",
+        select: "name country logo",
+      },
+      {
+        path: "model",
+        select: "name startYear endYear image",
+      },
+      {
+        path: "carOptions",
+        select: "name category description",
+      },
+      {
+        path: "bodyColor",
+        select: "name hexCode type",
+      },
+      {
+        path: "fuelType",
+        select: "name category description",
+      },
+      {
+        path: "transmission",
+        select: "name type gears description",
+      },
+      {
+        path: "carDrive",
+        select: "name type description",
+      },
+      {
+        path: "country",
+        select: "name",
+      },
+      {
+        path: "vehicleType",
+        select: "name description",
+      },
+    ],
+  };
+
   // Get 3 new live auctions
-  const newLiveAuctions = await Auction.find({
+  let newLiveAuctions = await Auction.find({
     status: "active",
     startTime: { $gte: oneDayAgo },
     endTime: { $gt: now },
   })
-    .populate({
-      path: "car",
-      select: "make model year price images mileage carOptions bodyColor cylinder fuelType transmission carDrive country vehicleType",
-      populate: [
-        {
-          path: "make",
-          select: "name country logo",
-        },
-        {
-          path: "model",
-          select: "name startYear endYear image",
-        },
-        {
-          path: "carOptions",
-          select: "name category description",
-        },
-        {
-          path: "bodyColor",
-          select: "name hexCode type",
-        },
-        {
-          path: "fuelType",
-          select: "name category description",
-        },
-        {
-          path: "transmission",
-          select: "name type gears description",
-        },
-        {
-          path: "carDrive",
-          select: "name type description",
-        },
-        {
-          path: "country",
-          select: "name",
-        },
-        {
-          path: "vehicleType",
-          select: "name description",
-        },
-      ],
-    })
+    .populate(carPopulateConfig)
     .populate("createdBy", "firstName lastName")
     .sort({ startTime: -1 })
     .limit(3);
 
+  // If no new live auctions, fallback to recent past auctions
+  if (newLiveAuctions.length === 0) {
+    newLiveAuctions = await Auction.find({
+      status: { $in: ["completed", "cancelled"] },
+    })
+      .populate(carPopulateConfig)
+      .populate("createdBy", "firstName lastName")
+      .populate("winner", "firstName lastName")
+      .sort({ endTime: -1 })
+      .limit(3);
+  }
+
   // Get 3 ending soon auctions
-  const endingSoonAuctions = await Auction.find({
+  let endingSoonAuctions = await Auction.find({
     status: "active",
     endTime: { $gt: now, $lte: oneDayFromNow },
   })
-    .populate({
-      path: "car",
-      select: "make model year price images mileage carOptions bodyColor cylinder fuelType transmission carDrive country vehicleType",
-      populate: [
-        {
-          path: "make",
-          select: "name country logo",
-        },
-        {
-          path: "model",
-          select: "name startYear endYear image",
-        },
-        {
-          path: "carOptions",
-          select: "name category description",
-        },
-        {
-          path: "bodyColor",
-          select: "name hexCode type",
-        },
-        {
-          path: "fuelType",
-          select: "name category description",
-        },
-        {
-          path: "transmission",
-          select: "name type gears description",
-        },
-        {
-          path: "carDrive",
-          select: "name type description",
-        },
-        {
-          path: "country",
-          select: "name",
-        },
-        {
-          path: "vehicleType",
-          select: "name description",
-        },
-      ],
-    })
+    .populate(carPopulateConfig)
     .populate("createdBy", "firstName lastName")
     .sort({ endTime: 1 })
     .limit(3);
+
+  // If no ending soon auctions, fallback to recent past auctions (different from newLiveAuctions)
+  if (endingSoonAuctions.length === 0) {
+    // Get recent completed auctions, excluding any that might already be in newLiveAuctions
+    const excludeIds = newLiveAuctions.map(auction => auction._id);
+    endingSoonAuctions = await Auction.find({
+      status: { $in: ["completed", "cancelled"] },
+      _id: { $nin: excludeIds }
+    })
+      .populate(carPopulateConfig)
+      .populate("createdBy", "firstName lastName")
+      .populate("winner", "firstName lastName")
+      .sort({ endTime: -1 })
+      .limit(3);
+  }
 
   // Get user's won auctions
   const wonAuctions = await Auction.find({
     winner: req.user.id,
     status: "completed",
   })
-    .populate({
-      path: "car",
-      select: "make model year price images mileage carOptions bodyColor cylinder fuelType transmission carDrive country vehicleType",
-      populate: [
-        {
-          path: "make",
-          select: "name country logo",
-        },
-        {
-          path: "model",
-          select: "name startYear endYear image",
-        },
-        {
-          path: "carOptions",
-          select: "name category description",
-        },
-        {
-          path: "bodyColor",
-          select: "name hexCode type",
-        },
-        {
-          path: "fuelType",
-          select: "name category description",
-        },
-        {
-          path: "transmission",
-          select: "name type gears description",
-        },
-        {
-          path: "carDrive",
-          select: "name type description",
-        },
-        {
-          path: "country",
-          select: "name",
-        },
-        {
-          path: "vehicleType",
-          select: "name description",
-        },
-      ],
-    })
+    .populate(carPopulateConfig)
     .sort({ endTime: -1 });
 
   sendSuccess(res, {
@@ -1196,6 +1144,12 @@ exports.getDashboardData = asyncHandler(async (req, res, next) => {
       endingSoonAuctions,
       wonAuctions,
     },
+    meta: {
+      fallbackUsed: {
+        newLiveAuctions: newLiveAuctions.length > 0 && newLiveAuctions[0].status !== "active",
+        endingSoonAuctions: endingSoonAuctions.length > 0 && endingSoonAuctions[0].status !== "active"
+      }
+    }
   });
 });
 
