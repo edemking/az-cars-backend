@@ -51,7 +51,7 @@ socket.on('new-bid', (data) => {
     },
     amount: 16000,
     time: "2023-06-01T14:30:00Z",
-    isWinningBid: false
+    isWinningBid: true
   },
   auction: {
     _id: "6470a9ae10b5d12345678901",

@@ -42,7 +42,7 @@ This document outlines the API endpoints for the auction functionality in the AZ
   "bidder": "6470a9ae10b5d12345600002", // Reference to User
   "amount": 16000,
   "time": "2023-06-01T14:30:00Z",
-  "isWinningBid": false, // Set to true when auction completes
+  "isWinningBid": true, // Set to true for the current winning bid (latest bid placed)
   "createdAt": "2023-06-01T14:30:00Z",
   "updatedAt": "2023-06-01T14:30:00Z"
 }
@@ -128,6 +128,14 @@ Rules:
 - Cannot bid on your own auction
 - Bid must be higher than starting price
 - Bid must be higher than current highest bid + increment
+
+#### Winning Bid Behavior
+
+When a new bid is placed:
+- The new bid automatically becomes the winning bid (`isWinningBid: true`)
+- All other bids for the same auction are marked as not winning (`isWinningBid: false`)
+- This ensures only one bid per auction has the winning status at any given time
+- When the auction completes, the highest bid remains as the winning bid
 
 ### Get Auction Bids
 

@@ -358,7 +358,19 @@ exports.placeBid = asyncHandler(async (req, res, next) => {
     bidder: req.user.id,
     amount,
     time: new Date(),
+    isWinningBid: true,
   });
+
+  // Set all other bids for this auction to not be winning bids
+  await Bid.updateMany(
+    { 
+      auction: auction._id, 
+      _id: { $ne: bid._id } // Exclude the current bid
+    },
+    { 
+      $set: { isWinningBid: false } 
+    }
+  );
 
   // Populate the bid with bidder information for real-time updates
   await bid.populate("bidder", "firstName lastName");
@@ -371,7 +383,6 @@ exports.placeBid = asyncHandler(async (req, res, next) => {
   if (auction.type === "buyNow" && amount >= auction.buyNowPrice) {
     auction.status = "completed";
     auction.winner = req.user.id;
-    bid.isWinningBid = true;
     await bid.save();
     
     // Emit auction completion event
@@ -473,6 +484,17 @@ exports.buyNowAuction = asyncHandler(async (req, res, next) => {
     time: new Date(),
     isWinningBid: true
   });
+
+  // Set all other bids for this auction to not be winning bids
+  await Bid.updateMany(
+    { 
+      auction: auction._id, 
+      _id: { $ne: bid._id } // Exclude the current bid
+    },
+    { 
+      $set: { isWinningBid: false } 
+    }
+  );
 
   // Populate the bid with bidder information for real-time updates
   await bid.populate("bidder", "firstName lastName");

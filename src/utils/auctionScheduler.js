@@ -35,7 +35,13 @@ const checkCompletedAuctions = async () => {
       if (highestBid) {
         auction.winner = highestBid.bidder;
         
-        // Mark this as the winning bid
+        // Mark this as the winning bid and set all other bids as not winning
+        await Bid.updateMany(
+          { auction: auction._id },
+          { $set: { isWinningBid: false } }
+        );
+        
+        // Now set only the highest bid as winning
         highestBid.isWinningBid = true;
         await highestBid.save();
         

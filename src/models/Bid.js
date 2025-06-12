@@ -28,5 +28,6 @@ const BidSchema = new mongoose.Schema({
 // Create index for efficient queries
 BidSchema.index({ auction: 1, amount: -1 });
 BidSchema.index({ bidder: 1, auction: 1 });
+BidSchema.index({ auction: 1, isWinningBid: 1 });
 
 module.exports = mongoose.model('Bid', BidSchema); 
