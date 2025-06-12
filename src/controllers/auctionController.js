@@ -1028,6 +1028,11 @@ exports.getEndingSoonAuctions = asyncHandler(async (req, res, next) => {
 // @route   GET /api/auctions/dashboard
 // @access  Private
 exports.getDashboardData = asyncHandler(async (req, res, next) => {
+  // Check if user is authenticated
+  if (!req.user || !req.user.id) {
+    return next(new ErrorResponse("User not authenticated", 401));
+  }
+
   // Calculate date 24 hours ago
   const oneDayAgo = new Date();
   oneDayAgo.setHours(oneDayAgo.getHours() - 24);
@@ -1082,61 +1087,110 @@ exports.getDashboardData = asyncHandler(async (req, res, next) => {
     ],
   };
 
+  // Common filter for cars with valid make and model
+  const carFilter = {
+    car: { 
+      $exists: true, 
+      $ne: null 
+    }
+  };
+
   // Get 3 new live auctions
   let newLiveAuctions = await Auction.find({
     status: "active",
     startTime: { $gte: oneDayAgo },
     endTime: { $gt: now },
+    ...carFilter
   })
     .populate(carPopulateConfig)
     .populate("createdBy", "firstName lastName")
     .sort({ startTime: -1 })
-    .limit(3);
+    .limit(10); // Get more initially to filter out invalid ones
+
+  // Filter out auctions with cars that have null make/model after population
+  newLiveAuctions = newLiveAuctions.filter(auction => 
+    auction.car && 
+    auction.car.make && 
+    auction.car.model
+  ).slice(0, 3); // Take only 3 after filtering
 
   // If no new live auctions, fallback to recent past auctions
   if (newLiveAuctions.length === 0) {
-    newLiveAuctions = await Auction.find({
+    let fallbackAuctions = await Auction.find({
       status: { $in: ["completed", "cancelled"] },
+      ...carFilter
     })
       .populate(carPopulateConfig)
       .populate("createdBy", "firstName lastName")
       .populate("winner", "firstName lastName")
       .sort({ endTime: -1 })
-      .limit(3);
+      .limit(10); // Get more initially to filter out invalid ones
+
+    // Filter out auctions with cars that have null make/model
+    newLiveAuctions = fallbackAuctions.filter(auction => 
+      auction.car && 
+      auction.car.make && 
+      auction.car.model
+    ).slice(0, 3);
   }
 
   // Get 3 ending soon auctions
   let endingSoonAuctions = await Auction.find({
     status: "active",
     endTime: { $gt: now, $lte: oneDayFromNow },
+    ...carFilter
   })
     .populate(carPopulateConfig)
     .populate("createdBy", "firstName lastName")
     .sort({ endTime: 1 })
-    .limit(3);
+    .limit(10); // Get more initially to filter out invalid ones
+
+  // Filter out auctions with cars that have null make/model after population
+  endingSoonAuctions = endingSoonAuctions.filter(auction => 
+    auction.car && 
+    auction.car.make && 
+    auction.car.model
+  ).slice(0, 3); // Take only 3 after filtering
 
   // If no ending soon auctions, fallback to recent past auctions (different from newLiveAuctions)
   if (endingSoonAuctions.length === 0) {
     // Get recent completed auctions, excluding any that might already be in newLiveAuctions
     const excludeIds = newLiveAuctions.map(auction => auction._id);
-    endingSoonAuctions = await Auction.find({
+    let fallbackAuctions = await Auction.find({
       status: { $in: ["completed", "cancelled"] },
-      _id: { $nin: excludeIds }
+      _id: { $nin: excludeIds },
+      ...carFilter
     })
       .populate(carPopulateConfig)
       .populate("createdBy", "firstName lastName")
       .populate("winner", "firstName lastName")
       .sort({ endTime: -1 })
-      .limit(3);
+      .limit(10); // Get more initially to filter out invalid ones
+
+    // Filter out auctions with cars that have null make/model
+    endingSoonAuctions = fallbackAuctions.filter(auction => 
+      auction.car && 
+      auction.car.make && 
+      auction.car.model
+    ).slice(0, 3);
   }
 
   // Get user's won auctions
-  const wonAuctions = await Auction.find({
+  let wonAuctions = await Auction.find({
     winner: req.user.id,
     status: "completed",
+    ...carFilter
   })
     .populate(carPopulateConfig)
-    .sort({ endTime: -1 });
+    .sort({ endTime: -1 })
+    .limit(20); // Get more initially to filter out invalid ones
+
+  // Filter out auctions with cars that have null make/model
+  wonAuctions = wonAuctions.filter(auction => 
+    auction.car && 
+    auction.car.make && 
+    auction.car.model
+  );
 
   sendSuccess(res, {
     data: {

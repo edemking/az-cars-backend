@@ -83,7 +83,8 @@ router.route('/history')
   .get(getAllAuctionHistory);
 
 router.route('/dashboard')
-  .get(protect, getDashboardData);
+  .get(getDashboardData);
+  // .get(protect, getDashboardData);
 
 router.route('/admin-dashboard')
   .get(protect, getAdminDashboardData);
