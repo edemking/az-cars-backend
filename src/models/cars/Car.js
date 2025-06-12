@@ -111,7 +111,7 @@ const carSchema = new mongoose.Schema({
     type: Number,
     required: false,
     min: 1,
-    max: 16
+    max: 16,
   },
   serviceHistory: {
     type: Boolean,
@@ -133,7 +133,7 @@ const carSchema = new mongoose.Schema({
   },
   transmission: {
     type: String,
-    enum: ['Automatic', 'Manual'],
+    enum: ["Automatic", "Manual"],
     required: false,
   },
   vehicleType: {
@@ -143,7 +143,18 @@ const carSchema = new mongoose.Schema({
   },
   owner: {
     type: String,
-    enum: ['First Owner', 'Second Owner', 'Third Owner', 'Fourth Owner', 'Fifth Owner', 'Sixth Owner', 'Seventh Owner', 'Eighth Owner', 'Ninth Owner', 'Tenth Owner'],
+    enum: [
+      "First Owner",
+      "Second Owner",
+      "Third Owner",
+      "Fourth Owner",
+      "Fifth Owner",
+      "Sixth Owner",
+      "Seventh Owner",
+      "Eighth Owner",
+      "Ninth Owner",
+      "Tenth Owner",
+    ],
     required: false,
   },
   componentSummary: {

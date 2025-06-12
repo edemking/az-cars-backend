@@ -552,6 +552,18 @@ exports.getReferenceData = async (req, res) => {
         vehicleTypes,
         ratings,
         carConditions,
+        seatTypes: [
+          { name: "Leather", value: "Leather" },
+          { name: "Fabric", value: "Fabric" },
+          { name: "Vinyl", value: "Vinyl" },
+          { name: "Alcantara", value: "Alcantara" },
+          { name: "Synthetic Leather", value: "Synthetic Leather" },
+          { name: "Cloth", value: "Cloth" }
+        ],
+        transmissions: [
+          { name: "Automatic", value: "Automatic" },
+          { name: "Manual", value: "Manual" }
+        ]
       },
     });
   } catch (error) {
