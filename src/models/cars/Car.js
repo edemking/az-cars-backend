@@ -145,7 +145,7 @@ const carSchema = new mongoose.Schema({
   },
   owner: {
     type: String,
-    enum: ['First Owner', 'Second Owner'],
+    enum: ['First Owner', 'Second Owner', 'Third Owner', 'Fourth Owner', 'Fifth Owner', 'Sixth Owner', 'Seventh Owner', 'Eighth Owner', 'Ninth Owner', 'Tenth Owner'],
     required: false,
   },
   componentSummary: {
