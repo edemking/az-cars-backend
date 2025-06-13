@@ -116,22 +116,3 @@ server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log('Socket.IO enabled for real-time communications');
 }); 
-
-
-db.createUser({
-  user: "az_cars_user",
-  pwd: "az_cars_password",
-  roles: [ { role: "readWrite", db: "az_cars" } ]
-})
-
-db.createUser({
-  user: "adminUser",
-  pwd: "admin123", 
-  roles: [ { role: "userAdminAnyDatabase", db: "admin" } ]
-})
-
-db.createUser({
-  user: "adminUser",
-  pwd: "admin123", 
-  roles: [ { role: "userAdminAnyDatabase", db: "admin" } ]
-})
