@@ -215,11 +215,23 @@ exports.getCar = async (req, res) => {
 // Create car
 exports.createCar = async (req, res) => {
   try {
-    // Parse form data fields that contain JSON strings
-    const carData = { ...req.body };
+    const processedData = { ...req.body };
+    
+    // Handle image uploads if present
+    if (req.files && req.files.images) {
+      try {
+        processedData.images = await getFileUrls(req, req.files.images);
+      } catch (error) {
+        return sendError(res, {
+          statusCode: 400,
+          message: "Error uploading images",
+          errors: { details: error.message }
+        });
+      }
+    }
 
     // Data preprocessing and validation
-    const { isValid, errors, warnings, processedData } = await validateCarData(carData);
+    const { isValid, errors, warnings, processedData: validatedData } = await validateCarData(processedData);
 
     if (!isValid) {
       return sendError(res, {
@@ -231,15 +243,15 @@ exports.createCar = async (req, res) => {
     }
 
     // Parse nested objects from form data with better error handling
-    if (processedData.componentSummary) {
+    if (validatedData.componentSummary) {
       try {
         let parsedSummary;
 
         // Parse if it's a string, otherwise use as is
-        if (typeof processedData.componentSummary === "string") {
-          parsedSummary = JSON.parse(processedData.componentSummary);
+        if (typeof validatedData.componentSummary === "string") {
+          parsedSummary = JSON.parse(validatedData.componentSummary);
         } else {
-          parsedSummary = processedData.componentSummary;
+          parsedSummary = validatedData.componentSummary;
         }
 
         // Clean and validate each field in componentSummary
@@ -279,7 +291,7 @@ exports.createCar = async (req, res) => {
           }
         });
 
-        processedData.componentSummary = cleanedSummary;
+        validatedData.componentSummary = cleanedSummary;
       } catch (e) {
         console.error("Error parsing componentSummary:", e);
         return sendError(res, {
@@ -288,31 +300,31 @@ exports.createCar = async (req, res) => {
           errors: {
             details: e.message,
             received:
-              typeof processedData.componentSummary === "string"
-                ? processedData.componentSummary.substring(0, 100) + "..."
-                : typeof processedData.componentSummary,
+              typeof validatedData.componentSummary === "string"
+                ? validatedData.componentSummary.substring(0, 100) + "..."
+                : typeof validatedData.componentSummary,
           },
         });
       }
     }
 
-    if (processedData.interiorAndExterior) {
+    if (validatedData.interiorAndExterior) {
       try {
         // First check if it's already an object
-        if (typeof processedData.interiorAndExterior === "object") {
+        if (typeof validatedData.interiorAndExterior === "object") {
           // If it's already an object, use it as is
           console.log("interiorAndExterior is already an object");
         } else {
           // Try to parse it as JSON
-          const parsed = JSON.parse(processedData.interiorAndExterior);
+          const parsed = JSON.parse(validatedData.interiorAndExterior);
           if (typeof parsed !== "object") {
             throw new Error("interiorAndExterior must be an object");
           }
-          processedData.interiorAndExterior = parsed;
+          validatedData.interiorAndExterior = parsed;
         }
 
         // Transform flat interior fields to nested structure
-        const interiorAndExterior = processedData.interiorAndExterior;
+        const interiorAndExterior = validatedData.interiorAndExterior;
         
         // Check if we have interior fields at the top level that need to be nested
         const interiorFields = {
@@ -359,32 +371,27 @@ exports.createCar = async (req, res) => {
           errors: {
             details: e.message,
             received:
-              typeof processedData.interiorAndExterior === "string"
-                ? processedData.interiorAndExterior.substring(0, 100) + "..."
-                : typeof processedData.interiorAndExterior,
+              typeof validatedData.interiorAndExterior === "string"
+                ? validatedData.interiorAndExterior.substring(0, 100) + "..."
+                : typeof validatedData.interiorAndExterior,
           },
         });
       }
     }
 
-    // Handle image uploads if present
-    if (req.files && req.files.images) {
-      processedData.images = req.files.images.map((file) => getFileUrl(req, file));
-    }
-
     // Log the processed data before saving
     console.log("Processed car data:", {
-      ...processedData,
-      componentSummary: processedData.componentSummary
+      ...validatedData,
+      componentSummary: validatedData.componentSummary
         ? "Present (cleaned)"
         : "Not present",
-      interiorAndExterior: processedData.interiorAndExterior
+      interiorAndExterior: validatedData.interiorAndExterior
         ? "Present (parsed)"
         : "Not present",
-      images: processedData.images ? `${processedData.images.length} images` : "No images",
+      images: validatedData.images ? `${validatedData.images.length} images` : "No images",
     });
 
-    const car = new Car(processedData);
+    const car = new Car(validatedData);
     const newCar = await car.save();
 
     // Populate references before sending response
@@ -437,23 +444,31 @@ exports.updateCar = async (req, res) => {
 
     // Handle image uploads if present
     if (req.files && req.files.images) {
-      const newImages = req.files.images.map((file) => getFileUrl(req, file));
+      try {
+        const newImages = await getFileUrls(req, req.files.images);
 
-      // If we want to append to existing images
-      if (updates.appendImages === "true") {
-        const existingCar = await Car.findById(req.params.id);
-        if (existingCar) {
-          updates.images = [...existingCar.images, ...newImages];
+        // If we want to append to existing images
+        if (updates.appendImages === "true") {
+          const existingCar = await Car.findById(req.params.id);
+          if (existingCar) {
+            updates.images = [...existingCar.images, ...newImages];
+          } else {
+            updates.images = newImages;
+          }
         } else {
+          // Replace existing images
           updates.images = newImages;
         }
-      } else {
-        // Replace existing images
-        updates.images = newImages;
-      }
 
-      // Remove appendImages from updates as it's not part of the model
-      delete updates.appendImages;
+        // Remove appendImages from updates as it's not part of the model
+        delete updates.appendImages;
+      } catch (error) {
+        return sendError(res, {
+          statusCode: 400,
+          message: "Error uploading images",
+          errors: { details: error.message }
+        });
+      }
     }
 
     const car = await Car.findByIdAndUpdate(req.params.id, updates, {
@@ -483,13 +498,25 @@ exports.updateCar = async (req, res) => {
 // Delete car
 exports.deleteCar = async (req, res) => {
   try {
-    const car = await Car.findByIdAndDelete(req.params.id);
+    const car = await Car.findById(req.params.id);
     if (!car) {
       return sendError(res, {
         statusCode: 404,
         message: "Car not found",
       });
     }
+
+    // Delete all car images from S3
+    if (car.images && car.images.length > 0) {
+      try {
+        await Promise.all(car.images.map(imageUrl => deleteFile(imageUrl)));
+      } catch (error) {
+        console.error("Error deleting car images:", error);
+        // Continue with car deletion even if image deletion fails
+      }
+    }
+
+    await Car.findByIdAndDelete(req.params.id);
     sendSuccess(res, { message: "Car deleted successfully" });
   } catch (error) {
     sendError(res, { message: error.message });
@@ -516,24 +543,36 @@ exports.uploadCarImages = async (req, res) => {
       });
     }
 
-    // Get URLs for the uploaded images
-    const imageUrls = req.files.images.map((file) => getFileUrl(req, file));
+    try {
+      // Get URLs for the uploaded images
+      const imageUrls = await getFileUrls(req, req.files.images);
 
-    // Update car with new images
-    if (req.body.replace === "true") {
-      // Replace all images
-      car.images = imageUrls;
-    } else {
-      // Append to existing images
-      car.images = [...car.images, ...imageUrls];
+      // Update car with new images
+      if (req.body.replace === "true") {
+        // Delete old images from S3 if replacing
+        if (car.images && car.images.length > 0) {
+          await Promise.all(car.images.map(imageUrl => deleteFile(imageUrl)));
+        }
+        // Replace all images
+        car.images = imageUrls;
+      } else {
+        // Append to existing images
+        car.images = [...car.images, ...imageUrls];
+      }
+
+      await car.save();
+
+      sendSuccess(res, {
+        message: "Images uploaded successfully",
+        data: { images: car.images },
+      });
+    } catch (error) {
+      return sendError(res, {
+        statusCode: 400,
+        message: "Error uploading images",
+        errors: { details: error.message }
+      });
     }
-
-    await car.save();
-
-    sendSuccess(res, {
-      message: "Images uploaded successfully",
-      data: { images: car.images },
-    });
   } catch (error) {
     sendError(res, {
       statusCode: 400,
@@ -546,6 +585,7 @@ exports.uploadCarImages = async (req, res) => {
 exports.deleteCarImage = async (req, res) => {
   try {
     const { id, imageUrl } = req.params;
+    const decodedImageUrl = decodeURIComponent(imageUrl);
 
     const car = await Car.findById(id);
     if (!car) {
@@ -556,14 +596,17 @@ exports.deleteCarImage = async (req, res) => {
     }
 
     // Remove the image URL from the car's images array
-    car.images = car.images.filter(
-      (img) => img !== decodeURIComponent(imageUrl)
-    );
+    car.images = car.images.filter(img => img !== decodedImageUrl);
+
+    // Delete the image from S3
+    try {
+      await deleteFile(decodedImageUrl);
+    } catch (error) {
+      console.error("Error deleting image from S3:", error);
+      // Continue with updating the car even if S3 deletion fails
+    }
 
     await car.save();
-
-    // Optionally, delete the actual file from the server
-    // This would require parsing the URL to get the file path
 
     sendSuccess(res, {
       message: "Image deleted successfully",

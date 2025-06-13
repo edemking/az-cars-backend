@@ -74,9 +74,6 @@ app.options('*', cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static files from uploads directory
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
-
 // Connect to MongoDB
 connectDB();
 
@@ -119,3 +116,22 @@ server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log('Socket.IO enabled for real-time communications');
 }); 
+
+
+db.createUser({
+  user: "az_cars_user",
+  pwd: "az_cars_password",
+  roles: [ { role: "readWrite", db: "az_cars" } ]
+})
+
+db.createUser({
+  user: "adminUser",
+  pwd: "admin123", 
+  roles: [ { role: "userAdminAnyDatabase", db: "admin" } ]
+})
+
+db.createUser({
+  user: "adminUser",
+  pwd: "admin123", 
+  roles: [ { role: "userAdminAnyDatabase", db: "admin" } ]
+})

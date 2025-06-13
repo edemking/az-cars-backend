@@ -242,7 +242,7 @@ const sendPushNotificationToUsersForNewAuction = async (auction, populatedAuctio
     // Prepare notification data
     const notificationData = {
       title: 'New Auction Available! 🚗',
-      body: `${carDetails} auction just started! Starting bid: $${auction.startingPrice.toLocaleString()}. Auction ends in ${durationHours}h.`,
+      body: `${carDetails} auction just started! Starting bid: AED ${auction.startingPrice.toLocaleString()}. Auction ends in ${durationHours}h.`,
       sound: 'default',
       data: {
         type: 'new_auction_created',

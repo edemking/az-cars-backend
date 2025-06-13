@@ -47,7 +47,7 @@ const createBidPlacedNotification = async (bid, auction) => {
       user: bid.bidder,
       type: 'bid_placed',
       title: 'Bid Placed Successfully',
-      description: `Your bid of $${bid.amount.toLocaleString()} has been placed on ${auction.auctionTitle}`,
+      description: `Your bid of AED ${bid.amount.toLocaleString()} has been placed on ${auction.auctionTitle}`,
       auction: auction._id,
       bid: bid._id,
       metadata: {
@@ -94,7 +94,7 @@ const createOutbidNotifications = async (newBid, auction) => {
         user: bidder._id,
         type: 'outbid',
         title: 'You\'ve Been Outbid!',
-        description: `Someone placed a higher bid of $${newBid.amount.toLocaleString()} on ${auction.auctionTitle}`,
+        description: `Someone placed a higher bid of AED ${newBid.amount.toLocaleString()} on ${auction.auctionTitle}`,
         auction: auction._id,
         bid: newBid._id,
         metadata: {
@@ -114,7 +114,7 @@ const createOutbidNotifications = async (newBid, auction) => {
         newBid.bidder,
         {
           title: 'New Bid Alert!',
-          body: `Someone placed a bid of $${newBid.amount.toLocaleString()} on ${auction.auctionTitle}`,
+          body: `Someone placed a bid of AED ${newBid.amount.toLocaleString()} on ${auction.auctionTitle}`,
           data: {
             type: 'new_bid',
             auctionId: auction._id.toString(),
@@ -156,7 +156,7 @@ const createAuctionWonNotification = async (auction, winningBid) => {
       user: auction.winner,
       type: 'auction_won',
       title: 'Congratulations! You Won!',
-      description: `You won the auction for ${auction.auctionTitle} with a bid of $${winningBid.amount.toLocaleString()}`,
+      description: `You won the auction for ${auction.auctionTitle} with a bid of AED ${winningBid.amount.toLocaleString()}`,
       auction: auction._id,
       bid: winningBid._id,
       metadata: {
@@ -203,7 +203,7 @@ const createAuctionLostNotifications = async (auction, winningBid) => {
         user: bidder._id,
         type: 'auction_lost',
         title: 'Auction Ended',
-        description: `The auction for ${auction.auctionTitle} has ended. The winning bid was $${winningBid.amount.toLocaleString()}`,
+        description: `The auction for ${auction.auctionTitle} has ended. The winning bid was AED ${winningBid.amount.toLocaleString()}`,
         auction: auction._id,
         bid: winningBid._id,
         metadata: {
@@ -252,7 +252,7 @@ const createAuctionEndingSoonNotifications = async (auction) => {
         user: bidder._id,
         type: 'auction_ending_soon',
         title: 'Auction Ending Soon!',
-        description: `The auction for ${auction.auctionTitle} ends in ${timeRemaining} minutes. Current highest bid: $${auction.currentHighestBid.toLocaleString()}`,
+        description: `The auction for ${auction.auctionTitle} ends in ${timeRemaining} minutes. Current highest bid: AED ${auction.currentHighestBid.toLocaleString()}`,
         auction: auction._id,
         metadata: {
           bidAmount: auction.currentHighestBid,
@@ -295,7 +295,7 @@ const createNewBidOnAuctionNotification = async (bid, auction) => {
       user: auction.createdBy,
       type: 'new_bid_on_auction',
       title: 'New Bid on Your Auction',
-      description: `Someone placed a bid of $${bid.amount.toLocaleString()} on your auction: ${auction.auctionTitle}`,
+      description: `Someone placed a bid of AED ${bid.amount.toLocaleString()} on your auction: ${auction.auctionTitle}`,
       auction: auction._id,
       bid: bid._id,
       metadata: {
@@ -346,7 +346,7 @@ const createNewAuctionNotifications = async (auction) => {
         user: user._id,
         type: 'new_auction_created',
         title: 'New Auction Available!',
-        description: `A new auction for ${auction.auctionTitle} (${carDetails}) has started. Starting price: $${auction.startingPrice.toLocaleString()}`,
+        description: `A new auction for ${auction.auctionTitle} (${carDetails}) has started. Starting price: AED ${auction.startingPrice.toLocaleString()}`,
         auction: auction._id,
         metadata: {
           auctionTitle: auction.auctionTitle,
