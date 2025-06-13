@@ -1060,11 +1060,7 @@ exports.getDashboardData = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse("User not authenticated", 401));
   }
 
-  // Calculate date 24 hours ago
-  const oneDayAgo = new Date();
-  oneDayAgo.setHours(oneDayAgo.getHours() - 24);
-
-  // Calculate date 24 hours from now
+  // Calculate date 24 hours from now for ending soon auctions
   const oneDayFromNow = new Date();
   oneDayFromNow.setHours(oneDayFromNow.getHours() + 24);
 
@@ -1110,32 +1106,33 @@ exports.getDashboardData = asyncHandler(async (req, res, next) => {
     ],
   };
 
-  // Get 3 new live auctions
+  // Get current auctions (not ended yet)
   let newLiveAuctions = await Auction.find({
-    status: "active",
-    startTime: { $gte: oneDayAgo },
     endTime: { $gt: now },
   })
     .populate(carPopulateConfig)
     .populate("createdBy", "firstName lastName")
-    .sort({ startTime: -1 })
+    .sort({ endTime: 1 }) // Sort by closest to ending
     .limit(3);
 
-  // If no new live auctions, fallback to recent past auctions
+  // If no current auctions, get the most recent ended auction
   if (newLiveAuctions.length === 0) {
-    newLiveAuctions = await Auction.find({
-      status: { $in: ["completed", "cancelled"] },
+    const mostRecentAuction = await Auction.findOne({
+      endTime: { $lt: now },
+      status: { $ne: "cancelled" } // Still exclude cancelled auctions
     })
       .populate(carPopulateConfig)
       .populate("createdBy", "firstName lastName")
       .populate("winner", "firstName lastName")
-      .sort({ endTime: -1 })
-      .limit(3);
+      .sort({ endTime: -1 });
+
+    if (mostRecentAuction) {
+      newLiveAuctions = [mostRecentAuction];
+    }
   }
 
-  // Get 3 ending soon auctions
+  // Get auctions ending soon (within next 24 hours)
   let endingSoonAuctions = await Auction.find({
-    status: "active",
     endTime: { $gt: now, $lte: oneDayFromNow },
   })
     .populate(carPopulateConfig)
@@ -1143,22 +1140,31 @@ exports.getDashboardData = asyncHandler(async (req, res, next) => {
     .sort({ endTime: 1 })
     .limit(3);
 
-  // If no ending soon auctions, fallback to recent past auctions (different from newLiveAuctions)
+  // If no ending soon auctions, get a different most recent ended auction
   if (endingSoonAuctions.length === 0) {
-    // Get recent completed auctions, excluding any that might already be in newLiveAuctions
-    const excludeIds = newLiveAuctions.map(auction => auction._id);
-    endingSoonAuctions = await Auction.find({
-      status: { $in: ["completed", "cancelled"] },
-      _id: { $nin: excludeIds }
-    })
+    // Get a different recent ended auction than the one used for newLiveAuctions
+    const excludeId = newLiveAuctions.length > 0 ? newLiveAuctions[0]._id : null;
+    const query = {
+      endTime: { $lt: now },
+      status: { $ne: "cancelled" } // Still exclude cancelled auctions
+    };
+    
+    if (excludeId) {
+      query._id = { $ne: excludeId };
+    }
+
+    const differentRecentAuction = await Auction.findOne(query)
       .populate(carPopulateConfig)
       .populate("createdBy", "firstName lastName")
       .populate("winner", "firstName lastName")
-      .sort({ endTime: -1 })
-      .limit(3);
+      .sort({ endTime: -1 });
+
+    if (differentRecentAuction) {
+      endingSoonAuctions = [differentRecentAuction];
+    }
   }
 
-  // Get user's won auctions based on winning bids
+  // Get user's won auctions based on winning bids and end time
   const userWinningBids = await Bid.find({
     bidder: req.user.id,
     isWinningBid: true
@@ -1169,7 +1175,7 @@ exports.getDashboardData = asyncHandler(async (req, res, next) => {
   const wonAuctions = await Auction.find({
     _id: { $in: winningAuctionIds },
     endTime: { $lt: now },
-    status: { $ne: "cancelled" }
+    status: { $ne: "cancelled" } // Still exclude cancelled auctions
   })
     .populate(carPopulateConfig)
     .sort({ endTime: -1 });
@@ -1182,8 +1188,8 @@ exports.getDashboardData = asyncHandler(async (req, res, next) => {
     },
     meta: {
       fallbackUsed: {
-        newLiveAuctions: newLiveAuctions.length > 0 && newLiveAuctions[0].status !== "active",
-        endingSoonAuctions: endingSoonAuctions.length > 0 && endingSoonAuctions[0].status !== "active"
+        newLiveAuctions: newLiveAuctions.length > 0 && newLiveAuctions[0].endTime < now,
+        endingSoonAuctions: endingSoonAuctions.length > 0 && endingSoonAuctions[0].endTime < now
       }
     }
   });
