@@ -1140,27 +1140,19 @@ exports.getDashboardData = asyncHandler(async (req, res, next) => {
     .sort({ endTime: 1 })
     .limit(3);
 
-  // If no ending soon auctions, get a different most recent ended auction
+  // If no ending soon auctions, get the most recent ended auction
   if (endingSoonAuctions.length === 0) {
-    // Get a different recent ended auction than the one used for newLiveAuctions
-    const excludeId = newLiveAuctions.length > 0 ? newLiveAuctions[0]._id : null;
-    const query = {
+    const mostRecentEndedAuction = await Auction.findOne({
       endTime: { $lt: now },
       status: { $ne: "cancelled" } // Still exclude cancelled auctions
-    };
-    
-    if (excludeId) {
-      query._id = { $ne: excludeId };
-    }
-
-    const differentRecentAuction = await Auction.findOne(query)
+    })
       .populate(carPopulateConfig)
       .populate("createdBy", "firstName lastName")
       .populate("winner", "firstName lastName")
       .sort({ endTime: -1 });
 
-    if (differentRecentAuction) {
-      endingSoonAuctions = [differentRecentAuction];
+    if (mostRecentEndedAuction) {
+      endingSoonAuctions = [mostRecentEndedAuction];
     }
   }
 
