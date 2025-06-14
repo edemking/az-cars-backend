@@ -967,165 +967,95 @@ exports.searchCars = async (req, res) => {
       if (maxMileage) filter.mileage.$lte = parseInt(maxMileage);
     }
 
-    // Build aggregation pipeline for complex searches
-    const pipeline = [
-      // First, match basic filters
-      { $match: filter },
-      
-      // Lookup and populate related collections using actual collection names
-      {
-        $lookup: {
-          from: Make.collection.name,
-          localField: 'make',
-          foreignField: '_id',
-          as: 'makeData'
-        }
-      },
-      {
-        $lookup: {
-          from: Model.collection.name,
-          localField: 'model',
-          foreignField: '_id',
-          as: 'modelData'
-        }
-      },
-      {
-        $lookup: {
-          from: BodyColor.collection.name,
-          localField: 'bodyColor',
-          foreignField: '_id',
-          as: 'bodyColorData'
-        }
-      },
-      {
-        $lookup: {
-          from: FuelType.collection.name,
-          localField: 'fuelType',
-          foreignField: '_id',
-          as: 'fuelTypeData'
-        }
-      },
-      {
-        $lookup: {
-          from: VehicleType.collection.name,
-          localField: 'vehicleType',
-          foreignField: '_id',
-          as: 'vehicleTypeData'
-        }
-      }
-    ];
+    // Use a simpler approach with populate instead of aggregation
+    let query = Car.find(filter);
 
-    // Add text search and name matching filters
-    const textSearchConditions = [];
-
-    // General search across multiple fields
-    if (search) {
-      const searchRegex = { $regex: search, $options: 'i' };
-      textSearchConditions.push({
-        $or: [
-          { 'makeData.name': searchRegex },
-          { 'modelData.name': searchRegex },
-          { 'bodyColorData.name': searchRegex },
-          { 'fuelTypeData.name': searchRegex },
-          { 'vehicleTypeData.name': searchRegex },
-          { description: searchRegex }
-        ]
-      });
-    }
-
-    // Specific field searches
-    if (make) {
-      textSearchConditions.push({
-        'makeData.name': { $regex: make, $options: 'i' }
-      });
-    }
-
-    if (model) {
-      textSearchConditions.push({
-        'modelData.name': { $regex: model, $options: 'i' }
-      });
-    }
-
-    if (bodyColor) {
-      textSearchConditions.push({
-        'bodyColorData.name': { $regex: bodyColor, $options: 'i' }
-      });
-    }
-
-    if (fuelType) {
-      textSearchConditions.push({
-        'fuelTypeData.name': { $regex: fuelType, $options: 'i' }
-      });
-    }
-
-    if (vehicleType) {
-      textSearchConditions.push({
-        'vehicleTypeData.name': { $regex: vehicleType, $options: 'i' }
-      });
-    }
-
-    // Add text search conditions to pipeline
-    if (textSearchConditions.length > 0) {
-      pipeline.push({
-        $match: {
-          $and: textSearchConditions
-        }
-      });
-    }
-
-    // Add pagination
+    // Apply pagination
     const skip = (parseInt(page) - 1) * parseInt(limit);
-    pipeline.push(
-      { $skip: skip },
-      { $limit: parseInt(limit) }
-    );
+    query = query.skip(skip).limit(parseInt(limit));
 
-    console.log('Search pipeline:', JSON.stringify(pipeline, null, 2));
+    // Populate related fields
+    query = query.populate('make', 'name country logo')
+                 .populate('model', 'name startYear endYear image')
+                 .populate('carDrive', 'name type description')
+                 .populate('bodyColor', 'name hexCode type')
+                 .populate('carOptions', 'name category description')
+                 .populate('fuelType', 'name')
+                 .populate('country', 'name')
+                 .populate('vehicleType', 'name category')
+                 .populate({
+                   path: 'componentSummary',
+                   populate: {
+                     path: 'engine steering centralLock centralLocking interiorButtons gearbox dashLight audioSystem windowControl electricComponents acHeating dashboard roof breaks suspension gloveBox frontSeats exhaust clutch backSeat driveTrain',
+                     model: 'Rating'
+                   }
+                 })
+                 .populate({
+                   path: 'interiorAndExterior',
+                   populate: {
+                     path: 'frontBumber bonnet roof reerBumber driverSideFrontWing driverSideFrontDoor driverSideRearDoor driverRearQuarter passengerSideFrontWing passengerSideFrontDoor passengerSideRearDoor passengerRearQuarter driverSideFrontTyre driverSideRearTyre passengerSideFrontTyre passengerSideRearTyre trunk frontGlass rearGlass leftGlass rightGlass',
+                     model: 'CarCondition'
+                   }
+                 })
+                 .populate('approvedBy', 'name email')
+                 .populate('archivedBy', 'name email');
 
-    // Execute the aggregation
-    const cars = await Car.aggregate(pipeline);
+    // Execute the query
+    const cars = await query.exec();
 
-    // Get total count for pagination (without limit/skip)
-    const countPipeline = pipeline.slice(0, -2); // Remove skip and limit
-    countPipeline.push({ $count: "total" });
-    const countResult = await Car.aggregate(countPipeline);
-    const totalCount = countResult.length > 0 ? countResult[0].total : 0;
+    // Filter results based on text search criteria
+    let filteredCars = cars;
 
-    // Populate the remaining fields for the results
-    const populatedCars = await Car.populate(cars, [
-      { path: 'make', select: 'name country logo' },
-      { path: 'model', select: 'name startYear endYear image' },
-      { path: 'carDrive', select: 'name type description' },
-      { path: 'bodyColor', select: 'name hexCode type' },
-      { path: 'carOptions', select: 'name category description' },
-      { path: 'fuelType', select: 'name' },
-      { path: 'country', select: 'name' },
-      { path: 'vehicleType', select: 'name category' },
-      {
-        path: 'componentSummary',
-        populate: {
-          path: 'engine steering centralLock centralLocking interiorButtons gearbox dashLight audioSystem windowControl electricComponents acHeating dashboard roof breaks suspension gloveBox frontSeats exhaust clutch backSeat driveTrain',
-          model: 'Rating'
+    if (search || make || model || bodyColor || fuelType || vehicleType) {
+      filteredCars = cars.filter(car => {
+        let matches = true;
+
+        // General search
+        if (search) {
+          const searchLower = search.toLowerCase();
+          const makeMatch = car.make?.name?.toLowerCase().includes(searchLower);
+          const modelMatch = car.model?.name?.toLowerCase().includes(searchLower);
+          const bodyColorMatch = car.bodyColor?.name?.toLowerCase().includes(searchLower);
+          const fuelTypeMatch = car.fuelType?.name?.toLowerCase().includes(searchLower);
+          const vehicleTypeMatch = car.vehicleType?.name?.toLowerCase().includes(searchLower);
+          const descriptionMatch = car.description?.toLowerCase().includes(searchLower);
+          
+          matches = matches && (makeMatch || modelMatch || bodyColorMatch || fuelTypeMatch || vehicleTypeMatch || descriptionMatch);
         }
-      },
-      {
-        path: 'interiorAndExterior',
-        populate: {
-          path: 'frontBumber bonnet roof reerBumber driverSideFrontWing driverSideFrontDoor driverSideRearDoor driverRearQuarter passengerSideFrontWing passengerSideFrontDoor passengerSideRearDoor passengerRearQuarter driverSideFrontTyre driverSideRearTyre passengerSideFrontTyre passengerSideRearTyre trunk frontGlass rearGlass leftGlass rightGlass',
-          model: 'CarCondition'
-        }
-      },
-      { path: 'approvedBy', select: 'name email' },
-      { path: 'archivedBy', select: 'name email' }
-    ]);
 
-    // Calculate pagination info
+        // Specific field searches
+        if (make && matches) {
+          matches = matches && car.make?.name?.toLowerCase().includes(make.toLowerCase());
+        }
+
+        if (model && matches) {
+          matches = matches && car.model?.name?.toLowerCase().includes(model.toLowerCase());
+        }
+
+        if (bodyColor && matches) {
+          matches = matches && car.bodyColor?.name?.toLowerCase().includes(bodyColor.toLowerCase());
+        }
+
+        if (fuelType && matches) {
+          matches = matches && car.fuelType?.name?.toLowerCase().includes(fuelType.toLowerCase());
+        }
+
+        if (vehicleType && matches) {
+          matches = matches && car.vehicleType?.name?.toLowerCase().includes(vehicleType.toLowerCase());
+        }
+
+        return matches;
+      });
+    }
+
+    // Get total count for pagination
+    const totalCount = await Car.countDocuments(filter);
     const totalPages = Math.ceil(totalCount / parseInt(limit));
     const hasNextPage = parseInt(page) < totalPages;
     const hasPrevPage = parseInt(page) > 1;
 
     sendSuccess(res, {
-      data: populatedCars,
+      data: filteredCars,
       pagination: {
         currentPage: parseInt(page),
         totalPages,
@@ -1150,48 +1080,6 @@ exports.searchCars = async (req, res) => {
     });
   } catch (error) {
     console.error('Search error:', error);
-    console.error('Error details:', {
-      message: error.message,
-      stack: error.stack,
-      name: error.name
-    });
-    
-    // Try a simpler search as fallback
-    try {
-      console.log('Attempting fallback search...');
-      const { search } = req.query;
-      const fallbackFilter = {
-        isArchived: false
-      };
-      
-      // Add simple text search conditions
-      if (search) {
-        fallbackFilter.$or = [
-          { description: { $regex: search, $options: 'i' } }
-        ];
-      }
-      
-      const fallbackCars = await Car.find(fallbackFilter)
-        .populate('make', 'name')
-        .populate('model', 'name')
-        .populate('bodyColor', 'name')
-        .populate('fuelType', 'name')
-        .populate('vehicleType', 'name')
-        .limit(parseInt(req.query.limit) || 10);
-      
-      console.log('Fallback search results:', fallbackCars.length);
-      
-      return sendSuccess(res, {
-        data: fallbackCars,
-        message: 'Fallback search used due to aggregation error',
-        searchCriteria: { search },
-        fallback: true,
-        originalError: error.message
-      });
-    } catch (fallbackError) {
-      console.error('Fallback search also failed:', fallbackError);
-    }
-    
     sendError(res, { 
       message: 'Error searching cars',
       errors: error.message 
