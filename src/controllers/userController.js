@@ -315,17 +315,41 @@ exports.activateUser = async (req, res) => {
 exports.updateIdDocuments = async (req, res) => {
   try {
     const updates = {};
+    const oldUser = await User.findById(req.params.id);
+    
+    if (!oldUser) {
+      return sendError(res, {
+        statusCode: 404,
+        message: 'User not found'
+      });
+    }
     
     // Handle file uploads for ID documents
     if (req.files) {
-      // Process ID Front
-      if (req.files.idFront && req.files.idFront.length > 0) {
-        updates.idFront = getFileUrl(req, req.files.idFront[0]);
-      }
-      
-      // Process ID Back
-      if (req.files.idBack && req.files.idBack.length > 0) {
-        updates.idBack = getFileUrl(req, req.files.idBack[0]);
+      try {
+        // Process ID Front
+        if (req.files.idFront && req.files.idFront.length > 0) {
+          // Delete old ID front if exists
+          if (oldUser.idFront) {
+            await deleteFile(oldUser.idFront);
+          }
+          updates.idFront = await getFileUrl(req, req.files.idFront[0]);
+        }
+        
+        // Process ID Back
+        if (req.files.idBack && req.files.idBack.length > 0) {
+          // Delete old ID back if exists
+          if (oldUser.idBack) {
+            await deleteFile(oldUser.idBack);
+          }
+          updates.idBack = await getFileUrl(req, req.files.idBack[0]);
+        }
+      } catch (error) {
+        return sendError(res, {
+          statusCode: 400,
+          message: "Error uploading ID documents",
+          errors: { details: error.message }
+        });
       }
     }
 
@@ -342,13 +366,6 @@ exports.updateIdDocuments = async (req, res) => {
       updates,
       { new: true, runValidators: true }
     ).select('-password').populate('role');
-
-    if (!user) {
-      return sendError(res, {
-        statusCode: 404,
-        message: 'User not found'
-      });
-    }
 
     sendSuccess(res, {
       message: 'ID documents updated successfully',

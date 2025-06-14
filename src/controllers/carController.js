@@ -972,10 +972,10 @@ exports.searchCars = async (req, res) => {
       // First, match basic filters
       { $match: filter },
       
-      // Lookup and populate related collections
+      // Lookup and populate related collections using actual collection names
       {
         $lookup: {
-          from: 'makes',
+          from: Make.collection.name,
           localField: 'make',
           foreignField: '_id',
           as: 'makeData'
@@ -983,7 +983,7 @@ exports.searchCars = async (req, res) => {
       },
       {
         $lookup: {
-          from: 'models',
+          from: Model.collection.name,
           localField: 'model',
           foreignField: '_id',
           as: 'modelData'
@@ -991,7 +991,7 @@ exports.searchCars = async (req, res) => {
       },
       {
         $lookup: {
-          from: 'bodycolors',
+          from: BodyColor.collection.name,
           localField: 'bodyColor',
           foreignField: '_id',
           as: 'bodyColorData'
@@ -999,7 +999,7 @@ exports.searchCars = async (req, res) => {
       },
       {
         $lookup: {
-          from: 'fueltypes',
+          from: FuelType.collection.name,
           localField: 'fuelType',
           foreignField: '_id',
           as: 'fuelTypeData'
@@ -1007,7 +1007,7 @@ exports.searchCars = async (req, res) => {
       },
       {
         $lookup: {
-          from: 'vehicletypes',
+          from: VehicleType.collection.name,
           localField: 'vehicleType',
           foreignField: '_id',
           as: 'vehicleTypeData'
@@ -1080,6 +1080,8 @@ exports.searchCars = async (req, res) => {
       { $limit: parseInt(limit) }
     );
 
+    console.log('Search pipeline:', JSON.stringify(pipeline, null, 2));
+
     // Execute the aggregation
     const cars = await Car.aggregate(pipeline);
 
@@ -1148,9 +1150,51 @@ exports.searchCars = async (req, res) => {
     });
   } catch (error) {
     console.error('Search error:', error);
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
+    
+    // Try a simpler search as fallback
+    try {
+      console.log('Attempting fallback search...');
+      const { search } = req.query;
+      const fallbackFilter = {
+        isArchived: false
+      };
+      
+      // Add simple text search conditions
+      if (search) {
+        fallbackFilter.$or = [
+          { description: { $regex: search, $options: 'i' } }
+        ];
+      }
+      
+      const fallbackCars = await Car.find(fallbackFilter)
+        .populate('make', 'name')
+        .populate('model', 'name')
+        .populate('bodyColor', 'name')
+        .populate('fuelType', 'name')
+        .populate('vehicleType', 'name')
+        .limit(parseInt(req.query.limit) || 10);
+      
+      console.log('Fallback search results:', fallbackCars.length);
+      
+      return sendSuccess(res, {
+        data: fallbackCars,
+        message: 'Fallback search used due to aggregation error',
+        searchCriteria: { search },
+        fallback: true,
+        originalError: error.message
+      });
+    } catch (fallbackError) {
+      console.error('Fallback search also failed:', fallbackError);
+    }
+    
     sendError(res, { 
       message: 'Error searching cars',
-      error: error.message 
+      errors: error.message 
     });
   }
 };
