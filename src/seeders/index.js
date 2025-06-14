@@ -16,8 +16,6 @@ const seedCountries = require('./countrySeeder');
 const seedRatings = require('./ratingSeeder');
 const seedCarConditions = require('./carConditionSeeder');
 const seedCarDrives = require('./carDriveSeeder');
-const seedServiceHistory = require('./serviceHistorySeeder');
-const seedCars = require('./carSeeder');
 
 const seedDatabase = async () => {
   try {
@@ -27,7 +25,7 @@ const seedDatabase = async () => {
     // Run all seeders in order
     console.log('Starting to seed reference data...');
     
-    // First seed all reference data
+    // Seed all reference data
     await seedMakes();
     await seedModels();
     await seedFuelTypes();
@@ -41,14 +39,6 @@ const seedDatabase = async () => {
     await seedCarDrives();
     
     console.log('Reference data seeded successfully');
-    
-    // Then seed cars first, then service history
-    console.log('Starting to seed cars...');
-    await seedCars();
-    
-    console.log('Starting to seed service history...');
-    await seedServiceHistory();
-    
     console.log('Database seeding completed successfully');
     
     await mongoose.connection.close();
