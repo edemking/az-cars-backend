@@ -919,15 +919,9 @@ exports.getAuctionsByType = asyncHandler(async (req, res, next) => {
 // @route   GET /api/auctions/new-live
 // @access  Public
 exports.getNewLiveAuctions = asyncHandler(async (req, res, next) => {
-  // Calculate date 24 hours ago
-  const oneDayAgo = new Date();
-  oneDayAgo.setHours(oneDayAgo.getHours() - 24);
-
   const now = new Date();
 
   const auctions = await Auction.find({
-    status: "active",
-    startTime: { $gte: oneDayAgo },
     endTime: { $gt: now },
   })
     .populate({
@@ -1108,6 +1102,7 @@ exports.getDashboardData = asyncHandler(async (req, res, next) => {
 
   // Get current auctions (not ended yet)
   let newLiveAuctions = await Auction.find({
+    status: "active",
     endTime: { $gt: now },
   })
     .populate(carPopulateConfig)
