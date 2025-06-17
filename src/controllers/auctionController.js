@@ -922,6 +922,7 @@ exports.getNewLiveAuctions = asyncHandler(async (req, res, next) => {
   const now = new Date();
 
   const auctions = await Auction.find({
+    status: "active",
     endTime: { $gt: now },
   })
     .populate({
@@ -967,8 +968,7 @@ exports.getNewLiveAuctions = asyncHandler(async (req, res, next) => {
       ],
     })
     .populate("createdBy", "firstName lastName profilePicture")
-    .sort({ startTime: -1 })
-    .limit(3);
+    .sort({ startTime: -1 });
 
   sendSuccess(res, {
     data: auctions,
