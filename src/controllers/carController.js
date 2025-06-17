@@ -165,7 +165,8 @@ exports.getCars = async (req, res) => {
         },
       })
       .populate("approvedBy", "name email")
-      .populate("archivedBy", "name email");
+      .populate("archivedBy", "name email")
+      .sort({ createdAt: -1 });
       
     sendSuccess(res, { data: cars });
   } catch (error) {
