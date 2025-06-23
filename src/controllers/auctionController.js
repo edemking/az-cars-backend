@@ -4,14 +4,19 @@ const Car = require("../models/cars/Car");
 const asyncHandler = require("../middleware/asyncHandler");
 const ErrorResponse = require("../utils/errorResponse");
 const { sendSuccess, sendError } = require("../utils/responseHandler");
-const { emitNewBid, emitAuctionUpdate, emitAuctionCompleted, getAuctionRoomClients } = require("../utils/socketEvents");
+const {
+  emitNewBid,
+  emitAuctionUpdate,
+  emitAuctionCompleted,
+  getAuctionRoomClients,
+} = require("../utils/socketEvents");
 const {
   createBidPlacedNotification,
   createOutbidNotifications,
   createAuctionWonNotification,
   createAuctionLostNotifications,
   createNewBidOnAuctionNotification,
-  createNewAuctionNotifications
+  createNewAuctionNotifications,
 } = require("../utils/notificationService");
 
 // @desc    Create a new auction
@@ -41,9 +46,14 @@ exports.createAuction = asyncHandler(async (req, res, next) => {
   setImmediate(async () => {
     try {
       await createNewAuctionNotifications(auction);
-      console.log(`New auction notifications triggered for auction ${auction._id}`);
+      console.log(
+        `New auction notifications triggered for auction ${auction._id}`
+      );
     } catch (notificationError) {
-      console.error('Error creating new auction notifications:', notificationError);
+      console.error(
+        "Error creating new auction notifications:",
+        notificationError
+      );
       // Don't fail auction creation if notifications fail
     }
   });
@@ -76,7 +86,8 @@ exports.getAuctions = asyncHandler(async (req, res, next) => {
   const auctions = await Auction.find(query)
     .populate({
       path: "car",
-      select: "make model year price images mileage carOptions bodyColor cylinder fuelType transmission carDrive country vehicleType",
+      select:
+        "make model year price images mileage carOptions bodyColor cylinder fuelType transmission carDrive country vehicleType",
       populate: [
         {
           path: "make",
@@ -113,21 +124,22 @@ exports.getAuctions = asyncHandler(async (req, res, next) => {
       ],
     })
     .populate("createdBy", "firstName lastName")
-    .populate("winner", "firstName lastName");
+    .populate("winner", "firstName lastName")
+    .sort({ createdAt: -1 });
 
   // Add sold/unsold status to each auction
-  const auctionsWithStatus = auctions.map(auction => {
+  const auctionsWithStatus = auctions.map((auction) => {
     const auctionObj = auction.toObject();
-    
+
     // Determine sale status
-    if (auctionObj.status === 'completed') {
-      auctionObj.saleStatus = auctionObj.winner ? 'sold' : 'unsold';
-    } else if (auctionObj.status === 'cancelled') {
-      auctionObj.saleStatus = 'unsold';
+    if (auctionObj.status === "completed") {
+      auctionObj.saleStatus = auctionObj.winner ? "sold" : "unsold";
+    } else if (auctionObj.status === "cancelled") {
+      auctionObj.saleStatus = "unsold";
     } else {
-      auctionObj.saleStatus = 'active'; // For active auctions
+      auctionObj.saleStatus = "active"; // For active auctions
     }
-    
+
     return auctionObj;
   });
 
@@ -148,47 +160,47 @@ exports.getAuction = asyncHandler(async (req, res, next) => {
       path: "car",
       populate: [
         {
-          path: "make"
+          path: "make",
         },
         {
-          path: "model"
+          path: "model",
         },
         {
-          path: "carDrive"
+          path: "carDrive",
         },
         {
-          path: "bodyColor"
+          path: "bodyColor",
         },
         {
-          path: "carOptions"
+          path: "carOptions",
         },
         {
-          path: "fuelType"
+          path: "fuelType",
         },
         {
-          path: "serviceHistory"
+          path: "serviceHistory",
         },
         {
-          path: "country"
+          path: "country",
         },
         {
-          path: "transmission"
+          path: "transmission",
         },
         {
           path: "componentSummary",
           populate: {
             path: "engine steering centralLock centralLocking interiorButtons gearbox dashLight audioSystem windowControl electricComponents acHeating dashboard roof breaks suspension gloveBox frontSeats exhaust clutch backSeat driveTrain",
-            model: "Rating"
-          }
+            model: "Rating",
+          },
         },
         {
           path: "interiorAndExterior",
           populate: {
             path: "frontBumber bonnet roof reerBumber driverSideFrontWing driverSideFrontDoor driverSideRearDoor driverRearQuarter passengerSideFrontWing passengerSideFrontDoor passengerSideRearDoor passengerRearQuarter driverSideFrontTyre driverSideRearTyre passengerSideFrontTyre passengerSideRearTyre trunk frontGlass rearGlass leftGlass rightGlass",
-            model: "CarCondition"
-          }
-        }
-      ]
+            model: "CarCondition",
+          },
+        },
+      ],
     })
     .populate("createdBy", "firstName lastName profilePicture")
     .populate("winner", "firstName lastName profilePicture");
@@ -363,12 +375,12 @@ exports.placeBid = asyncHandler(async (req, res, next) => {
 
   // Set all other bids for this auction to not be winning bids
   await Bid.updateMany(
-    { 
-      auction: auction._id, 
-      _id: { $ne: bid._id } // Exclude the current bid
+    {
+      auction: auction._id,
+      _id: { $ne: bid._id }, // Exclude the current bid
     },
-    { 
-      $set: { isWinningBid: false } 
+    {
+      $set: { isWinningBid: false },
     }
   );
 
@@ -384,12 +396,12 @@ exports.placeBid = asyncHandler(async (req, res, next) => {
     auction.status = "completed";
     auction.winner = req.user.id;
     await bid.save();
-    
+
     // Emit auction completion event
     emitAuctionCompleted(auction._id.toString(), {
       winner: req.user,
       finalBid: bid,
-      auction: auction
+      auction: auction,
     });
   }
 
@@ -403,8 +415,8 @@ exports.placeBid = asyncHandler(async (req, res, next) => {
       currentHighestBid: auction.currentHighestBid,
       totalBids: auction.totalBids,
       status: auction.status,
-      winner: auction.winner
-    }
+      winner: auction.winner,
+    },
   });
 
   // If auction status changed, emit auction update
@@ -429,7 +441,7 @@ exports.placeBid = asyncHandler(async (req, res, next) => {
       await createAuctionLostNotifications(auction, bid);
     }
   } catch (notificationError) {
-    console.error('Error creating notifications:', notificationError);
+    console.error("Error creating notifications:", notificationError);
     // Don't fail the bid placement if notifications fail
   }
 
@@ -471,7 +483,9 @@ exports.buyNowAuction = asyncHandler(async (req, res, next) => {
 
   // Check if buyNowPrice is set
   if (!auction.buyNowPrice || auction.buyNowPrice <= 0) {
-    return next(new ErrorResponse("This auction does not have a buy now price set", 400));
+    return next(
+      new ErrorResponse("This auction does not have a buy now price set", 400)
+    );
   }
 
   const buyNowAmount = auction.buyNowPrice;
@@ -482,17 +496,17 @@ exports.buyNowAuction = asyncHandler(async (req, res, next) => {
     bidder: req.user.id,
     amount: buyNowAmount,
     time: new Date(),
-    isWinningBid: true
+    isWinningBid: true,
   });
 
   // Set all other bids for this auction to not be winning bids
   await Bid.updateMany(
-    { 
-      auction: auction._id, 
-      _id: { $ne: bid._id } // Exclude the current bid
+    {
+      auction: auction._id,
+      _id: { $ne: bid._id }, // Exclude the current bid
     },
-    { 
-      $set: { isWinningBid: false } 
+    {
+      $set: { isWinningBid: false },
     }
   );
 
@@ -511,7 +525,7 @@ exports.buyNowAuction = asyncHandler(async (req, res, next) => {
   emitAuctionCompleted(auction._id.toString(), {
     winner: req.user,
     finalBid: bid,
-    auction: auction
+    auction: auction,
   });
 
   // Create notifications
@@ -529,7 +543,7 @@ exports.buyNowAuction = asyncHandler(async (req, res, next) => {
     await createAuctionWonNotification(auction, bid);
     await createAuctionLostNotifications(auction, bid);
   } catch (notificationError) {
-    console.error('Error creating notifications:', notificationError);
+    console.error("Error creating notifications:", notificationError);
     // Don't fail the buy now if notifications fail
   }
 
@@ -538,7 +552,7 @@ exports.buyNowAuction = asyncHandler(async (req, res, next) => {
     data: {
       auction,
       bid,
-      purchaseAmount: buyNowAmount
+      purchaseAmount: buyNowAmount,
     },
   });
 });
@@ -549,7 +563,8 @@ exports.buyNowAuction = asyncHandler(async (req, res, next) => {
 exports.getUserAuctions = asyncHandler(async (req, res, next) => {
   const auctions = await Auction.find({ createdBy: req.user.id }).populate({
     path: "car",
-    select: "make model year price images mileage carOptions bodyColor cylinder fuelType transmission carDrive country vehicleType",
+    select:
+      "make model year price images mileage carOptions bodyColor cylinder fuelType transmission carDrive country vehicleType",
     populate: [
       {
         path: "make",
@@ -609,7 +624,8 @@ exports.getUserBids = asyncHandler(async (req, res, next) => {
       select: "auctionTitle startingPrice currentHighestBid endTime status",
       populate: {
         path: "car",
-        select: "make model year images mileage carOptions bodyColor cylinder fuelType transmission carDrive country vehicleType",
+        select:
+          "make model year images mileage carOptions bodyColor cylinder fuelType transmission carDrive country vehicleType",
         populate: [
           {
             path: "make",
@@ -664,7 +680,8 @@ exports.getUserBids = asyncHandler(async (req, res, next) => {
   // Get the auctions
   const auctions = await Auction.find({ _id: { $in: auctionIds } }).populate({
     path: "car",
-    select: "make model year price images mileage carOptions bodyColor cylinder fuelType transmission carDrive country vehicleType",
+    select:
+      "make model year price images mileage carOptions bodyColor cylinder fuelType transmission carDrive country vehicleType",
     populate: [
       {
         path: "make",
@@ -747,20 +764,21 @@ exports.getUserWonBids = asyncHandler(async (req, res, next) => {
   // Find all winning bids by the user first
   const userWinningBids = await Bid.find({
     bidder: req.user.id,
-    isWinningBid: true
-  }).select('auction');
+    isWinningBid: true,
+  }).select("auction");
 
-  const winningAuctionIds = userWinningBids.map(bid => bid.auction);
+  const winningAuctionIds = userWinningBids.map((bid) => bid.auction);
 
   // Find all completed auctions where the user has winning bids
-  const wonAuctions = await Auction.find({ 
+  const wonAuctions = await Auction.find({
     _id: { $in: winningAuctionIds },
     endTime: { $lt: new Date() },
-    status: { $ne: "cancelled" }
+    status: { $ne: "cancelled" },
   })
     .populate({
       path: "car",
-      select: "make model year price images mileage carOptions bodyColor cylinder fuelType transmission carDrive country vehicleType description numberOfKeys warranty engineSize owner",
+      select:
+        "make model year price images mileage carOptions bodyColor cylinder fuelType transmission carDrive country vehicleType description numberOfKeys warranty engineSize owner",
       populate: [
         {
           path: "make",
@@ -803,19 +821,19 @@ exports.getUserWonBids = asyncHandler(async (req, res, next) => {
     .sort({ endTime: -1 });
 
   // Get the winning bids for these auctions
-  const auctionIds = wonAuctions.map(auction => auction._id);
+  const auctionIds = wonAuctions.map((auction) => auction._id);
   const winningBids = await Bid.find({
     auction: { $in: auctionIds },
     bidder: req.user.id,
-    isWinningBid: true
+    isWinningBid: true,
   }).sort({ createdAt: -1 });
 
   // Format the response to include win date and winning amount
-  const formattedWonBids = wonAuctions.map(auction => {
-    const correspondingBid = winningBids.find(bid => 
-      bid.auction.toString() === auction._id.toString()
+  const formattedWonBids = wonAuctions.map((auction) => {
+    const correspondingBid = winningBids.find(
+      (bid) => bid.auction.toString() === auction._id.toString()
     );
-    
+
     return {
       bidId: correspondingBid?._id,
       winningAmount: correspondingBid?.amount || auction.currentHighestBid,
@@ -830,7 +848,7 @@ exports.getUserWonBids = asyncHandler(async (req, res, next) => {
         status: auction.status,
         type: auction.type,
         createdAt: auction.createdAt,
-        car: auction.car
+        car: auction.car,
       },
     };
   });
@@ -864,7 +882,8 @@ exports.getAuctionsByType = asyncHandler(async (req, res, next) => {
   })
     .populate({
       path: "car",
-      select: "make model year price images mileage carOptions bodyColor cylinder fuelType transmission carDrive country vehicleType",
+      select:
+        "make model year price images mileage carOptions bodyColor cylinder fuelType transmission carDrive country vehicleType",
       populate: [
         {
           path: "make",
@@ -927,7 +946,8 @@ exports.getNewLiveAuctions = asyncHandler(async (req, res, next) => {
   })
     .populate({
       path: "car",
-      select: "make model year price images mileage carOptions bodyColor cylinder fuelType transmission carDrive country vehicleType",
+      select:
+        "make model year price images mileage carOptions bodyColor cylinder fuelType transmission carDrive country vehicleType",
       populate: [
         {
           path: "make",
@@ -994,7 +1014,8 @@ exports.getEndingSoonAuctions = asyncHandler(async (req, res, next) => {
   })
     .populate({
       path: "car",
-      select: "make model year price images mileage carOptions bodyColor cylinder fuelType transmission carDrive country vehicleType",
+      select:
+        "make model year price images mileage carOptions bodyColor cylinder fuelType transmission carDrive country vehicleType",
       populate: [
         {
           path: "make",
@@ -1063,7 +1084,8 @@ exports.getDashboardData = asyncHandler(async (req, res, next) => {
   // Common populate structure
   const carPopulateConfig = {
     path: "car",
-    select: "make model year price images mileage carOptions bodyColor cylinder fuelType transmission carDrive country vehicleType",
+    select:
+      "make model year price images mileage carOptions bodyColor cylinder fuelType transmission carDrive country vehicleType",
     populate: [
       {
         path: "make",
@@ -1114,7 +1136,7 @@ exports.getDashboardData = asyncHandler(async (req, res, next) => {
   if (newLiveAuctions.length === 0) {
     const mostRecentAuction = await Auction.findOne({
       endTime: { $lt: now },
-      status: { $ne: "cancelled" } // Still exclude cancelled auctions
+      status: { $ne: "cancelled" }, // Still exclude cancelled auctions
     })
       .populate(carPopulateConfig)
       .populate("createdBy", "firstName lastName")
@@ -1139,7 +1161,7 @@ exports.getDashboardData = asyncHandler(async (req, res, next) => {
   if (endingSoonAuctions.length === 0) {
     const mostRecentEndedAuction = await Auction.findOne({
       endTime: { $lt: now },
-      status: { $ne: "cancelled" } // Still exclude cancelled auctions
+      status: { $ne: "cancelled" }, // Still exclude cancelled auctions
     })
       .populate(carPopulateConfig)
       .populate("createdBy", "firstName lastName")
@@ -1154,15 +1176,15 @@ exports.getDashboardData = asyncHandler(async (req, res, next) => {
   // Get user's won auctions based on winning bids and end time
   const userWinningBids = await Bid.find({
     bidder: req.user.id,
-    isWinningBid: true
-  }).select('auction');
+    isWinningBid: true,
+  }).select("auction");
 
-  const winningAuctionIds = userWinningBids.map(bid => bid.auction);
+  const winningAuctionIds = userWinningBids.map((bid) => bid.auction);
 
   const wonAuctions = await Auction.find({
     _id: { $in: winningAuctionIds },
     endTime: { $lt: now },
-    status: { $ne: "cancelled" } // Still exclude cancelled auctions
+    status: { $ne: "cancelled" }, // Still exclude cancelled auctions
   })
     .populate(carPopulateConfig)
     .sort({ endTime: -1 });
@@ -1175,10 +1197,12 @@ exports.getDashboardData = asyncHandler(async (req, res, next) => {
     },
     meta: {
       fallbackUsed: {
-        newLiveAuctions: newLiveAuctions.length > 0 && newLiveAuctions[0].endTime < now,
-        endingSoonAuctions: endingSoonAuctions.length > 0 && endingSoonAuctions[0].endTime < now
-      }
-    }
+        newLiveAuctions:
+          newLiveAuctions.length > 0 && newLiveAuctions[0].endTime < now,
+        endingSoonAuctions:
+          endingSoonAuctions.length > 0 && endingSoonAuctions[0].endTime < now,
+      },
+    },
   });
 });
 
@@ -1196,59 +1220,59 @@ exports.getAdminDashboardData = asyncHandler(async (req, res, next) => {
     totalBidders,
     liveAuctions,
     endedAuctions,
-    totalAuctions
+    totalAuctions,
   ] = await Promise.all([
     // Total cars in the system
     Car.countDocuments(),
-    
+
     // Total unique bidders
-    Bid.distinct('bidder').then(bidders => bidders.length),
-    
+    Bid.distinct("bidder").then((bidders) => bidders.length),
+
     // Live auctions count
-    Auction.countDocuments({ status: 'active', endTime: { $gt: now } }),
-    
+    Auction.countDocuments({ status: "active", endTime: { $gt: now } }),
+
     // Ended auctions count
-    Auction.countDocuments({ status: 'completed' }),
-    
+    Auction.countDocuments({ status: "completed" }),
+
     // Total auctions
-    Auction.countDocuments()
+    Auction.countDocuments(),
   ]);
 
   // 2. Daily auction activity for last 7 days
   const dailyAuctionActivity = await Auction.aggregate([
     {
       $match: {
-        createdAt: { $gte: sevenDaysAgo }
-      }
+        createdAt: { $gte: sevenDaysAgo },
+      },
     },
     {
       $group: {
         _id: {
-          $dateToString: { format: "%Y-%m-%d", date: "$createdAt" }
+          $dateToString: { format: "%Y-%m-%d", date: "$createdAt" },
         },
-        count: { $sum: 1 }
-      }
+        count: { $sum: 1 },
+      },
     },
     {
-      $sort: { "_id": 1 }
-    }
+      $sort: { _id: 1 },
+    },
   ]);
 
   // 3. Top performing auctions (by views and bids)
   const topPerformingAuctions = await Auction.find({
-    createdAt: { $gte: thirtyDaysAgo }
+    createdAt: { $gte: thirtyDaysAgo },
   })
     .populate({
-      path: 'car',
-      select: 'make model year images',
+      path: "car",
+      select: "make model year images",
       populate: {
-        path: 'make',
-        select: 'name'
-      }
+        path: "make",
+        select: "name",
+      },
     })
     .sort({ totalBids: -1, currentHighestBid: -1 })
     .limit(10)
-    .select('auctionTitle currentHighestBid totalBids status car createdAt');
+    .select("auctionTitle currentHighestBid totalBids status car createdAt");
 
   // 4. Top bidders analysis
   const topBidders = await Bid.aggregate([
@@ -1258,21 +1282,21 @@ exports.getAdminDashboardData = asyncHandler(async (req, res, next) => {
         totalBids: { $sum: 1 },
         highestBid: { $max: "$amount" },
         totalBidAmount: { $sum: "$amount" },
-        auctionsWon: { 
-          $sum: { $cond: [{ $eq: ["$isWinningBid", true] }, 1, 0] } 
-        }
-      }
+        auctionsWon: {
+          $sum: { $cond: [{ $eq: ["$isWinningBid", true] }, 1, 0] },
+        },
+      },
     },
     {
       $lookup: {
         from: "users",
         localField: "_id",
         foreignField: "_id",
-        as: "bidder"
-      }
+        as: "bidder",
+      },
     },
     {
-      $unwind: "$bidder"
+      $unwind: "$bidder",
     },
     {
       $project: {
@@ -1281,91 +1305,93 @@ exports.getAdminDashboardData = asyncHandler(async (req, res, next) => {
           firstName: "$bidder.firstName",
           lastName: "$bidder.lastName",
           email: "$bidder.email",
-          profilePicture: "$bidder.profilePicture"
+          profilePicture: "$bidder.profilePicture",
         },
         totalBids: 1,
         highestBid: 1,
         totalBidAmount: 1,
-        auctionsWon: 1
-      }
+        auctionsWon: 1,
+      },
     },
     {
-      $sort: { auctionsWon: -1, totalBids: -1, highestBid: -1 }
+      $sort: { auctionsWon: -1, totalBids: -1, highestBid: -1 },
     },
     {
-      $limit: 10
-    }
+      $limit: 10,
+    },
   ]);
 
   // 5. Daily sales data for last 7 days
   const dailySalesData = await Auction.aggregate([
     {
       $match: {
-        status: 'completed',
+        status: "completed",
         winner: { $exists: true },
-        updatedAt: { $gte: sevenDaysAgo }
-      }
+        updatedAt: { $gte: sevenDaysAgo },
+      },
     },
     {
       $group: {
         _id: {
-          $dateToString: { format: "%Y-%m-%d", date: "$updatedAt" }
+          $dateToString: { format: "%Y-%m-%d", date: "$updatedAt" },
         },
         totalSales: { $sum: "$currentHighestBid" },
-        salesCount: { $sum: 1 }
-      }
+        salesCount: { $sum: 1 },
+      },
     },
     {
-      $sort: { "_id": 1 }
-    }
+      $sort: { _id: 1 },
+    },
   ]);
 
   // 6. Recent auction activity
   const recentAuctions = await Auction.find()
     .populate({
-      path: 'car',
-      select: 'make model year images',
+      path: "car",
+      select: "make model year images",
       populate: {
-        path: 'make',
-        select: 'name'
-      }
+        path: "make",
+        select: "name",
+      },
     })
-    .populate('createdBy', 'firstName lastName')
-    .populate('winner', 'firstName lastName')
+    .populate("createdBy", "firstName lastName")
+    .populate("winner", "firstName lastName")
     .sort({ createdAt: -1 })
     .limit(5)
-    .select('auctionTitle status currentHighestBid totalBids startTime endTime car createdBy winner');
+    .select(
+      "auctionTitle status currentHighestBid totalBids startTime endTime car createdBy winner"
+    );
 
   // 7. Revenue analytics
   const totalRevenue = await Auction.aggregate([
     {
       $match: {
-        status: 'completed',
-        winner: { $exists: true }
-      }
+        status: "completed",
+        winner: { $exists: true },
+      },
     },
     {
       $group: {
         _id: null,
-        total: { $sum: "$currentHighestBid" }
-      }
-    }
+        total: { $sum: "$currentHighestBid" },
+      },
+    },
   ]);
 
   const monthlyRevenue = await Auction.aggregate([
     {
       $match: {
-        status: 'completed',
+        status: "completed",
         winner: { $exists: true },
-        updatedAt: { $gte: thirtyDaysAgo }
-      }
+        updatedAt: { $gte: thirtyDaysAgo },
+      },
     },
     {
       $group: {
         _id: null,
-        total: { $sum: "$currentHighestBid" }
-      }
-    }
+        total: { $sum: "$currentHighestBid" },
+      },
+    },
   ]);
 
   // Format response data
@@ -1378,36 +1404,38 @@ exports.getAdminDashboardData = asyncHandler(async (req, res, next) => {
       endedAuctions,
       totalAuctions,
       totalRevenue: totalRevenue[0]?.total || 0,
-      monthlyRevenue: monthlyRevenue[0]?.total || 0
+      monthlyRevenue: monthlyRevenue[0]?.total || 0,
     },
 
     // Charts data
     charts: {
-      dailyAuctionActivity: dailyAuctionActivity.map(item => ({
+      dailyAuctionActivity: dailyAuctionActivity.map((item) => ({
         date: item._id,
-        count: item.count
+        count: item.count,
       })),
-      dailySalesData: dailySalesData.map(item => ({
+      dailySalesData: dailySalesData.map((item) => ({
         date: item._id,
         totalSales: item.totalSales,
-        salesCount: item.salesCount
-      }))
+        salesCount: item.salesCount,
+      })),
     },
 
     // Performance data
-    topPerformingAuctions: topPerformingAuctions.map(auction => ({
+    topPerformingAuctions: topPerformingAuctions.map((auction) => ({
       id: auction._id,
       title: auction.auctionTitle,
-      carInfo: auction.car ? {
-        make: auction.car.make?.name,
-        model: auction.car.model,
-        year: auction.car.year,
-        image: auction.car.images?.[0]
-      } : null,
+      carInfo: auction.car
+        ? {
+            make: auction.car.make?.name,
+            model: auction.car.model,
+            year: auction.car.year,
+            image: auction.car.images?.[0],
+          }
+        : null,
       currentHighestBid: auction.currentHighestBid,
       totalBids: auction.totalBids,
       status: auction.status,
-      createdAt: auction.createdAt
+      createdAt: auction.createdAt,
     })),
 
     // Top bidders
@@ -1417,11 +1445,11 @@ exports.getAdminDashboardData = asyncHandler(async (req, res, next) => {
       totalBids: bidder.totalBids,
       highestBid: bidder.highestBid,
       totalBidAmount: bidder.totalBidAmount,
-      auctionsWon: bidder.auctionsWon
+      auctionsWon: bidder.auctionsWon,
     })),
 
     // Recent activity
-    recentAuctions: recentAuctions.map(auction => ({
+    recentAuctions: recentAuctions.map((auction) => ({
       id: auction._id,
       title: auction.auctionTitle,
       status: auction.status,
@@ -1429,20 +1457,22 @@ exports.getAdminDashboardData = asyncHandler(async (req, res, next) => {
       totalBids: auction.totalBids,
       startTime: auction.startTime,
       endTime: auction.endTime,
-      carInfo: auction.car ? {
-        make: auction.car.make?.name,
-        model: auction.car.model,
-        year: auction.car.year,
-        image: auction.car.images?.[0]
-      } : null,
+      carInfo: auction.car
+        ? {
+            make: auction.car.make?.name,
+            model: auction.car.model,
+            year: auction.car.year,
+            image: auction.car.images?.[0],
+          }
+        : null,
       createdBy: auction.createdBy,
-      winner: auction.winner
-    }))
+      winner: auction.winner,
+    })),
   };
 
   sendSuccess(res, {
     message: "Admin dashboard data retrieved successfully",
-    data: dashboardData
+    data: dashboardData,
   });
 });
 
@@ -1480,9 +1510,10 @@ exports.getAuctionStats = asyncHandler(async (req, res, next) => {
       timeRemaining: timeRemaining,
       connectedClients: connectedClients,
       recentBids: recentBids,
-      nextMinimumBid: auction.currentHighestBid > 0 
-        ? auction.currentHighestBid + auction.bidIncrement 
-        : auction.startingPrice
+      nextMinimumBid:
+        auction.currentHighestBid > 0
+          ? auction.currentHighestBid + auction.bidIncrement
+          : auction.startingPrice,
     },
   });
 });
@@ -1498,209 +1529,209 @@ exports.getAuctionResults = asyncHandler(async (req, res, next) => {
       populate: [
         {
           path: "make",
-          select: "name country logo"
+          select: "name country logo",
         },
         {
-          path: "model", 
-          select: "name startYear endYear image"
+          path: "model",
+          select: "name startYear endYear image",
         },
         {
           path: "carDrive",
-          select: "name type description"
+          select: "name type description",
         },
         {
           path: "bodyColor",
-          select: "name hexCode type"
+          select: "name hexCode type",
         },
         {
           path: "carOptions",
-          select: "name category description"
+          select: "name category description",
         },
         {
           path: "fuelType",
-          select: "name category description"
+          select: "name category description",
         },
         {
-          path: "serviceHistory"
+          path: "serviceHistory",
         },
         {
           path: "country",
-          select: "name"
+          select: "name",
         },
         {
           path: "transmission",
-          select: "name type gears description"
+          select: "name type gears description",
         },
         {
           path: "vehicleType",
-          select: "name description"
+          select: "name description",
         },
         {
           path: "componentSummary.engine",
           model: "Rating",
-          select: "rating"
+          select: "rating",
         },
         {
           path: "componentSummary.steering",
-          model: "Rating", 
-          select: "rating"
+          model: "Rating",
+          select: "rating",
         },
         {
           path: "componentSummary.centralLock",
           model: "Rating",
-          select: "rating"
+          select: "rating",
         },
         {
           path: "componentSummary.centralLocking",
           model: "Rating",
-          select: "rating"
+          select: "rating",
         },
         {
           path: "componentSummary.interiorButtons",
           model: "Rating",
-          select: "rating"
+          select: "rating",
         },
         {
           path: "componentSummary.gearbox",
           model: "Rating",
-          select: "rating"
+          select: "rating",
         },
         {
           path: "componentSummary.dashLight",
           model: "Rating",
-          select: "rating"
+          select: "rating",
         },
         {
           path: "componentSummary.audioSystem",
           model: "Rating",
-          select: "rating"
+          select: "rating",
         },
         {
           path: "componentSummary.windowControl",
           model: "Rating",
-          select: "rating"
+          select: "rating",
         },
         {
           path: "componentSummary.electricComponents",
           model: "Rating",
-          select: "rating"
+          select: "rating",
         },
         {
           path: "componentSummary.acHeating",
           model: "Rating",
-          select: "rating"
+          select: "rating",
         },
         {
           path: "componentSummary.dashboard",
           model: "Rating",
-          select: "rating"
+          select: "rating",
         },
         {
           path: "componentSummary.roof",
           model: "Rating",
-          select: "rating"
+          select: "rating",
         },
         {
           path: "componentSummary.breaks",
           model: "Rating",
-          select: "rating"
+          select: "rating",
         },
         {
           path: "componentSummary.suspension",
           model: "Rating",
-          select: "rating"
+          select: "rating",
         },
         {
           path: "componentSummary.gloveBox",
           model: "Rating",
-          select: "rating"
+          select: "rating",
         },
         {
           path: "componentSummary.frontSeats",
           model: "Rating",
-          select: "rating"
+          select: "rating",
         },
         {
           path: "componentSummary.exhaust",
           model: "Rating",
-          select: "rating"
+          select: "rating",
         },
         {
           path: "componentSummary.clutch",
           model: "Rating",
-          select: "rating"
+          select: "rating",
         },
         {
           path: "componentSummary.backSeat",
           model: "Rating",
-          select: "rating"
+          select: "rating",
         },
         {
           path: "componentSummary.driveTrain",
           model: "Rating",
-          select: "rating"
+          select: "rating",
         },
         {
           path: "interiorAndExterior.frontBumber",
           model: "CarCondition",
-          select: "condition"
+          select: "condition",
         },
         {
           path: "interiorAndExterior.bonnet",
           model: "CarCondition",
-          select: "condition"
+          select: "condition",
         },
         {
           path: "interiorAndExterior.roof",
           model: "CarCondition",
-          select: "condition"
+          select: "condition",
         },
         {
           path: "interiorAndExterior.reerBumber",
           model: "CarCondition",
-          select: "condition"
+          select: "condition",
         },
         {
           path: "interiorAndExterior.driverSideFrontWing",
           model: "CarCondition",
-          select: "condition"
+          select: "condition",
         },
         {
           path: "interiorAndExterior.driverSideFrontDoor",
           model: "CarCondition",
-          select: "condition"
+          select: "condition",
         },
         {
           path: "interiorAndExterior.driverSideRearDoor",
           model: "CarCondition",
-          select: "condition"
+          select: "condition",
         },
         {
           path: "interiorAndExterior.driverRearQuarter",
           model: "CarCondition",
-          select: "condition"
+          select: "condition",
         },
         {
           path: "interiorAndExterior.passengerSideFrontWing",
           model: "CarCondition",
-          select: "condition"
+          select: "condition",
         },
         {
           path: "interiorAndExterior.passengerSideFrontDoor",
           model: "CarCondition",
-          select: "condition"
+          select: "condition",
         },
         {
           path: "interiorAndExterior.passengerSideRearDoor",
           model: "CarCondition",
-          select: "condition"
+          select: "condition",
         },
         {
           path: "interiorAndExterior.passengerRearQuarter",
           model: "CarCondition",
-          select: "condition"
-        }
-      ]
+          select: "condition",
+        },
+      ],
     })
     .populate("createdBy", "firstName lastName email profilePicture")
     .populate("winner", "firstName lastName email profilePicture");
@@ -1720,25 +1751,28 @@ exports.getAuctionResults = asyncHandler(async (req, res, next) => {
   const winningBid = allBids.length > 0 ? allBids[0] : null;
 
   // Get the bid winner details (same as auction.winner but with bid details)
-  const bidWinner = winningBid ? {
-    user: winningBid.bidder,
-    winningAmount: winningBid.amount,
-    bidTime: winningBid.createdAt,
-    isWinningBid: winningBid.isWinningBid
-  } : null;
+  const bidWinner = winningBid
+    ? {
+        user: winningBid.bidder,
+        winningAmount: winningBid.amount,
+        bidTime: winningBid.createdAt,
+        isWinningBid: winningBid.isWinningBid,
+      }
+    : null;
 
   // Calculate auction statistics
   const auctionStats = {
     totalBids: allBids.length,
-    uniqueBidders: [...new Set(allBids.map(bid => bid.bidder._id.toString()))].length,
+    uniqueBidders: [...new Set(allBids.map((bid) => bid.bidder._id.toString()))]
+      .length,
     startingPrice: auction.startingPrice,
     finalPrice: winningBid ? winningBid.amount : auction.startingPrice,
     priceIncrease: winningBid ? winningBid.amount - auction.startingPrice : 0,
     auctionDuration: {
       start: auction.startTime,
       end: auction.endTime,
-      durationMs: auction.endTime - auction.startTime
-    }
+      durationMs: auction.endTime - auction.startTime,
+    },
   };
 
   sendSuccess(res, {
@@ -1758,14 +1792,14 @@ exports.getAuctionResults = asyncHandler(async (req, res, next) => {
         currentHighestBid: auction.currentHighestBid,
         totalBids: auction.totalBids,
         createdAt: auction.createdAt,
-        updatedAt: auction.updatedAt
+        updatedAt: auction.updatedAt,
       },
       carDetails: auction.car,
       bids: allBids,
       winningBid: winningBid,
       bidWinner: bidWinner,
-      auctionStats: auctionStats
-    }
+      auctionStats: auctionStats,
+    },
   });
 });
 
@@ -1776,11 +1810,12 @@ exports.getSoldAuctions = asyncHandler(async (req, res, next) => {
   // Find completed auctions that have winners (sold cars)
   const soldAuctions = await Auction.find({
     status: "completed",
-    winner: { $exists: true, $ne: null }
+    winner: { $exists: true, $ne: null },
   })
     .populate({
       path: "car",
-      select: "make model year price images mileage carOptions bodyColor cylinder fuelType transmission carDrive country vehicleType",
+      select:
+        "make model year price images mileage carOptions bodyColor cylinder fuelType transmission carDrive country vehicleType",
       populate: [
         {
           path: "make",
@@ -1829,7 +1864,7 @@ exports.getSoldAuctions = asyncHandler(async (req, res, next) => {
     data: soldAuctions,
     meta: {
       count: soldAuctions.length,
-      type: "sold"
+      type: "sold",
     },
   });
 });
@@ -1843,12 +1878,13 @@ exports.getUnsoldAuctions = asyncHandler(async (req, res, next) => {
     $or: [
       { status: "completed", winner: { $exists: false } },
       { status: "completed", winner: null },
-      { status: "cancelled" }
-    ]
+      { status: "cancelled" },
+    ],
   })
     .populate({
       path: "car",
-      select: "make model year price images mileage carOptions bodyColor cylinder fuelType transmission carDrive country vehicleType",
+      select:
+        "make model year price images mileage carOptions bodyColor cylinder fuelType transmission carDrive country vehicleType",
       populate: [
         {
           path: "make",
@@ -1896,7 +1932,7 @@ exports.getUnsoldAuctions = asyncHandler(async (req, res, next) => {
     data: unsoldAuctions,
     meta: {
       count: unsoldAuctions.length,
-      type: "unsold"
+      type: "unsold",
     },
   });
 });
@@ -1907,11 +1943,12 @@ exports.getUnsoldAuctions = asyncHandler(async (req, res, next) => {
 exports.getCompletedAuctions = asyncHandler(async (req, res, next) => {
   // Find all completed auctions (both sold and unsold)
   const completedAuctions = await Auction.find({
-    status: "completed"
+    status: "completed",
   })
     .populate({
       path: "car",
-      select: "make model year price images mileage carOptions bodyColor cylinder fuelType transmission carDrive country vehicleType",
+      select:
+        "make model year price images mileage carOptions bodyColor cylinder fuelType transmission carDrive country vehicleType",
       populate: [
         {
           path: "make",
@@ -1956,8 +1993,8 @@ exports.getCompletedAuctions = asyncHandler(async (req, res, next) => {
     .sort({ endTime: -1 }); // Sort by most recently ended
 
   // Separate sold and unsold for additional statistics
-  const soldAuctions = completedAuctions.filter(auction => auction.winner);
-  const unsoldAuctions = completedAuctions.filter(auction => !auction.winner);
+  const soldAuctions = completedAuctions.filter((auction) => auction.winner);
+  const unsoldAuctions = completedAuctions.filter((auction) => !auction.winner);
 
   sendSuccess(res, {
     message: "Completed auctions retrieved successfully",
@@ -1966,7 +2003,7 @@ exports.getCompletedAuctions = asyncHandler(async (req, res, next) => {
       count: completedAuctions.length,
       type: "completed",
       soldCount: soldAuctions.length,
-      unsoldCount: unsoldAuctions.length
+      unsoldCount: unsoldAuctions.length,
     },
   });
 });
@@ -1974,146 +2011,163 @@ exports.getCompletedAuctions = asyncHandler(async (req, res, next) => {
 // @desc    Get completed auctions with all bidders populated
 // @route   GET /api/auctions/completed-with-bidders
 // @access  Public
-exports.getCompletedAuctionsWithBidders = asyncHandler(async (req, res, next) => {
-  // Find all completed auctions (both sold and unsold)
-  const completedAuctions = await Auction.find({
-    status: "completed"
-  })
-    .populate({
-      path: "car",
-      select: "make model year price images mileage carOptions bodyColor cylinder fuelType transmission carDrive country vehicleType",
-      populate: [
-        {
-          path: "make",
-          select: "name country logo",
-        },
-        {
-          path: "model",
-          select: "name startYear endYear image",
-        },
-        {
-          path: "carOptions",
-          select: "name category description",
-        },
-        {
-          path: "bodyColor",
-          select: "name hexCode type",
-        },
-        {
-          path: "fuelType",
-          select: "name category description",
-        },
-        {
-          path: "transmission",
-          select: "name type gears description",
-        },
-        {
-          path: "carDrive",
-          select: "name type description",
-        },
-        {
-          path: "country",
-          select: "name",
-        },
-        {
-          path: "vehicleType",
-          select: "name description",
-        },
-      ],
+exports.getCompletedAuctionsWithBidders = asyncHandler(
+  async (req, res, next) => {
+    // Find all completed auctions (both sold and unsold)
+    const completedAuctions = await Auction.find({
+      status: "completed",
     })
-    .populate("createdBy", "firstName lastName profilePicture")
-    .populate("winner", "firstName lastName email profilePicture")
-    .sort({ endTime: -1 });
+      .populate({
+        path: "car",
+        select:
+          "make model year price images mileage carOptions bodyColor cylinder fuelType transmission carDrive country vehicleType",
+        populate: [
+          {
+            path: "make",
+            select: "name country logo",
+          },
+          {
+            path: "model",
+            select: "name startYear endYear image",
+          },
+          {
+            path: "carOptions",
+            select: "name category description",
+          },
+          {
+            path: "bodyColor",
+            select: "name hexCode type",
+          },
+          {
+            path: "fuelType",
+            select: "name category description",
+          },
+          {
+            path: "transmission",
+            select: "name type gears description",
+          },
+          {
+            path: "carDrive",
+            select: "name type description",
+          },
+          {
+            path: "country",
+            select: "name",
+          },
+          {
+            path: "vehicleType",
+            select: "name description",
+          },
+        ],
+      })
+      .populate("createdBy", "firstName lastName profilePicture")
+      .populate("winner", "firstName lastName email profilePicture")
+      .sort({ endTime: -1 });
 
-  // Get auction IDs for bid lookup
-  const auctionIds = completedAuctions.map(auction => auction._id);
+    // Get auction IDs for bid lookup
+    const auctionIds = completedAuctions.map((auction) => auction._id);
 
-  // Get all bids for these auctions
-  const allBids = await Bid.find({ 
-    auction: { $in: auctionIds } 
-  })
-    .populate("bidder", "firstName lastName email profilePicture")
-    .sort({ auction: 1, amount: -1 }); // Sort by auction, then highest bid first
+    // Get all bids for these auctions
+    const allBids = await Bid.find({
+      auction: { $in: auctionIds },
+    })
+      .populate("bidder", "firstName lastName email profilePicture")
+      .sort({ auction: 1, amount: -1 }); // Sort by auction, then highest bid first
 
-  // Group bids by auction
-  const bidsByAuction = {};
-  allBids.forEach(bid => {
-    const auctionId = bid.auction.toString();
-    if (!bidsByAuction[auctionId]) {
-      bidsByAuction[auctionId] = [];
-    }
-    bidsByAuction[auctionId].push({
-      _id: bid._id,
-      amount: bid.amount,
-      bidTime: bid.time,
-      createdAt: bid.createdAt,
-      isWinningBid: bid.isWinningBid,
-      bidder: bid.bidder
-    });
-  });
-
-  // Combine auctions with their bidders
-  const auctionsWithBidders = completedAuctions.map(auction => {
-    const auctionId = auction._id.toString();
-    const auctionBids = bidsByAuction[auctionId] || [];
-    
-    // Calculate bidder statistics
-    const uniqueBidders = [...new Set(auctionBids.map(bid => bid.bidder._id.toString()))];
-    const winningBid = auctionBids.find(bid => bid.isWinningBid);
-
-    return {
-      _id: auction._id,
-      auctionTitle: auction.auctionTitle,
-      auctionDescription: auction.auctionDescription,
-      type: auction.type,
-      status: auction.status,
-      startTime: auction.startTime,
-      endTime: auction.endTime,
-      startingPrice: auction.startingPrice,
-      bidIncrement: auction.bidIncrement,
-      buyNowPrice: auction.buyNowPrice,
-      currentHighestBid: auction.currentHighestBid,
-      totalBids: auction.totalBids,
-      createdAt: auction.createdAt,
-      updatedAt: auction.updatedAt,
-      car: auction.car,
-      createdBy: auction.createdBy,
-      winner: auction.winner,
-      
-      // Bidder information
-      allBidders: auctionBids,
-      bidderStats: {
-        totalBids: auctionBids.length,
-        uniqueBidders: uniqueBidders.length,
-        winningBid: winningBid,
-        highestBid: auctionBids.length > 0 ? auctionBids[0].amount : null,
-        bidRange: auctionBids.length > 0 ? {
-          highest: Math.max(...auctionBids.map(b => b.amount)),
-          lowest: Math.min(...auctionBids.map(b => b.amount))
-        } : null
+    // Group bids by auction
+    const bidsByAuction = {};
+    allBids.forEach((bid) => {
+      const auctionId = bid.auction.toString();
+      if (!bidsByAuction[auctionId]) {
+        bidsByAuction[auctionId] = [];
       }
-    };
-  });
+      bidsByAuction[auctionId].push({
+        _id: bid._id,
+        amount: bid.amount,
+        bidTime: bid.time,
+        createdAt: bid.createdAt,
+        isWinningBid: bid.isWinningBid,
+        bidder: bid.bidder,
+      });
+    });
 
-  // Overall statistics
-  const soldAuctions = auctionsWithBidders.filter(auction => auction.winner);
-  const unsoldAuctions = auctionsWithBidders.filter(auction => !auction.winner);
-  const totalBids = auctionsWithBidders.reduce((sum, auction) => sum + auction.bidderStats.totalBids, 0);
-  const totalUniqueBidders = [...new Set(allBids.map(bid => bid.bidder._id.toString()))].length;
+    // Combine auctions with their bidders
+    const auctionsWithBidders = completedAuctions.map((auction) => {
+      const auctionId = auction._id.toString();
+      const auctionBids = bidsByAuction[auctionId] || [];
 
-  sendSuccess(res, {
-    message: "Completed auctions with bidders retrieved successfully",
-    data: auctionsWithBidders,
-    meta: {
-      count: auctionsWithBidders.length,
-      type: "completed_with_bidders",
-      soldCount: soldAuctions.length,
-      unsoldCount: unsoldAuctions.length,
-      totalBids: totalBids,
-      totalUniqueBidders: totalUniqueBidders
-    },
-  });
-});
+      // Calculate bidder statistics
+      const uniqueBidders = [
+        ...new Set(auctionBids.map((bid) => bid.bidder._id.toString())),
+      ];
+      const winningBid = auctionBids.find((bid) => bid.isWinningBid);
+
+      return {
+        _id: auction._id,
+        auctionTitle: auction.auctionTitle,
+        auctionDescription: auction.auctionDescription,
+        type: auction.type,
+        status: auction.status,
+        startTime: auction.startTime,
+        endTime: auction.endTime,
+        startingPrice: auction.startingPrice,
+        bidIncrement: auction.bidIncrement,
+        buyNowPrice: auction.buyNowPrice,
+        currentHighestBid: auction.currentHighestBid,
+        totalBids: auction.totalBids,
+        createdAt: auction.createdAt,
+        updatedAt: auction.updatedAt,
+        car: auction.car,
+        createdBy: auction.createdBy,
+        winner: auction.winner,
+
+        // Bidder information
+        allBidders: auctionBids,
+        bidderStats: {
+          totalBids: auctionBids.length,
+          uniqueBidders: uniqueBidders.length,
+          winningBid: winningBid,
+          highestBid: auctionBids.length > 0 ? auctionBids[0].amount : null,
+          bidRange:
+            auctionBids.length > 0
+              ? {
+                  highest: Math.max(...auctionBids.map((b) => b.amount)),
+                  lowest: Math.min(...auctionBids.map((b) => b.amount)),
+                }
+              : null,
+        },
+      };
+    });
+
+    // Overall statistics
+    const soldAuctions = auctionsWithBidders.filter(
+      (auction) => auction.winner
+    );
+    const unsoldAuctions = auctionsWithBidders.filter(
+      (auction) => !auction.winner
+    );
+    const totalBids = auctionsWithBidders.reduce(
+      (sum, auction) => sum + auction.bidderStats.totalBids,
+      0
+    );
+    const totalUniqueBidders = [
+      ...new Set(allBids.map((bid) => bid.bidder._id.toString())),
+    ].length;
+
+    sendSuccess(res, {
+      message: "Completed auctions with bidders retrieved successfully",
+      data: auctionsWithBidders,
+      meta: {
+        count: auctionsWithBidders.length,
+        type: "completed_with_bidders",
+        soldCount: soldAuctions.length,
+        unsoldCount: unsoldAuctions.length,
+        totalBids: totalBids,
+        totalUniqueBidders: totalUniqueBidders,
+      },
+    });
+  }
+);
 
 // @desc    Get all auction history (comprehensive historical data)
 // @route   GET /api/auctions/history
@@ -2126,17 +2180,17 @@ exports.getAllAuctionHistory = asyncHandler(async (req, res, next) => {
 
   // Build query filters
   const queryFilters = {};
-  
+
   // Filter by status if provided
   if (req.query.status) {
     queryFilters.status = req.query.status;
   }
-  
+
   // Filter by type if provided
   if (req.query.type) {
     queryFilters.type = req.query.type;
   }
-  
+
   // Filter by date range if provided
   if (req.query.startDate || req.query.endDate) {
     queryFilters.endTime = {};
@@ -2182,7 +2236,7 @@ exports.getAllAuctionHistory = asyncHandler(async (req, res, next) => {
     .limit(limit);
 
   // Get auction IDs for bid statistics
-  const auctionIds = auctionsHistory.map(auction => auction._id);
+  const auctionIds = auctionsHistory.map((auction) => auction._id);
 
   // Get bid statistics for all auctions
   const bidStats = await Bid.aggregate([
@@ -2195,31 +2249,31 @@ exports.getAllAuctionHistory = asyncHandler(async (req, res, next) => {
         highestBid: { $max: "$amount" },
         lowestBid: { $min: "$amount" },
         averageBid: { $avg: "$amount" },
-        lastBidTime: { $max: "$time" }
-      }
+        lastBidTime: { $max: "$time" },
+      },
     },
     {
       $addFields: {
-        uniqueBiddersCount: { $size: "$uniqueBidders" }
-      }
-    }
+        uniqueBiddersCount: { $size: "$uniqueBidders" },
+      },
+    },
   ]);
 
   // Create a map for quick lookup
   const bidStatsMap = {};
-  bidStats.forEach(stat => {
+  bidStats.forEach((stat) => {
     bidStatsMap[stat._id.toString()] = {
       totalBids: stat.totalBids,
       uniqueBiddersCount: stat.uniqueBiddersCount,
       highestBid: stat.highestBid,
       lowestBid: stat.lowestBid,
       averageBid: Math.round(stat.averageBid * 100) / 100, // Round to 2 decimal places
-      lastBidTime: stat.lastBidTime
+      lastBidTime: stat.lastBidTime,
     };
   });
 
   // Combine auction data with bid statistics
-  const enrichedHistory = auctionsHistory.map(auction => {
+  const enrichedHistory = auctionsHistory.map((auction) => {
     const auctionId = auction._id.toString();
     const stats = bidStatsMap[auctionId] || {
       totalBids: 0,
@@ -2227,25 +2281,25 @@ exports.getAllAuctionHistory = asyncHandler(async (req, res, next) => {
       highestBid: null,
       lowestBid: null,
       averageBid: null,
-      lastBidTime: null
+      lastBidTime: null,
     };
 
     const auctionObj = auction.toObject();
-    
+
     // Determine sale status and final outcome
-    let saleStatus = 'active';
+    let saleStatus = "active";
     let finalPrice = null;
     let profitLoss = null;
-    
-    if (auctionObj.status === 'completed') {
-      saleStatus = auctionObj.winner ? 'sold' : 'unsold';
+
+    if (auctionObj.status === "completed") {
+      saleStatus = auctionObj.winner ? "sold" : "unsold";
       finalPrice = auctionObj.currentHighestBid;
-      
-      if (saleStatus === 'sold' && auctionObj.car?.price) {
+
+      if (saleStatus === "sold" && auctionObj.car?.price) {
         profitLoss = finalPrice - auctionObj.car.price;
       }
-    } else if (auctionObj.status === 'cancelled') {
-      saleStatus = 'cancelled';
+    } else if (auctionObj.status === "cancelled") {
+      saleStatus = "cancelled";
     }
 
     return {
@@ -2254,27 +2308,35 @@ exports.getAllAuctionHistory = asyncHandler(async (req, res, next) => {
       finalPrice,
       profitLoss,
       biddingStatistics: stats,
-      duration: auctionObj.endTime && auctionObj.startTime 
-        ? Math.round((new Date(auctionObj.endTime) - new Date(auctionObj.startTime)) / (1000 * 60 * 60 * 24)) 
-        : null // Duration in days
+      duration:
+        auctionObj.endTime && auctionObj.startTime
+          ? Math.round(
+              (new Date(auctionObj.endTime) - new Date(auctionObj.startTime)) /
+                (1000 * 60 * 60 * 24)
+            )
+          : null, // Duration in days
     };
   });
 
   // Calculate summary statistics
   const summary = {
     totalAuctions: total,
-    completedAuctions: enrichedHistory.filter(a => a.status === 'completed').length,
-    soldAuctions: enrichedHistory.filter(a => a.saleStatus === 'sold').length,
-    unsoldAuctions: enrichedHistory.filter(a => a.saleStatus === 'unsold').length,
-    activeAuctions: enrichedHistory.filter(a => a.status === 'active').length,
+    completedAuctions: enrichedHistory.filter((a) => a.status === "completed")
+      .length,
+    soldAuctions: enrichedHistory.filter((a) => a.saleStatus === "sold").length,
+    unsoldAuctions: enrichedHistory.filter((a) => a.saleStatus === "unsold")
+      .length,
+    activeAuctions: enrichedHistory.filter((a) => a.status === "active").length,
     totalRevenue: enrichedHistory
-      .filter(a => a.saleStatus === 'sold')
+      .filter((a) => a.saleStatus === "sold")
       .reduce((sum, a) => sum + (a.finalPrice || 0), 0),
-    averageSalePrice: null
+    averageSalePrice: null,
   };
 
   if (summary.soldAuctions > 0) {
-    summary.averageSalePrice = Math.round(summary.totalRevenue / summary.soldAuctions);
+    summary.averageSalePrice = Math.round(
+      summary.totalRevenue / summary.soldAuctions
+    );
   }
 
   sendSuccess(res, {
@@ -2287,8 +2349,8 @@ exports.getAllAuctionHistory = asyncHandler(async (req, res, next) => {
       totalPages: Math.ceil(total / limit),
       hasNextPage: page < Math.ceil(total / limit),
       hasPrevPage: page > 1,
-      summary
-    }
+      summary,
+    },
   });
 });
 
@@ -2306,9 +2368,12 @@ exports.getCompletedBidsForAuction = asyncHandler(async (req, res, next) => {
   }
 
   // Only return bids for completed or cancelled auctions
-  if (auction.status !== 'completed' && auction.status !== 'cancelled') {
+  if (auction.status !== "completed" && auction.status !== "cancelled") {
     return next(
-      new ErrorResponse(`Cannot retrieve completed bids for an active auction. Auction status: ${auction.status}`, 400)
+      new ErrorResponse(
+        `Cannot retrieve completed bids for an active auction. Auction status: ${auction.status}`,
+        400
+      )
     );
   }
 
@@ -2320,29 +2385,47 @@ exports.getCompletedBidsForAuction = asyncHandler(async (req, res, next) => {
   // Calculate bidding statistics
   const biddingStats = {
     totalBids: completedBids.length,
-    uniqueBidders: [...new Set(completedBids.map(bid => bid.bidder._id.toString()))].length,
-    highestBid: completedBids.length > 0 ? Math.max(...completedBids.map(b => b.amount)) : null,
-    lowestBid: completedBids.length > 0 ? Math.min(...completedBids.map(b => b.amount)) : null,
-    averageBid: completedBids.length > 0 ? 
-      Math.round((completedBids.reduce((sum, b) => sum + b.amount, 0) / completedBids.length) * 100) / 100 : null,
+    uniqueBidders: [
+      ...new Set(completedBids.map((bid) => bid.bidder._id.toString())),
+    ].length,
+    highestBid:
+      completedBids.length > 0
+        ? Math.max(...completedBids.map((b) => b.amount))
+        : null,
+    lowestBid:
+      completedBids.length > 0
+        ? Math.min(...completedBids.map((b) => b.amount))
+        : null,
+    averageBid:
+      completedBids.length > 0
+        ? Math.round(
+            (completedBids.reduce((sum, b) => sum + b.amount, 0) /
+              completedBids.length) *
+              100
+          ) / 100
+        : null,
     biddingTimespan: null,
-    winningBid: completedBids.find(bid => bid.isWinningBid) || null
+    winningBid: completedBids.find((bid) => bid.isWinningBid) || null,
   };
 
   // Calculate bidding timespan
   if (completedBids.length > 0) {
-    const firstBidTime = new Date(Math.min(...completedBids.map(b => new Date(b.time))));
-    const lastBidTime = new Date(Math.max(...completedBids.map(b => new Date(b.time))));
+    const firstBidTime = new Date(
+      Math.min(...completedBids.map((b) => new Date(b.time)))
+    );
+    const lastBidTime = new Date(
+      Math.max(...completedBids.map((b) => new Date(b.time)))
+    );
     biddingStats.biddingTimespan = {
       firstBid: firstBidTime,
       lastBid: lastBidTime,
-      durationMinutes: Math.round((lastBidTime - firstBidTime) / (1000 * 60))
+      durationMinutes: Math.round((lastBidTime - firstBidTime) / (1000 * 60)),
     };
   }
 
   // Group bids by bidder for additional insights
   const bidderActivity = {};
-  completedBids.forEach(bid => {
+  completedBids.forEach((bid) => {
     const bidderId = bid.bidder._id.toString();
     if (!bidderActivity[bidderId]) {
       bidderActivity[bidderId] = {
@@ -2351,19 +2434,22 @@ exports.getCompletedBidsForAuction = asyncHandler(async (req, res, next) => {
         totalBids: 0,
         highestBid: 0,
         firstBidTime: bid.time,
-        lastBidTime: bid.time
+        lastBidTime: bid.time,
       };
     }
-    
+
     bidderActivity[bidderId].bids.push({
       _id: bid._id,
       amount: bid.amount,
       time: bid.time,
-      isWinningBid: bid.isWinningBid
+      isWinningBid: bid.isWinningBid,
     });
     bidderActivity[bidderId].totalBids++;
-    bidderActivity[bidderId].highestBid = Math.max(bidderActivity[bidderId].highestBid, bid.amount);
-    
+    bidderActivity[bidderId].highestBid = Math.max(
+      bidderActivity[bidderId].highestBid,
+      bid.amount
+    );
+
     if (new Date(bid.time) < new Date(bidderActivity[bidderId].firstBidTime)) {
       bidderActivity[bidderId].firstBidTime = bid.time;
     }
@@ -2373,8 +2459,9 @@ exports.getCompletedBidsForAuction = asyncHandler(async (req, res, next) => {
   });
 
   // Convert bidder activity to array and sort by highest bid
-  const bidderActivityArray = Object.values(bidderActivity)
-    .sort((a, b) => b.highestBid - a.highestBid);
+  const bidderActivityArray = Object.values(bidderActivity).sort(
+    (a, b) => b.highestBid - a.highestBid
+  );
 
   sendSuccess(res, {
     message: "Completed bids retrieved successfully",
@@ -2388,17 +2475,17 @@ exports.getCompletedBidsForAuction = asyncHandler(async (req, res, next) => {
         startingPrice: auction.startingPrice,
         currentHighestBid: auction.currentHighestBid,
         winner: auction.winner,
-        type: auction.type
+        type: auction.type,
       },
       bids: completedBids,
       biddingStatistics: biddingStats,
-      bidderActivity: bidderActivityArray
+      bidderActivity: bidderActivityArray,
     },
     meta: {
       totalBids: completedBids.length,
       auctionStatus: auction.status,
-      isCompleted: auction.status === 'completed',
-      hasBids: completedBids.length > 0
-    }
+      isCompleted: auction.status === "completed",
+      hasBids: completedBids.length > 0,
+    },
   });
 });
