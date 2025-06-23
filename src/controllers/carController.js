@@ -441,7 +441,22 @@ exports.createCar = async (req, res) => {
 // Update car
 exports.updateCar = async (req, res) => {
   try {
-    const updates = req.body;
+    const updates = { ...req.body };
+
+    // Apply the same validation logic as createCar for consistency
+    const { isValid, errors, warnings, processedData } = await validateCarData(updates);
+
+    if (!isValid) {
+      return sendError(res, {
+        statusCode: 400,
+        message: "Invalid car update data",
+        errors: errors,
+        warnings: warnings,
+      });
+    }
+
+    // Use the processed data instead of raw body
+    const validatedUpdates = processedData;
 
     // Handle image uploads if present
     if (req.files && req.files.images) {
@@ -449,20 +464,20 @@ exports.updateCar = async (req, res) => {
         const newImages = await getFileUrls(req, req.files.images);
 
         // If we want to append to existing images
-        if (updates.appendImages === "true") {
+        if (validatedUpdates.appendImages === "true") {
           const existingCar = await Car.findById(req.params.id);
           if (existingCar) {
-            updates.images = [...existingCar.images, ...newImages];
+            validatedUpdates.images = [...existingCar.images, ...newImages];
           } else {
-            updates.images = newImages;
+            validatedUpdates.images = newImages;
           }
         } else {
           // Replace existing images
-          updates.images = newImages;
+          validatedUpdates.images = newImages;
         }
 
         // Remove appendImages from updates as it's not part of the model
-        delete updates.appendImages;
+        delete validatedUpdates.appendImages;
       } catch (error) {
         return sendError(res, {
           statusCode: 400,
@@ -472,7 +487,7 @@ exports.updateCar = async (req, res) => {
       }
     }
 
-    const car = await Car.findByIdAndUpdate(req.params.id, updates, {
+    const car = await Car.findByIdAndUpdate(req.params.id, validatedUpdates, {
       new: true,
       runValidators: true,
     });
