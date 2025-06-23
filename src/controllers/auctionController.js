@@ -189,7 +189,7 @@ exports.getAuction = asyncHandler(async (req, res, next) => {
         {
           path: "componentSummary",
           populate: {
-            path: "engine steering centralLock centralLocking interiorButtons gearbox dashLight audioSystem windowControl electricComponents acHeating dashboard roof breaks suspension gloveBox frontSeats exhaust clutch backSeat driveTrain",
+            path: "windows tires brakes battery engine transmission suspension body interior exterior ac electrical centralLock audio navigation seats sunroof paint dashboard lights steering exhaust clutch",
             model: "Rating",
           },
         },
@@ -1583,72 +1583,32 @@ exports.getAuctionResults = asyncHandler(async (req, res, next) => {
           select: "name description",
         },
         {
+          path: "componentSummary.windows",
+          model: "Rating",
+          select: "rating",
+        },
+        {
+          path: "componentSummary.tires",
+          model: "Rating",
+          select: "rating",
+        },
+        {
+          path: "componentSummary.brakes",
+          model: "Rating",
+          select: "rating",
+        },
+        {
+          path: "componentSummary.battery",
+          model: "Rating",
+          select: "rating",
+        },
+        {
           path: "componentSummary.engine",
           model: "Rating",
           select: "rating",
         },
         {
-          path: "componentSummary.steering",
-          model: "Rating",
-          select: "rating",
-        },
-        {
-          path: "componentSummary.centralLock",
-          model: "Rating",
-          select: "rating",
-        },
-        {
-          path: "componentSummary.centralLocking",
-          model: "Rating",
-          select: "rating",
-        },
-        {
-          path: "componentSummary.interiorButtons",
-          model: "Rating",
-          select: "rating",
-        },
-        {
-          path: "componentSummary.gearbox",
-          model: "Rating",
-          select: "rating",
-        },
-        {
-          path: "componentSummary.dashLight",
-          model: "Rating",
-          select: "rating",
-        },
-        {
-          path: "componentSummary.audioSystem",
-          model: "Rating",
-          select: "rating",
-        },
-        {
-          path: "componentSummary.windowControl",
-          model: "Rating",
-          select: "rating",
-        },
-        {
-          path: "componentSummary.electricComponents",
-          model: "Rating",
-          select: "rating",
-        },
-        {
-          path: "componentSummary.acHeating",
-          model: "Rating",
-          select: "rating",
-        },
-        {
-          path: "componentSummary.dashboard",
-          model: "Rating",
-          select: "rating",
-        },
-        {
-          path: "componentSummary.roof",
-          model: "Rating",
-          select: "rating",
-        },
-        {
-          path: "componentSummary.breaks",
+          path: "componentSummary.transmission",
           model: "Rating",
           select: "rating",
         },
@@ -1658,12 +1618,72 @@ exports.getAuctionResults = asyncHandler(async (req, res, next) => {
           select: "rating",
         },
         {
-          path: "componentSummary.gloveBox",
+          path: "componentSummary.body",
           model: "Rating",
           select: "rating",
         },
         {
-          path: "componentSummary.frontSeats",
+          path: "componentSummary.interior",
+          model: "Rating",
+          select: "rating",
+        },
+        {
+          path: "componentSummary.exterior",
+          model: "Rating",
+          select: "rating",
+        },
+        {
+          path: "componentSummary.ac",
+          model: "Rating",
+          select: "rating",
+        },
+        {
+          path: "componentSummary.electrical",
+          model: "Rating",
+          select: "rating",
+        },
+        {
+          path: "componentSummary.centralLock",
+          model: "Rating",
+          select: "rating",
+        },
+        {
+          path: "componentSummary.audio",
+          model: "Rating",
+          select: "rating",
+        },
+        {
+          path: "componentSummary.navigation",
+          model: "Rating",
+          select: "rating",
+        },
+        {
+          path: "componentSummary.seats",
+          model: "Rating",
+          select: "rating",
+        },
+        {
+          path: "componentSummary.sunroof",
+          model: "Rating",
+          select: "rating",
+        },
+        {
+          path: "componentSummary.paint",
+          model: "Rating",
+          select: "rating",
+        },
+        {
+          path: "componentSummary.dashboard",
+          model: "Rating",
+          select: "rating",
+        },
+        {
+          path: "componentSummary.lights",
+          model: "Rating",
+          select: "rating",
+        },
+        {
+          path: "componentSummary.steering",
           model: "Rating",
           select: "rating",
         },
@@ -1674,16 +1694,6 @@ exports.getAuctionResults = asyncHandler(async (req, res, next) => {
         },
         {
           path: "componentSummary.clutch",
-          model: "Rating",
-          select: "rating",
-        },
-        {
-          path: "componentSummary.backSeat",
-          model: "Rating",
-          select: "rating",
-        },
-        {
-          path: "componentSummary.driveTrain",
           model: "Rating",
           select: "rating",
         },

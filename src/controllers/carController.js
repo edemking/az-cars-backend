@@ -153,7 +153,7 @@ exports.getCars = async (req, res) => {
       .populate({
         path: "componentSummary",
         populate: {
-          path: "engine steering centralLock centralLocking interiorButtons gearbox dashLight audioSystem windowControl electricComponents acHeating dashboard roof breaks suspension gloveBox frontSeats exhaust clutch backSeat driveTrain",
+          path: "windows tires brakes battery engine transmission suspension body interior exterior ac electrical centralLock audio navigation seats sunroof paint dashboard lights steering exhaust clutch",
           model: "Rating",
         },
       })
@@ -189,7 +189,7 @@ exports.getCar = async (req, res) => {
       .populate({
         path: "componentSummary",
         populate: {
-          path: "engine steering centralLock centralLocking interiorButtons gearbox dashLight audioSystem windowControl electricComponents acHeating dashboard roof breaks suspension gloveBox frontSeats exhaust clutch backSeat driveTrain",
+          path: "windows tires brakes battery engine transmission suspension body interior exterior ac electrical centralLock audio navigation seats sunroof paint dashboard lights steering exhaust clutch",
           model: "Rating",
         },
       })
@@ -258,27 +258,29 @@ exports.createCar = async (req, res) => {
         // Clean and validate each field in componentSummary
         const cleanedSummary = {};
         const fields = [
+          "windows",
+          "tires",
+          "brakes",
+          "battery",
           "engine",
-          "steering",
-          "centralLock",
-          "centralLocking",
-          "interiorButtons",
-          "gearbox",
-          "dashLight",
-          "audioSystem",
-          "windowControl",
-          "electricComponents",
-          "acHeating",
-          "dashboard",
-          "roof",
-          "breaks",
+          "transmission",
           "suspension",
-          "gloveBox",
-          "frontSeats",
+          "body",
+          "interior",
+          "exterior",
+          "ac",
+          "electrical",
+          "centralLock",
+          "audio",
+          "navigation",
+          "seats",
+          "sunroof",
+          "paint",
+          "dashboard",
+          "lights",
+          "steering",
           "exhaust",
           "clutch",
-          "backSeat",
-          "driveTrain",
         ];
 
         fields.forEach((field) => {
@@ -408,7 +410,7 @@ exports.createCar = async (req, res) => {
       .populate({
         path: "componentSummary",
         populate: {
-          path: "engine steering centralLock centralLocking interiorButtons gearbox dashLight audioSystem windowControl electricComponents acHeating dashboard roof breaks suspension gloveBox frontSeats exhaust clutch backSeat driveTrain",
+          path: "windows tires brakes battery engine transmission suspension body interior exterior ac electrical centralLock audio navigation seats sunroof paint dashboard lights steering exhaust clutch",
           model: "Rating",
         },
       })
@@ -1002,7 +1004,7 @@ exports.searchCars = async (req, res) => {
                  .populate({
                    path: 'componentSummary',
                    populate: {
-                     path: 'engine steering centralLock centralLocking interiorButtons gearbox dashLight audioSystem windowControl electricComponents acHeating dashboard roof breaks suspension gloveBox frontSeats exhaust clutch backSeat driveTrain',
+                     path: 'windows tires brakes battery engine transmission suspension body interior exterior ac electrical centralLock audio navigation seats sunroof paint dashboard lights steering exhaust clutch',
                      model: 'Rating'
                    }
                  })
@@ -1184,7 +1186,6 @@ exports.createMake = async (req, res) => {
     });
   }
 };
-
 
 
 // Create a new model
