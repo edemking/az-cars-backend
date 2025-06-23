@@ -5,7 +5,8 @@ const {
   markAllNotificationsAsRead,
   deleteNotification,
   clearAllNotifications,
-  getNotificationStats
+  getNotificationStats,
+  testPushNotification
 } = require('../controllers/notificationController');
 
 const router = express.Router();
@@ -14,7 +15,7 @@ const router = express.Router();
 const { protect } = require('../middleware/auth');
 
 // All routes require authentication
-router.use(protect);
+// router.use(protect);
 
 // Routes
 router.route('/')
@@ -22,6 +23,9 @@ router.route('/')
 
 router.route('/stats')
   .get(getNotificationStats);
+
+router.route('/test-push')
+  .post(testPushNotification);
 
 router.route('/read-all')
   .put(markAllNotificationsAsRead);

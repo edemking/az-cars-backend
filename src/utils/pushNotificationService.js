@@ -1,11 +1,18 @@
-const { Expo } = require('expo-server-sdk');
-const User = require('../models/User');
+const { Expo } = require("expo-server-sdk");
+const User = require("../models/User");
 
-// Create a new Expo SDK client
+// Create a new Expo SDK client with proper configuration
 const expo = new Expo({
   accessToken: process.env.EXPO_ACCESS_TOKEN,
   useFcmV1: true,
 });
+
+// Log configuration status
+if (process.env.EXPO_ACCESS_TOKEN) {
+  console.log("✅ Expo SDK initialized with access token");
+} else {
+  console.warn("⚠️  Expo SDK initialized without access token - push notifications may have rate limits");
+}
 
 /**
  * Send push notification to a single user
@@ -20,26 +27,29 @@ const expo = new Expo({
  */
 const sendPushNotificationToUser = async (userId, notificationData) => {
   try {
-    // Get user's notification token
-    const user = await User.findById(userId).select('notificationToken');
+    console.log(`📱 Attempting to send push notification to user ${userId}`);
     
+    // Get user's notification token
+    const user = await User.findById(userId).select("notificationToken");
+
     if (!user || !user.notificationToken) {
-      console.log(`No notification token found for user ${userId}`);
-      return { success: false, reason: 'No notification token' };
+      console.log(`❌ No notification token found for user ${userId}`);
+      return { success: false, reason: "No notification token" };
     }
 
     const pushToken = user.notificationToken;
+    console.log(`📲 Found push token for user ${userId}: ${pushToken.substring(0, 20)}...`);
 
     // Check that the push token appears to be valid
     if (!Expo.isExpoPushToken(pushToken)) {
-      console.error(`Push token ${pushToken} is not a valid Expo push token`);
-      return { success: false, reason: 'Invalid push token' };
+      console.error(`❌ Push token ${pushToken} is not a valid Expo push token`);
+      return { success: false, reason: "Invalid push token" };
     }
 
     // Construct the message
     const message = {
       to: pushToken,
-      sound: notificationData.sound || 'default',
+      sound: notificationData.sound || "default",
       title: notificationData.title,
       body: notificationData.body,
       data: notificationData.data || {},
@@ -48,24 +58,33 @@ const sendPushNotificationToUser = async (userId, notificationData) => {
     // Add image if provided
     if (notificationData.image) {
       message.richContent = {
-        image: notificationData.image
+        image: notificationData.image,
       };
     }
+
+    console.log(`📤 Sending push notification to user ${userId}:`, {
+      title: message.title,
+      body: message.body,
+      token: pushToken.substring(0, 20) + "..."
+    });
 
     // Send the notification
     const tickets = await expo.sendPushNotificationsAsync([message]);
     const ticket = tickets[0];
 
-    if (ticket.status === 'error') {
-      console.error(`Error sending push notification to user ${userId}:`, ticket.message);
-      return { success: false, reason: ticket.message, details: ticket.details };
+    if (ticket.status === "error") {
+      console.error(`❌ Error sending push notification to user ${userId}:`, ticket.message);
+      return {
+        success: false,
+        reason: ticket.message,
+        details: ticket.details,
+      };
     }
 
-    console.log(`Push notification sent successfully to user ${userId}`);
+    console.log(`✅ Push notification sent successfully to user ${userId}`);
     return { success: true, ticket };
-
   } catch (error) {
-    console.error(`Error sending push notification to user ${userId}:`, error);
+    console.error(`❌ Error sending push notification to user ${userId}:`, error);
     return { success: false, reason: error.message };
   }
 };
@@ -78,14 +97,18 @@ const sendPushNotificationToUser = async (userId, notificationData) => {
  */
 const sendPushNotificationsToUsers = async (userIds, notificationData) => {
   try {
+    console.log(`📱 Attempting to send push notifications to ${userIds.length} users`);
+    
     // Get all users' notification tokens
-    const users = await User.find({ 
+    const users = await User.find({
       _id: { $in: userIds },
-      notificationToken: { $exists: true, $ne: null }
-    }).select('_id notificationToken');
+      notificationToken: { $exists: true, $ne: null },
+    }).select("_id notificationToken");
+
+    console.log(`📲 Found ${users.length} users with notification tokens out of ${userIds.length} total users`);
 
     if (users.length === 0) {
-      console.log('No users with notification tokens found');
+      console.log("❌ No users with notification tokens found");
       return [];
     }
 
@@ -98,7 +121,9 @@ const sendPushNotificationsToUsers = async (userIds, notificationData) => {
 
       // Check that the push token appears to be valid
       if (!Expo.isExpoPushToken(pushToken)) {
-        console.error(`Push token ${pushToken} is not a valid Expo push token for user ${user._id}`);
+        console.error(
+          `Push token ${pushToken} is not a valid Expo push token for user ${user._id}`
+        );
         continue;
       }
 
@@ -107,7 +132,7 @@ const sendPushNotificationsToUsers = async (userIds, notificationData) => {
       // Construct the message
       const message = {
         to: pushToken,
-        sound: notificationData.sound || 'default',
+        sound: notificationData.sound || "default",
         title: notificationData.title,
         body: notificationData.body,
         data: notificationData.data || {},
@@ -116,7 +141,7 @@ const sendPushNotificationsToUsers = async (userIds, notificationData) => {
       // Add image if provided
       if (notificationData.image) {
         message.richContent = {
-          image: notificationData.image
+          image: notificationData.image,
         };
       }
 
@@ -124,7 +149,7 @@ const sendPushNotificationsToUsers = async (userIds, notificationData) => {
     }
 
     if (messages.length === 0) {
-      console.log('No valid push tokens found');
+      console.log("No valid push tokens found");
       return [];
     }
 
@@ -135,48 +160,51 @@ const sendPushNotificationsToUsers = async (userIds, notificationData) => {
     for (const chunk of chunks) {
       try {
         const ticketChunk = await expo.sendPushNotificationsAsync(chunk);
-        
+
         // Map tickets back to users
         ticketChunk.forEach((ticket, index) => {
           const message = chunk[index];
           const userId = userTokenMap[message.to];
-          
-          if (ticket.status === 'error') {
-            console.error(`Error sending push notification to user ${userId}:`, ticket.message);
-            results.push({ 
-              userId, 
-              success: false, 
-              reason: ticket.message, 
-              details: ticket.details 
+
+          if (ticket.status === "error") {
+            console.error(
+              `Error sending push notification to user ${userId}:`,
+              ticket.message
+            );
+            results.push({
+              userId,
+              success: false,
+              reason: ticket.message,
+              details: ticket.details,
             });
           } else {
-            console.log(`Push notification sent successfully to user ${userId}`);
-            results.push({ 
-              userId, 
-              success: true, 
-              ticket 
+            console.log(
+              `Push notification sent successfully to user ${userId}`
+            );
+            results.push({
+              userId,
+              success: true,
+              ticket,
             });
           }
         });
-
       } catch (error) {
-        console.error('Error sending push notification chunk:', error);
+        console.error("Error sending push notification chunk:", error);
         // Add failed results for this chunk
-        chunk.forEach(message => {
+        chunk.forEach((message) => {
           const userId = userTokenMap[message.to];
-          results.push({ 
-            userId, 
-            success: false, 
-            reason: error.message 
+          results.push({
+            userId,
+            success: false,
+            reason: error.message,
           });
         });
       }
     }
 
     return results;
-
   } catch (error) {
-    console.error('Error sending push notifications to users:', error);
+    console.error("Error sending push notifications to users:", error);
     throw error;
   }
 };
@@ -188,31 +216,44 @@ const sendPushNotificationsToUsers = async (userIds, notificationData) => {
  * @param {Object} notificationData - The notification data
  * @returns {Promise<Array>} Array of results for each user
  */
-const sendPushNotificationToAuctionBidders = async (auctionId, newBidderId, notificationData) => {
+const sendPushNotificationToAuctionBidders = async (
+  auctionId,
+  newBidderId,
+  notificationData
+) => {
   try {
-    const Bid = require('../models/Bid');
-    
+    const Bid = require("../models/Bid");
+
     // Find all users who have bid on this auction (except the new bidder)
     const previousBids = await Bid.find({
       auction: auctionId,
-      bidder: { $ne: newBidderId }
-    }).populate('bidder', '_id');
+      bidder: { $ne: newBidderId },
+    }).populate("bidder", "_id");
 
     // Get unique bidder IDs
-    const uniqueBidderIds = [...new Set(previousBids.map(bid => bid.bidder._id.toString()))];
+    const uniqueBidderIds = [
+      ...new Set(previousBids.map((bid) => bid.bidder._id.toString())),
+    ];
 
     if (uniqueBidderIds.length === 0) {
       console.log(`No other bidders found for auction ${auctionId}`);
       return [];
     }
 
-    console.log(`Sending push notifications to ${uniqueBidderIds.length} bidders for auction ${auctionId}`);
-    
-    // Send push notifications to all bidders
-    return await sendPushNotificationsToUsers(uniqueBidderIds, notificationData);
+    console.log(
+      `Sending push notifications to ${uniqueBidderIds.length} bidders for auction ${auctionId}`
+    );
 
+    // Send push notifications to all bidders
+    return await sendPushNotificationsToUsers(
+      uniqueBidderIds,
+      notificationData
+    );
   } catch (error) {
-    console.error('Error sending push notifications to auction bidders:', error);
+    console.error(
+      "Error sending push notifications to auction bidders:",
+      error
+    );
     throw error;
   }
 };
@@ -225,14 +266,26 @@ const sendPushNotificationToAuctionBidders = async (auctionId, newBidderId, noti
  * @param {Array} usersWithTokens - Array of users with notification tokens
  * @returns {Promise<Array>} Array of results for each user
  */
-const sendPushNotificationToUsersForNewAuction = async (auction, populatedAuction, carDetails, usersWithTokens) => {
+const sendPushNotificationToUsersForNewAuction = async (
+  auction,
+  populatedAuction,
+  carDetails,
+  usersWithTokens
+) => {
   try {
+    console.log(`🔔 Processing new auction push notifications for auction: ${auction._id}`);
+    console.log(`📋 Auction details: ${auction.auctionTitle} (${carDetails})`);
+    
     if (usersWithTokens.length === 0) {
-      console.log('No users with notification tokens found for new auction push notification');
+      console.log(
+        "❌ No users with notification tokens found for new auction push notification"
+      );
       return [];
     }
 
-    console.log(`Sending push notifications about new auction to ${usersWithTokens.length} users`);
+    console.log(
+      `📤 Sending push notifications about new auction to ${usersWithTokens.length} users`
+    );
 
     // Calculate auction end time for better description
     const endTime = new Date(auction.endTime);
@@ -241,32 +294,38 @@ const sendPushNotificationToUsersForNewAuction = async (auction, populatedAuctio
 
     // Prepare notification data
     const notificationData = {
-      title: 'New Auction Available! 🚗',
+      title: "New Auction Available! 🚗",
       body: `${carDetails} auction just started! Starting bid: AED ${auction.startingPrice.toLocaleString()}. Auction ends in ${durationHours}h.`,
-      sound: 'default',
+      sound: "default",
       data: {
-        type: 'new_auction_created',
+        type: "new_auction_created",
         auctionId: auction._id.toString(),
         auctionTitle: auction.auctionTitle,
         carDetails: carDetails,
         startingPrice: auction.startingPrice,
         endTime: auction.endTime.toISOString(),
-        auctionType: auction.type
-      }
+        auctionType: auction.type,
+      },
     };
 
     // Extract user IDs from users with tokens
-    const userIds = usersWithTokens.map(user => user._id.toString());
+    const userIds = usersWithTokens.map((user) => user._id.toString());
 
     // Send push notifications to all users
-    const results = await sendPushNotificationsToUsers(userIds, notificationData);
+    const results = await sendPushNotificationsToUsers(
+      userIds,
+      notificationData
+    );
 
-    console.log(`Push notifications sent for new auction. Success: ${results.filter(r => r.success).length}, Failed: ${results.filter(r => !r.success).length}`);
+    console.log(
+      `Push notifications sent for new auction. Success: ${
+        results.filter((r) => r.success).length
+      }, Failed: ${results.filter((r) => !r.success).length}`
+    );
 
     return results;
-
   } catch (error) {
-    console.error('Error sending push notifications for new auction:', error);
+    console.error("Error sending push notifications for new auction:", error);
     throw error;
   }
 };
@@ -275,5 +334,5 @@ module.exports = {
   sendPushNotificationToUser,
   sendPushNotificationsToUsers,
   sendPushNotificationToAuctionBidders,
-  sendPushNotificationToUsersForNewAuction
-}; 
+  sendPushNotificationToUsersForNewAuction,
+};

@@ -362,10 +362,17 @@ const createNewAuctionNotifications = async (auction) => {
     // Send push notifications in the background
     setImmediate(async () => {
       try {
+        console.log(`🚀 Initiating push notifications for new auction ${auction._id} to ${usersWithTokens.length} users`);
         const { sendPushNotificationToUsersForNewAuction } = require('./pushNotificationService');
-        await sendPushNotificationToUsersForNewAuction(auction, populatedAuction, carDetails, usersWithTokens);
+        const results = await sendPushNotificationToUsersForNewAuction(auction, populatedAuction, carDetails, usersWithTokens);
+        console.log(`📊 Push notification results for auction ${auction._id}:`, {
+          total: results.length,
+          successful: results.filter(r => r.success).length,
+          failed: results.filter(r => !r.success).length
+        });
       } catch (pushError) {
-        console.error('Error sending push notifications for new auction:', pushError);
+        console.error('❌ Error sending push notifications for new auction:', pushError);
+        console.error('Push notification error details:', pushError.stack);
       }
     });
 

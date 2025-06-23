@@ -6,5 +6,6 @@ module.exports = {
   JWT_EXPIRE: process.env.JWT_EXPIRE || "30d",
   EMAIL_SERVICE: process.env.EMAIL_SERVICE || "gmail",
   EMAIL_USER: process.env.EMAIL_USER,
-  EMAIL_PASSWORD: process.env.EMAIL_PASSWORD
+  EMAIL_PASSWORD: process.env.EMAIL_PASSWORD,
+  EXPO_ACCESS_TOKEN: process.env.EXPO_ACCESS_TOKEN
 }; 

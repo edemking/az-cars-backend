@@ -1,7 +1,8 @@
-const Notification = require('../models/Notification');
-const asyncHandler = require('../middleware/asyncHandler');
-const ErrorResponse = require('../utils/errorResponse');
-const { sendSuccess, sendError } = require('../utils/responseHandler');
+const Notification = require("../models/Notification");
+const asyncHandler = require("../middleware/asyncHandler");
+const ErrorResponse = require("../utils/errorResponse");
+const { sendSuccess, sendError } = require("../utils/responseHandler");
+const { Expo } = require("expo-server-sdk");
 
 // @desc    Get user notifications
 // @route   GET /api/notifications
@@ -16,7 +17,7 @@ exports.getUserNotifications = asyncHandler(async (req, res, next) => {
 
   // Filter by read status if provided
   if (req.query.isRead !== undefined) {
-    query.isRead = req.query.isRead === 'true';
+    query.isRead = req.query.isRead === "true";
   }
 
   // Filter by notification type if provided
@@ -30,20 +31,20 @@ exports.getUserNotifications = asyncHandler(async (req, res, next) => {
   // Get notifications
   const notifications = await Notification.find(query)
     .populate({
-      path: 'auction',
-      select: 'auctionTitle status endTime currentHighestBid',
+      path: "auction",
+      select: "auctionTitle status endTime currentHighestBid",
       populate: {
-        path: 'car',
-        select: 'images',
+        path: "car",
+        select: "images",
         populate: [
-          { path: 'make', select: 'name' },
-          { path: 'model', select: 'name' }
-        ]
-      }
+          { path: "make", select: "name" },
+          { path: "model", select: "name" },
+        ],
+      },
     })
     .populate({
-      path: 'bid',
-      select: 'amount createdAt'
+      path: "bid",
+      select: "amount createdAt",
     })
     .sort({ createdAt: -1 })
     .limit(limit)
@@ -51,25 +52,25 @@ exports.getUserNotifications = asyncHandler(async (req, res, next) => {
 
   // Calculate pagination info
   const pagination = {};
-  
+
   if (startIndex + limit < total) {
     pagination.next = {
       page: page + 1,
-      limit
+      limit,
     };
   }
 
   if (startIndex > 0) {
     pagination.prev = {
       page: page - 1,
-      limit
+      limit,
     };
   }
 
   // Get unread count
   const unreadCount = await Notification.countDocuments({
     user: req.user.id,
-    isRead: false
+    isRead: false,
   });
 
   sendSuccess(res, {
@@ -78,8 +79,8 @@ exports.getUserNotifications = asyncHandler(async (req, res, next) => {
       count: notifications.length,
       total,
       unreadCount,
-      pagination
-    }
+      pagination,
+    },
   });
 });
 
@@ -91,14 +92,17 @@ exports.markNotificationAsRead = asyncHandler(async (req, res, next) => {
 
   if (!notification) {
     return next(
-      new ErrorResponse(`Notification not found with id of ${req.params.id}`, 404)
+      new ErrorResponse(
+        `Notification not found with id of ${req.params.id}`,
+        404
+      )
     );
   }
 
   // Make sure notification belongs to user
   if (notification.user.toString() !== req.user.id) {
     return next(
-      new ErrorResponse('Not authorized to access this notification', 401)
+      new ErrorResponse("Not authorized to access this notification", 401)
     );
   }
 
@@ -106,8 +110,8 @@ exports.markNotificationAsRead = asyncHandler(async (req, res, next) => {
   await notification.save();
 
   sendSuccess(res, {
-    message: 'Notification marked as read',
-    data: notification
+    message: "Notification marked as read",
+    data: notification,
   });
 });
 
@@ -123,8 +127,8 @@ exports.markAllNotificationsAsRead = asyncHandler(async (req, res, next) => {
   sendSuccess(res, {
     message: `${result.modifiedCount} notifications marked as read`,
     data: {
-      modifiedCount: result.modifiedCount
-    }
+      modifiedCount: result.modifiedCount,
+    },
   });
 });
 
@@ -136,21 +140,24 @@ exports.deleteNotification = asyncHandler(async (req, res, next) => {
 
   if (!notification) {
     return next(
-      new ErrorResponse(`Notification not found with id of ${req.params.id}`, 404)
+      new ErrorResponse(
+        `Notification not found with id of ${req.params.id}`,
+        404
+      )
     );
   }
 
   // Make sure notification belongs to user
   if (notification.user.toString() !== req.user.id) {
     return next(
-      new ErrorResponse('Not authorized to delete this notification', 401)
+      new ErrorResponse("Not authorized to delete this notification", 401)
     );
   }
 
   await notification.deleteOne();
 
   sendSuccess(res, {
-    message: 'Notification deleted successfully'
+    message: "Notification deleted successfully",
   });
 });
 
@@ -163,8 +170,8 @@ exports.clearAllNotifications = asyncHandler(async (req, res, next) => {
   sendSuccess(res, {
     message: `${result.deletedCount} notifications cleared`,
     data: {
-      deletedCount: result.deletedCount
-    }
+      deletedCount: result.deletedCount,
+    },
   });
 });
 
@@ -176,23 +183,104 @@ exports.getNotificationStats = asyncHandler(async (req, res, next) => {
     { $match: { user: req.user._id } },
     {
       $group: {
-        _id: '$type',
+        _id: "$type",
         count: { $sum: 1 },
         unreadCount: {
-          $sum: { $cond: [{ $eq: ['$isRead', false] }, 1, 0] }
-        }
-      }
-    }
+          $sum: { $cond: [{ $eq: ["$isRead", false] }, 1, 0] },
+        },
+      },
+    },
   ]);
 
-  const totalNotifications = await Notification.countDocuments({ user: req.user.id });
-  const totalUnread = await Notification.countDocuments({ user: req.user.id, isRead: false });
+  const totalNotifications = await Notification.countDocuments({
+    user: req.user.id,
+  });
+  const totalUnread = await Notification.countDocuments({
+    user: req.user.id,
+    isRead: false,
+  });
 
   sendSuccess(res, {
     data: {
       totalNotifications,
       totalUnread,
-      byType: stats
-    }
+      byType: stats,
+    },
   });
-}); 
+});
+
+// @desc    Test push notification to a specific token
+// @route   POST /api/notifications/test-push
+// @access  Private
+exports.testPushNotification = asyncHandler(async (req, res, next) => {
+  const { token, title, body, data, sound, image } = req.body;
+
+  // Validate required fields
+  if (!token) {
+    return next(new ErrorResponse("Push token is required", 400));
+  }
+
+  if (!title || !body) {
+    return next(new ErrorResponse("Title and body are required", 400));
+  }
+
+  try {
+    // Create a new Expo SDK client
+    const expo = new Expo({
+      accessToken: process.env.EXPO_ACCESS_TOKEN,
+    });
+
+    // Check that the push token appears to be valid
+    if (!Expo.isExpoPushToken(token)) {
+      return next(new ErrorResponse("Invalid Expo push token format", 400));
+    }
+
+    // Construct the message
+    const message = {
+      to: token,
+      sound: sound || "default",
+      title: title,
+      body: body,
+      data: data || { test: true },
+    };
+
+    // Add image if provided
+    if (image) {
+      message.richContent = {
+        image: image,
+      };
+    }
+
+    // Send the notification
+    const tickets = await expo.sendPushNotificationsAsync([message]);
+    const ticket = tickets[0];
+
+    if (ticket.status === "error") {
+      console.error("Error sending test push notification:", ticket.message);
+      return next(
+        new ErrorResponse(
+          `Failed to send push notification: ${ticket.message}`,
+          400
+        )
+      );
+    }
+
+    console.log("Test push notification sent successfully");
+
+    sendSuccess(res, {
+      message: "Test push notification sent successfully",
+      data: {
+        ticket,
+        sentMessage: message,
+      },
+    });
+  } catch (error) {
+    console.error("Error sending test push notification:", error);
+    return next(
+      new ErrorResponse(
+        `Failed to send push notification: ${error.message}`,
+        500
+      )
+    );
+  }
+});
