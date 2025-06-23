@@ -101,6 +101,7 @@ const carSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "CarOption",
     required: false,
+    default: null,
   },
   fuelType: {
     type: mongoose.Schema.Types.ObjectId,
