@@ -27,4 +27,31 @@ const generatePassword = (length = 10) => {
   return password.split('').sort(() => 0.5 - Math.random()).join('');
 };
 
-module.exports = { generatePassword }; 
+/**
+ * Generates a simple temporary password with only letters and numbers
+ * @param {number} length - Length of the password (default: 8)
+ * @returns {string} - Generated simple password
+ */
+const generateSimplePassword = (length = 8) => {
+  const upperChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const lowerChars = 'abcdefghijklmnopqrstuvwxyz';
+  const numbers = '0123456789';
+  
+  const allChars = upperChars + lowerChars + numbers;
+  
+  // Ensure at least one uppercase, one lowercase, and one number
+  let password = 
+    upperChars.charAt(Math.floor(Math.random() * upperChars.length)) +
+    lowerChars.charAt(Math.floor(Math.random() * lowerChars.length)) +
+    numbers.charAt(Math.floor(Math.random() * numbers.length));
+  
+  // Fill the rest with random alphanumeric characters
+  for (let i = 3; i < length; i++) {
+    password += allChars.charAt(Math.floor(Math.random() * allChars.length));
+  }
+  
+  // Shuffle the password characters
+  return password.split('').sort(() => 0.5 - Math.random()).join('');
+};
+
+module.exports = { generatePassword, generateSimplePassword }; 

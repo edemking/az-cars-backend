@@ -1,5 +1,5 @@
 const User = require('../models/User');
-const { generatePassword } = require('../utils/passwordGenerator');
+const { generatePassword, generateSimplePassword } = require('../utils/passwordGenerator');
 const emailService = require('../utils/emailService');
 const { getFileUrl, deleteFile } = require('../utils/fileUpload');
 const { sendSuccess, sendError } = require('../utils/responseHandler');
@@ -61,8 +61,8 @@ exports.createUser = async (req, res) => {
       }
     }
     
-    // Generate a random password
-    const generatedPassword = generatePassword(12);
+    // Generate a simple temporary password
+    const generatedPassword = generateSimplePassword(8);
     userData.password = generatedPassword;
     
     const user = new User(userData);

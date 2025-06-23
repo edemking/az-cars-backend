@@ -260,6 +260,204 @@ const getEmailTemplate = (title, heading, content, codeOrButton = '', buttonLink
 };
 
 /**
+ * Create a welcome email template with custom credentials section
+ * @param {string} title - Email title/subject
+ * @param {string} heading - Main heading text
+ * @param {string} content - Main content text
+ * @param {string} credentialsHtml - Custom HTML for credentials display
+ * @returns {string} - Complete HTML email template
+ */
+const getWelcomeEmailTemplate = (title, heading, content, credentialsHtml) => {
+  const currentYear = new Date().getFullYear();
+  
+  return `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>${title}</title>
+      <style>
+        * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+        }
+        
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+          line-height: 1.6;
+          color: #ffffff;
+          background-color: #000000;
+        }
+        
+        .container {
+          max-width: 600px;
+          margin: 0 auto;
+          background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
+          border-radius: 12px;
+          overflow: hidden;
+          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+        
+        .header {
+          background: linear-gradient(135deg, #000000 0%, #2a2a2a 100%);
+          padding: 40px 20px;
+          text-align: center;
+          border-bottom: 3px solid #FF0076;
+        }
+        
+        .logo {
+          width: 120px;
+          height: auto;
+          margin-bottom: 20px;
+          filter: drop-shadow(0 4px 8px rgba(255, 255, 255, 0.1));
+        }
+        
+        .content {
+          padding: 50px 40px;
+          text-align: center;
+        }
+        
+        .heading {
+          font-size: 32px;
+          font-weight: 700;
+          color: #ffffff;
+          margin-bottom: 20px;
+          text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        
+        .message {
+          font-size: 16px;
+          color: #cccccc;
+          line-height: 1.8;
+          margin-bottom: 20px;
+          max-width: 480px;
+          margin-left: auto;
+          margin-right: auto;
+        }
+        
+        .button {
+          display: inline-block;
+          background: linear-gradient(135deg, #FF0076 0%, #FF3399 100%);
+          color: #ffffff;
+          padding: 16px 40px;
+          text-decoration: none;
+          border-radius: 8px;
+          font-weight: 600;
+          font-size: 16px;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          transition: all 0.3s ease;
+          box-shadow: 0 4px 15px rgba(255, 0, 118, 0.3);
+          border: none;
+          cursor: pointer;
+          margin-top: 20px;
+        }
+        
+        .button:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 20px rgba(255, 0, 118, 0.4);
+        }
+        
+        .divider {
+          height: 1px;
+          background: linear-gradient(90deg, transparent, #333333, transparent);
+          margin: 40px 0;
+        }
+        
+        .footer {
+          background: #0a0a0a;
+          padding: 30px 40px;
+          text-align: center;
+          border-top: 1px solid #333333;
+        }
+        
+        .footer-text {
+          font-size: 14px;
+          color: #666666;
+          margin-bottom: 15px;
+        }
+        
+        .footer-links {
+          margin-top: 20px;
+        }
+        
+        .footer-links a {
+          color: #888888;
+          text-decoration: none;
+          font-size: 12px;
+          margin: 0 10px;
+          transition: color 0.3s ease;
+        }
+        
+        .footer-links a:hover {
+          color: #FF0076;
+        }
+        
+        @media (max-width: 600px) {
+          .container {
+            margin: 0;
+            border-radius: 0;
+          }
+          
+          .content {
+            padding: 30px 20px;
+          }
+          
+          .heading {
+            font-size: 24px;
+          }
+          
+          .message {
+            font-size: 14px;
+          }
+          
+          .button {
+            padding: 14px 30px;
+            font-size: 14px;
+          }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <img src="cid:logo" alt="AZ Cars" class="logo">
+        </div>
+        
+        <div class="content">
+          <h1 class="heading">${heading}</h1>
+          <p class="message">${content}</p>
+          
+          ${credentialsHtml}
+          
+          <a href="${config.FRONTEND_URL || 'https://azcars.com'}" class="button">LOGIN NOW</a>
+        </div>
+        
+        <div class="divider"></div>
+        
+        <div class="footer">
+          <div class="footer-text">
+            <strong>AZ Cars</strong><br>
+            Professional Car Auction Services
+          </div>
+          <div class="footer-text">
+            © ${currentYear} AZ Cars. All Rights Reserved.
+          </div>
+          <div class="footer-links">
+            <a href="#">Privacy Policy</a>
+            <a href="#">Terms of Service</a>
+            <a href="#">Contact Support</a>
+          </div>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+};
+
+/**
  * Send an email with the provided details using the modern template
  * @param {string} to - Recipient email
  * @param {string} subject - Email subject
@@ -307,7 +505,7 @@ exports.sendPasswordResetEmail = async (to, otp) => {
 };
 
 /**
- * Send a welcome email to a new user using the modern template
+ * Send a welcome email to a new user with distinct credentials display
  * @param {string} to - Recipient email
  * @param {string} password - User's initial password
  * @param {string} firstName - User's first name
@@ -316,9 +514,45 @@ exports.sendPasswordResetEmail = async (to, otp) => {
 exports.sendWelcomeEmail = async (to, password, firstName) => {
   const subject = 'Welcome to AZ Cars!';
   const heading = `Welcome ${firstName}!`;
-  const content = `Thank you for joining AZ Cars! Your account has been created successfully. Your login email is <strong>${to}</strong> and your temporary password is <strong>${password}</strong>. Please login and change your password for security.`;
+  const content = `Thank you for joining AZ Cars! Your account has been created successfully. Please use the credentials below to access your account:`;
   
-  return exports.sendEmail(to, subject, heading, content, 'LOGIN NOW', config.FRONTEND_URL || 'https://azcars.com', false);
+  // Create custom HTML with distinct credential display
+  const credentialsHtml = `
+    <div style="background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%); border: 2px solid #FF0076; border-radius: 12px; padding: 30px; margin: 30px 0; text-align: left;">
+      <div style="margin-bottom: 20px;">
+        <div style="font-size: 14px; color: #999999; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px;">Email Address</div>
+        <div style="font-size: 18px; font-weight: 700; color: #ffffff; font-family: 'Courier New', monospace; background: rgba(255, 0, 118, 0.1); padding: 10px; border-radius: 6px; word-break: break-all;">${to}</div>
+      </div>
+      <div>
+        <div style="font-size: 14px; color: #999999; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px;">Temporary Password</div>
+        <div style="font-size: 18px; font-weight: 700; color: #FF0076; font-family: 'Courier New', monospace; background: rgba(255, 0, 118, 0.1); padding: 10px; border-radius: 6px; letter-spacing: 2px;">${password}</div>
+      </div>
+    </div>
+    <div style="background: rgba(255, 0, 118, 0.1); border: 1px solid rgba(255, 0, 118, 0.3); border-radius: 8px; padding: 15px; margin: 20px 0; font-size: 13px; color: #cccccc;">
+      <strong>Important:</strong> This is a temporary password. Please login and change it immediately for security reasons.
+    </div>
+  `;
+  
+  // Modify the email template to include credentials
+  const html = getWelcomeEmailTemplate(subject, heading, content, credentialsHtml);
+  
+  const logoPath = path.join(__dirname, '../../assets/icon.png');
+  
+  const mailOptions = {
+    from: `"AZ Cars" <${config.EMAIL_USER}>`,
+    to,
+    subject,
+    html,
+    attachments: [
+      {
+        filename: 'logo.png',
+        path: logoPath,
+        cid: 'logo'
+      }
+    ]
+  };
+
+  return transporter.sendMail(mailOptions);
 };
 
 /**
