@@ -270,4 +270,158 @@ Error responses:
 - Maximum file size: 5MB
 - Profile pictures are stored in `/uploads/profiles/`
 - ID documents are stored in `/uploads/ids/`
-- Car images are stored in `/uploads/cars/` 
+- Car images are stored in `/uploads/cars/`
+
+## Make and Model Management Endpoints
+
+### Create Make
+**POST** `/api/cars/makes`
+
+Creates a new car make/brand.
+
+**Authentication:** Required
+
+**Request Body:**
+```json
+{
+  "name": "Toyota", // Required
+  "country": "Japan", // Optional
+  "logo": "https://example.com/toyota-logo.png" // Optional
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Make created successfully",
+  "data": {
+    "_id": "60d5f484b6e4e51c9c8f4a12",
+    "name": "Toyota",
+    "country": "Japan",
+    "logo": "https://example.com/toyota-logo.png",
+    "createdAt": "2023-06-25T10:00:00Z"
+  }
+}
+```
+
+### Create Model
+**POST** `/api/cars/models`
+
+Creates a new car model under a specific make.
+
+**Authentication:** Required
+
+**Request Body:**
+```json
+{
+  "name": "Camry", // Required
+  "make": "60d5f484b6e4e51c9c8f4a12", // Required - Make ObjectId
+  "startYear": 1982, // Optional
+  "endYear": 2024, // Optional
+  "image": "https://example.com/camry.jpg" // Optional
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Model created successfully",
+  "data": {
+    "_id": "60d5f484b6e4e51c9c8f4b13",
+    "name": "Camry",
+    "make": {
+      "_id": "60d5f484b6e4e51c9c8f4a12",
+      "name": "Toyota",
+      "country": "Japan",
+      "logo": "https://example.com/toyota-logo.png"
+    },
+    "startYear": 1982,
+    "endYear": 2024,
+    "image": "https://example.com/camry.jpg",
+    "createdAt": "2023-06-25T10:05:00Z"
+  }
+}
+```
+
+### Get All Makes
+**GET** `/api/cars/makes`
+
+Retrieves all car makes/brands.
+
+**Authentication:** Not required
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Found 5 makes",
+  "data": [
+    {
+      "_id": "60d5f484b6e4e51c9c8f4a12",
+      "name": "Toyota",
+      "country": "Japan",
+      "logo": "https://example.com/toyota-logo.png",
+      "createdAt": "2023-06-25T10:00:00Z"
+    }
+  ]
+}
+```
+
+### Get All Models
+**GET** `/api/cars/models`
+
+Retrieves all car models, optionally filtered by make.
+
+**Authentication:** Not required
+
+**Query Parameters:**
+- `makeId` (optional): Filter models by make ObjectId
+
+**Examples:**
+- Get all models: `/api/cars/models`
+- Get models for specific make: `/api/cars/models?makeId=60d5f484b6e4e51c9c8f4a12`
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Found 3 models",
+  "data": [
+    {
+      "_id": "60d5f484b6e4e51c9c8f4b13",
+      "name": "Camry",
+      "make": {
+        "_id": "60d5f484b6e4e51c9c8f4a12",
+        "name": "Toyota",
+        "country": "Japan",
+        "logo": "https://example.com/toyota-logo.png"
+      },
+      "startYear": 1982,
+      "endYear": 2024,
+      "image": "https://example.com/camry.jpg",
+      "createdAt": "2023-06-25T10:05:00Z"
+    }
+  ]
+}
+```
+
+### Error Responses
+
+All endpoints return consistent error responses:
+
+```json
+{
+  "success": false,
+  "message": "Error message",
+  "errors": "Detailed error information"
+}
+```
+
+**Common HTTP Status Codes:**
+- `400` - Bad Request (validation errors)
+- `401` - Unauthorized (authentication required)
+- `404` - Not Found (resource not found)
+- `409` - Conflict (duplicate entry)
+- `500` - Internal Server Error 

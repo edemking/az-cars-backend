@@ -1123,3 +1123,183 @@ exports.validateCarData = async (req, res) => {
     });
   }
 };
+
+// Create a new make
+exports.createMake = async (req, res) => {
+  try {
+    const { name, country, logo } = req.body;
+
+    // Validate required fields
+    if (!name) {
+      return sendError(res, {
+        statusCode: 400,
+        message: "Make name is required",
+      });
+    }
+
+    // Check if make already exists
+    const existingMake = await Make.findOne({ name: name.trim() });
+    if (existingMake) {
+      return sendError(res, {
+        statusCode: 409,
+        message: "Make with this name already exists",
+      });
+    }
+
+    // Create new make
+    const make = new Make({
+      name: name.trim(),
+      country: country?.trim() || null,
+      logo: logo?.trim() || null,
+    });
+
+    await make.save();
+
+    sendSuccess(res, {
+      statusCode: 201,
+      message: "Make created successfully",
+      data: make,
+    });
+  } catch (error) {
+    console.error("Error creating make:", error);
+    sendError(res, {
+      statusCode: 500,
+      message: "Error creating make",
+      errors: error.message,
+    });
+  }
+};
+
+// Create a new model
+exports.createModel = async (req, res) => {
+  try {
+    const { name, make, startYear, endYear, image } = req.body;
+
+    // Validate required fields
+    if (!name) {
+      return sendError(res, {
+        statusCode: 400,
+        message: "Model name is required",
+      });
+    }
+
+    if (!make) {
+      return sendError(res, {
+        statusCode: 400,
+        message: "Make ID is required",
+      });
+    }
+
+    // Validate make exists
+    const makeExists = await Make.findById(make);
+    if (!makeExists) {
+      return sendError(res, {
+        statusCode: 404,
+        message: "Make not found",
+      });
+    }
+
+    // Check if model already exists for this make
+    const existingModel = await Model.findOne({ 
+      name: name.trim(), 
+      make: make 
+    });
+    if (existingModel) {
+      return sendError(res, {
+        statusCode: 409,
+        message: "Model with this name already exists for this make",
+      });
+    }
+
+    // Validate year range if provided
+    if (startYear && endYear && parseInt(startYear) > parseInt(endYear)) {
+      return sendError(res, {
+        statusCode: 400,
+        message: "Start year cannot be greater than end year",
+      });
+    }
+
+    // Create new model
+    const model = new Model({
+      name: name.trim(),
+      make: make,
+      startYear: startYear ? parseInt(startYear) : null,
+      endYear: endYear ? parseInt(endYear) : null,
+      image: image?.trim() || null,
+    });
+
+    await model.save();
+
+    // Populate the make field in the response
+    await model.populate('make', 'name country logo');
+
+    sendSuccess(res, {
+      statusCode: 201,
+      message: "Model created successfully",
+      data: model,
+    });
+  } catch (error) {
+    console.error("Error creating model:", error);
+    sendError(res, {
+      statusCode: 500,
+      message: "Error creating model",
+      errors: error.message,
+    });
+  }
+};
+
+// Get all makes
+exports.getMakes = async (req, res) => {
+  try {
+    const makes = await Make.find({}).sort({ name: 1 });
+    
+    sendSuccess(res, {
+      data: makes,
+      message: `Found ${makes.length} makes`,
+    });
+  } catch (error) {
+    console.error("Error fetching makes:", error);
+    sendError(res, {
+      statusCode: 500,
+      message: "Error fetching makes",
+      errors: error.message,
+    });
+  }
+};
+
+// Get all models (optionally filtered by make)
+exports.getModels = async (req, res) => {
+  try {
+    const { makeId } = req.query;
+    
+    // Build filter
+    const filter = {};
+    if (makeId) {
+      // Validate make exists
+      const makeExists = await Make.findById(makeId);
+      if (!makeExists) {
+        return sendError(res, {
+          statusCode: 404,
+          message: "Make not found",
+        });
+      }
+      filter.make = makeId;
+    }
+
+    const models = await Model.find(filter)
+      .populate('make', 'name country logo')
+      .sort({ name: 1 });
+    
+    sendSuccess(res, {
+      data: models,
+      message: `Found ${models.length} models${makeId ? ' for the specified make' : ''}`,
+    });
+  } catch (error) {
+    console.error("Error fetching models:", error);
+    sendError(res, {
+      statusCode: 500,
+      message: "Error fetching models",
+      errors: error.message,
+    });
+  }
+};

@@ -13,7 +13,7 @@ const transporter = nodemailer.createTransport({
 });
 
 /**
- * Read and prepare the email template
+ * Create a modern, clean email template
  * @param {string} title - Email title/subject
  * @param {string} heading - Main heading text
  * @param {string} content - Main content text
@@ -23,102 +23,244 @@ const transporter = nodemailer.createTransport({
  * @returns {string} - Complete HTML email template
  */
 const getEmailTemplate = (title, heading, content, codeOrButton = '', buttonLink = '', isCode = false) => {
-  try {
-    // Read the template file
-    const templatePath = path.join(__dirname, '../../assets/emailTemplates/05-code-activation.html');
-    let template = fs.readFileSync(templatePath, 'utf8');
-    
-    // Replace template placeholders
-    template = template.replace('<title></title>', `<title>${title}</title>`);
-    
-    // Replace logo source to use the actual logo file
-    template = template.replace('src="images/logo.png"', `src="cid:logo"`);
-    
-    // Replace main heading
-    template = template.replace(
-      'Activate your Account with Code',
-      heading
-    );
-    
-    // Replace main content
-    template = template.replace(
-      'Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi accus antium iste natus.',
-      content
-    );
-    
-    if (isCode) {
-      // Replace the code section
-      template = template.replace(
-        'User Code: <span style="color:#FFFFFF;">Black#798436#</span>',
-        `User Code: <span style="color:#FFFFFF;">${codeOrButton}</span>`
-      );
-      
-      // Hide the button by removing it
-      template = template.replace(
-        /<tr data-element="black-intro-5-button"[\s\S]*?<\/tr>/,
-        ''
-      );
-    } else {
-      // Replace button text and link
-      template = template.replace('ACTIVATE CODE', codeOrButton);
-      template = template.replace('href="#"', `href="${buttonLink}"`);
-      
-      // Hide the code section by removing it
-      template = template.replace(
-        /<tr data-element="black-intro-usercode"[\s\S]*?<\/tr>/g,
-        ''
-      );
-    }
-    
-    // Update footer information
-    template = template.replace(
-      '2022 black Inc. All Rights Reserved.<br>\n                Address name St. 152, City Name, State, Country Name',
-      `${new Date().getFullYear()} AZ Cars. All Rights Reserved.<br>\n                Professional Car Auction Services`
-    );
-    
-    // Remove social media icons (replace with empty space)
-    template = template.replace(
-      /<tr data-element="black-footer-social-icons"[\s\S]*?<\/tr>/g,
-      ''
-    );
-    
-    // Remove app store buttons
-    template = template.replace(
-      /<tr data-element="black-footer-buttons"[\s\S]*?<\/tr>/g,
-      ''
-    );
-    
-    return template;
-  } catch (error) {
-    console.error('Error reading email template:', error);
-    // Fallback to simple HTML if template reading fails
-    return `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #000; color: #fff; padding: 40px;">
-        <div style="text-align: center; margin-bottom: 40px;">
-          <img src="cid:logo" alt="AZ Cars" style="width: 189px;">
-        </div>
-        <h1 style="color: #fff; text-align: center; font-size: 24px;">${heading}</h1>
-        <p style="color: #fff; text-align: center; font-size: 16px; line-height: 1.5;">${content}</p>
-        ${isCode ? 
-          `<div style="background-color: #333; padding: 20px; border-radius: 5px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 3px; margin: 20px 0; border: 3px dotted #FF0076;">
-            ${codeOrButton}
-          </div>` :
-          `<div style="text-align: center; margin: 30px 0;">
-            <a href="${buttonLink}" style="background-color: #FF0076; color: #fff; padding: 16px 38px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">
-              ${codeOrButton}
-            </a>
-          </div>`
+  const currentYear = new Date().getFullYear();
+  
+  return `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>${title}</title>
+      <style>
+        * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
         }
-        <p style="color: #999; text-align: center; font-size: 14px; margin-top: 40px;">
-          © ${new Date().getFullYear()} AZ Cars. All Rights Reserved.
-        </p>
+        
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+          line-height: 1.6;
+          color: #ffffff;
+          background-color: #000000;
+        }
+        
+        .container {
+          max-width: 600px;
+          margin: 0 auto;
+          background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
+          border-radius: 12px;
+          overflow: hidden;
+          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+        
+        .header {
+          background: linear-gradient(135deg, #000000 0%, #2a2a2a 100%);
+          padding: 40px 20px;
+          text-align: center;
+          border-bottom: 3px solid #FF0076;
+        }
+        
+        .logo {
+          width: 120px;
+          height: auto;
+          margin-bottom: 20px;
+          filter: drop-shadow(0 4px 8px rgba(255, 255, 255, 0.1));
+        }
+        
+        .content {
+          padding: 50px 40px;
+          text-align: center;
+        }
+        
+        .heading {
+          font-size: 32px;
+          font-weight: 700;
+          color: #ffffff;
+          margin-bottom: 20px;
+          text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        
+        .message {
+          font-size: 16px;
+          color: #cccccc;
+          line-height: 1.8;
+          margin-bottom: 40px;
+          max-width: 480px;
+          margin-left: auto;
+          margin-right: auto;
+        }
+        
+        .code-section {
+          background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+          border: 2px dashed #FF0076;
+          border-radius: 12px;
+          padding: 30px;
+          margin: 30px 0;
+          text-align: center;
+        }
+        
+        .code-label {
+          font-size: 14px;
+          color: #999999;
+          margin-bottom: 10px;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+        }
+        
+        .code-value {
+          font-size: 28px;
+          font-weight: 700;
+          color: #FF0076;
+          font-family: 'Courier New', monospace;
+          letter-spacing: 3px;
+          text-shadow: 0 2px 4px rgba(255, 0, 118, 0.3);
+        }
+        
+        .button {
+          display: inline-block;
+          background: linear-gradient(135deg, #FF0076 0%, #FF3399 100%);
+          color: #ffffff;
+          padding: 16px 40px;
+          text-decoration: none;
+          border-radius: 8px;
+          font-weight: 600;
+          font-size: 16px;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          transition: all 0.3s ease;
+          box-shadow: 0 4px 15px rgba(255, 0, 118, 0.3);
+          border: none;
+          cursor: pointer;
+        }
+        
+        .button:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 20px rgba(255, 0, 118, 0.4);
+        }
+        
+        .divider {
+          height: 1px;
+          background: linear-gradient(90deg, transparent, #333333, transparent);
+          margin: 40px 0;
+        }
+        
+        .footer {
+          background: #0a0a0a;
+          padding: 30px 40px;
+          text-align: center;
+          border-top: 1px solid #333333;
+        }
+        
+        .footer-text {
+          font-size: 14px;
+          color: #666666;
+          margin-bottom: 15px;
+        }
+        
+        .footer-links {
+          margin-top: 20px;
+        }
+        
+        .footer-links a {
+          color: #888888;
+          text-decoration: none;
+          font-size: 12px;
+          margin: 0 10px;
+          transition: color 0.3s ease;
+        }
+        
+        .footer-links a:hover {
+          color: #FF0076;
+        }
+        
+        .security-note {
+          background: rgba(255, 0, 118, 0.1);
+          border: 1px solid rgba(255, 0, 118, 0.3);
+          border-radius: 8px;
+          padding: 15px;
+          margin-top: 30px;
+          font-size: 13px;
+          color: #cccccc;
+        }
+        
+        @media (max-width: 600px) {
+          .container {
+            margin: 0;
+            border-radius: 0;
+          }
+          
+          .content {
+            padding: 30px 20px;
+          }
+          
+          .heading {
+            font-size: 24px;
+          }
+          
+          .message {
+            font-size: 14px;
+          }
+          
+          .code-value {
+            font-size: 24px;
+          }
+          
+          .button {
+            padding: 14px 30px;
+            font-size: 14px;
+          }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <img src="cid:logo" alt="AZ Cars" class="logo">
+        </div>
+        
+        <div class="content">
+          <h1 class="heading">${heading}</h1>
+          <p class="message">${content}</p>
+          
+          ${isCode ? `
+            <div class="code-section">
+              <div class="code-label">Verification Code</div>
+              <div class="code-value">${codeOrButton}</div>
+            </div>
+            <div class="security-note">
+              <strong>Security Note:</strong> This code will expire in 1 hour. Never share this code with anyone.
+            </div>
+          ` : `
+            <a href="${buttonLink}" class="button">${codeOrButton}</a>
+          `}
+        </div>
+        
+        <div class="divider"></div>
+        
+        <div class="footer">
+          <div class="footer-text">
+            <strong>AZ Cars</strong><br>
+            Professional Car Auction Services
+          </div>
+          <div class="footer-text">
+            © ${currentYear} AZ Cars. All Rights Reserved.
+          </div>
+          <div class="footer-links">
+            <a href="#">Privacy Policy</a>
+            <a href="#">Terms of Service</a>
+            <a href="#">Contact Support</a>
+          </div>
+        </div>
       </div>
-    `;
-  }
+    </body>
+    </html>
+  `;
 };
 
 /**
- * Send an email with the provided details using the professional template
+ * Send an email with the provided details using the modern template
  * @param {string} to - Recipient email
  * @param {string} subject - Email subject
  * @param {string} heading - Main heading text
@@ -151,7 +293,7 @@ exports.sendEmail = async (to, subject, heading, content, codeOrButton = '', but
 };
 
 /**
- * Send a password reset OTP email using the professional template
+ * Send a password reset OTP email using the modern template
  * @param {string} to - Recipient email
  * @param {string} otp - One-time password for verification
  * @returns {Promise} - Resolves with info about the sent email
@@ -159,13 +301,13 @@ exports.sendEmail = async (to, subject, heading, content, codeOrButton = '', but
 exports.sendPasswordResetEmail = async (to, otp) => {
   const subject = 'Password Reset Request - AZ Cars';
   const heading = 'Reset Your Password';
-  const content = 'You\'ve requested to reset your password. Please use the verification code below to proceed. This code will expire in 1 hour.';
+  const content = 'You requested to reset your password. Please use the verification code below to proceed. If you didn\'t request this, please ignore this email.';
   
   return exports.sendEmail(to, subject, heading, content, otp, '', true);
 };
 
 /**
- * Send a welcome email to a new user using the professional template
+ * Send a welcome email to a new user using the modern template
  * @param {string} to - Recipient email
  * @param {string} password - User's initial password
  * @param {string} firstName - User's first name
@@ -174,9 +316,9 @@ exports.sendPasswordResetEmail = async (to, otp) => {
 exports.sendWelcomeEmail = async (to, password, firstName) => {
   const subject = 'Welcome to AZ Cars!';
   const heading = `Welcome ${firstName}!`;
-  const content = `Thank you for joining AZ Cars. Your account has been created successfully. Your login email is ${to} and your temporary password is: ${password}. Please login and change your password for security.`;
+  const content = `Thank you for joining AZ Cars! Your account has been created successfully. Your login email is <strong>${to}</strong> and your temporary password is <strong>${password}</strong>. Please login and change your password for security.`;
   
-  return exports.sendEmail(to, subject, heading, content, 'LOGIN NOW', config.FRONTEND_URL || '#', false);
+  return exports.sendEmail(to, subject, heading, content, 'LOGIN NOW', config.FRONTEND_URL || 'https://azcars.com', false);
 };
 
 /**
@@ -188,8 +330,8 @@ exports.sendWelcomeEmail = async (to, password, firstName) => {
  */
 exports.sendActivationEmail = async (to, activationCode, firstName) => {
   const subject = 'Activate Your AZ Cars Account';
-  const heading = 'Activate Your Account';
-  const content = `Hello ${firstName}! Welcome to AZ Cars. Please use the activation code below to verify your account and complete your registration.`;
+  const heading = `Welcome ${firstName}!`;
+  const content = 'Welcome to AZ Cars! Please use the activation code below to verify your account and complete your registration.';
   
   return exports.sendEmail(to, subject, heading, content, activationCode, '', true);
 };
@@ -203,11 +345,11 @@ exports.sendActivationEmail = async (to, activationCode, firstName) => {
  * @returns {Promise} - Resolves with info about the sent email
  */
 exports.sendBidNotificationEmail = async (to, carTitle, bidAmount, bidderName) => {
-  const subject = 'New Bid on Your Car - AZ Cars';
+  const subject = 'New Bid Received - AZ Cars';
   const heading = 'New Bid Received!';
-  const content = `Great news! ${bidderName} has placed a bid of $${bidAmount.toLocaleString()} on your ${carTitle}. Check your dashboard for more details.`;
+  const content = `Exciting news! <strong>${bidderName}</strong> has placed a bid of <strong>$${bidAmount.toLocaleString()}</strong> on your <strong>${carTitle}</strong>. Check your dashboard to see all bids and manage your auction.`;
   
-  return exports.sendEmail(to, subject, heading, content, 'VIEW AUCTION', config.FRONTEND_URL || '#', false);
+  return exports.sendEmail(to, subject, heading, content, 'VIEW AUCTION', config.FRONTEND_URL || 'https://azcars.com', false);
 };
 
 /**
@@ -220,8 +362,23 @@ exports.sendBidNotificationEmail = async (to, carTitle, bidAmount, bidderName) =
  */
 exports.sendAuctionEndEmail = async (to, carTitle, finalBid, winnerName) => {
   const subject = 'Auction Ended - AZ Cars';
-  const heading = 'Auction Has Ended';
-  const content = `The auction for ${carTitle} has ended. The winning bid was $${finalBid.toLocaleString()} by ${winnerName}. Thank you for participating!`;
+  const heading = 'Auction Complete!';
+  const content = `The auction for <strong>${carTitle}</strong> has ended successfully! The winning bid was <strong>$${finalBid.toLocaleString()}</strong> by <strong>${winnerName}</strong>. Thank you for using AZ Cars!`;
   
-  return exports.sendEmail(to, subject, heading, content, 'VIEW RESULTS', config.FRONTEND_URL || '#', false);
+  return exports.sendEmail(to, subject, heading, content, 'VIEW RESULTS', config.FRONTEND_URL || 'https://azcars.com', false);
+};
+
+/**
+ * Send auction winner notification email
+ * @param {string} to - Recipient email
+ * @param {string} carTitle - Car title
+ * @param {number} winningBid - Winning bid amount
+ * @returns {Promise} - Resolves with info about the sent email
+ */
+exports.sendWinnerNotificationEmail = async (to, carTitle, winningBid) => {
+  const subject = 'Congratulations! You Won - AZ Cars';
+  const heading = 'Congratulations!';
+  const content = `You've won the auction for <strong>${carTitle}</strong> with your bid of <strong>$${winningBid.toLocaleString()}</strong>! Please check your dashboard for next steps and payment instructions.`;
+  
+  return exports.sendEmail(to, subject, heading, content, 'VIEW DETAILS', config.FRONTEND_URL || 'https://azcars.com', false);
 }; 

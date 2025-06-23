@@ -15,10 +15,16 @@ router.get('/search', carController.searchCars);
 router.get('/reference/data', carController.getReferenceData);
 router.get('/brand/model/:modelId', carController.getBrandByModel);
 router.get('/models/brand/:brandId', carController.getModelsByBrand);
+router.get('/makes', carController.getMakes);
+router.get('/models', carController.getModels);
 router.get('/:id', carController.getCar);
 
 // Debugging route - validate car data without creating
 router.post('/validate', carController.validateCarData);
+
+// Make and Model creation routes (protected)
+router.post('/makes', protect, carController.createMake);
+router.post('/models', protect, carController.createModel);
 
 // Protected routes - only authenticated users can modify
 router.post('/', protect, uploadCarImages, carController.createCar);
