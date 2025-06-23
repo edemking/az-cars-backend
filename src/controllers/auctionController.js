@@ -1264,11 +1264,17 @@ exports.getAdminDashboardData = asyncHandler(async (req, res, next) => {
   })
     .populate({
       path: "car",
-      select: "make model year images",
-      populate: {
-        path: "make",
-        select: "name",
-      },
+      select: "make model year images fuelType engineSize",
+      populate: [
+        {
+          path: "make",
+          select: "name",
+        },
+        {
+          path: "fuelType",
+          select: "name",
+        },
+      ],
     })
     .sort({ totalBids: -1, currentHighestBid: -1 })
     .limit(10)
@@ -1348,11 +1354,17 @@ exports.getAdminDashboardData = asyncHandler(async (req, res, next) => {
   const recentAuctions = await Auction.find()
     .populate({
       path: "car",
-      select: "make model year images",
-      populate: {
-        path: "make",
-        select: "name",
-      },
+      select: "make model year images fuelType engineSize",
+      populate: [
+        {
+          path: "make",
+          select: "name",
+        },
+        {
+          path: "fuelType",
+          select: "name",
+        },
+      ],
     })
     .populate("createdBy", "firstName lastName")
     .populate("winner", "firstName lastName")
@@ -1430,6 +1442,8 @@ exports.getAdminDashboardData = asyncHandler(async (req, res, next) => {
             model: auction.car.model,
             year: auction.car.year,
             image: auction.car.images?.[0],
+            fuelType: auction.car.fuelType?.name,
+            engineSize: auction.car.engineSize,
           }
         : null,
       currentHighestBid: auction.currentHighestBid,
@@ -1463,6 +1477,8 @@ exports.getAdminDashboardData = asyncHandler(async (req, res, next) => {
             model: auction.car.model,
             year: auction.car.year,
             image: auction.car.images?.[0],
+            fuelType: auction.car.fuelType?.name,
+            engineSize: auction.car.engineSize,
           }
         : null,
       createdBy: auction.createdBy,
