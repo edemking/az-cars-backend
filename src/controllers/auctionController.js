@@ -1760,7 +1760,7 @@ exports.getAuctionResults = asyncHandler(async (req, res, next) => {
       ],
     })
     .populate("createdBy", "firstName lastName email profilePicture")
-    .populate("winner", "firstName lastName email profilePicture");
+    .populate("winner", "firstName lastName email profilePicture phoneNumber, country");
 
   if (!auction) {
     return next(
