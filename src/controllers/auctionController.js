@@ -746,7 +746,7 @@ exports.getAuctionBids = asyncHandler(async (req, res, next) => {
   }
 
   const bids = await Bid.find({ auction: req.params.id })
-    .populate("bidder", "firstName lastName profilePicture")
+    .populate("bidder", "firstName lastName profilePicture phoneNumber country")
     .sort({ amount: -1 });
 
   sendSuccess(res, {
@@ -1312,6 +1312,8 @@ exports.getAdminDashboardData = asyncHandler(async (req, res, next) => {
           lastName: "$bidder.lastName",
           email: "$bidder.email",
           profilePicture: "$bidder.profilePicture",
+          phoneNumber: "$bidder.phoneNumber",
+          country: "$bidder.country",
         },
         totalBids: 1,
         highestBid: 1,
@@ -1509,7 +1511,7 @@ exports.getAuctionStats = asyncHandler(async (req, res, next) => {
 
   // Get recent bids (last 5)
   const recentBids = await Bid.find({ auction: req.params.id })
-    .populate("bidder", "firstName lastName profilePicture")
+    .populate("bidder", "firstName lastName profilePicture phoneNumber country")
     .sort({ createdAt: -1 })
     .limit(5);
 
@@ -1770,7 +1772,7 @@ exports.getAuctionResults = asyncHandler(async (req, res, next) => {
 
   // Get all bids for this auction, sorted by amount (highest first)
   const allBids = await Bid.find({ auction: req.params.id })
-    .populate("bidder", "firstName lastName email profilePicture")
+    .populate("bidder", "firstName lastName email profilePicture phoneNumber country")
     .sort({ amount: -1, createdAt: 1 });
 
   // Get the winning bid (highest bid)
@@ -2097,7 +2099,7 @@ exports.getCompletedAuctionsWithBidders = asyncHandler(
     const allBids = await Bid.find({
       auction: { $in: auctionIds },
     })
-      .populate("bidder", "firstName lastName email profilePicture")
+      .populate("bidder", "firstName lastName email profilePicture phoneNumber country")
       .sort({ auction: 1, amount: -1 }); // Sort by auction, then highest bid first
 
     // Group bids by auction
