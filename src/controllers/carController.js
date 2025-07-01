@@ -216,7 +216,7 @@ exports.getCar = async (req, res) => {
 // Create car
 exports.createCar = async (req, res) => {
   try {
-    const processedData = { ...req.body };
+    const processedData = { ...req.body.carData };
     
     // Handle image uploads if present
     if (req.files && req.files.images) {
