@@ -1968,10 +1968,86 @@ exports.getUnsoldAuctions = asyncHandler(async (req, res, next) => {
 // @desc    Get completed auctions (all auctions that have ended)
 // @route   GET /api/auctions/completed
 // @access  Public
+// exports.getCompletedAuctions = asyncHandler(async (req, res, next) => {
+//   // Find all completed auctions (both sold and unsold)
+//   const completedAuctions = await Auction.find({
+//     status: "completed",
+//   })
+//     .populate({
+//       path: "car",
+//       select:
+//         "make model year price images mileage carOptions bodyColor cylinder fuelType transmission carDrive country vehicleType",
+//       populate: [
+//         {
+//           path: "make",
+//           select: "name country logo",
+//         },
+//         {
+//           path: "model",
+//           select: "name startYear endYear image",
+//         },
+//         {
+//           path: "carOptions",
+//           select: "name category description",
+//         },
+//         {
+//           path: "bodyColor",
+//           select: "name hexCode type",
+//         },
+//         {
+//           path: "fuelType",
+//           select: "name category description",
+//         },
+//         {
+//           path: "transmission",
+//           select: "name type gears description",
+//         },
+//         {
+//           path: "carDrive",
+//           select: "name type description",
+//         },
+//         {
+//           path: "country",
+//           select: "name",
+//         },
+//         {
+//           path: "vehicleType",
+//           select: "name description",
+//         },
+//       ],
+//     })
+//     .populate("createdBy", "firstName lastName profilePicture")
+//     .populate("winner", "firstName lastName email profilePicture")
+//     .sort({ endTime: -1 }); // Sort by most recently ended
+
+//   // Separate sold and unsold for additional statistics
+//   const soldAuctions = completedAuctions.filter((auction) => auction.winner);
+//   const unsoldAuctions = completedAuctions.filter((auction) => !auction.winner);
+
+//   sendSuccess(res, {
+//     message: "Completed auctions retrieved successfully",
+//     data: completedAuctions,
+//     meta: {
+//       count: completedAuctions.length,
+//       type: "completed",
+//       soldCount: soldAuctions.length,
+//       unsoldCount: unsoldAuctions.length,
+//     },
+//   });
+// });
+
+// @desc    Get completed auctions (all auctions that have ended)
+// @route   GET /api/auctions/completed
+// @access  Public
 exports.getCompletedAuctions = asyncHandler(async (req, res, next) => {
-  // Find all completed auctions (both sold and unsold)
+  const now = new Date();
+  
+  // Find all auctions that are either marked as completed OR have ended
   const completedAuctions = await Auction.find({
-    status: "completed",
+    $or: [
+      { status: "completed" },
+      { endTime: { $lt: now } } // Auctions whose end time has passed
+    ]
   })
     .populate({
       path: "car",
