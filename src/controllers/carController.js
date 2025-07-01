@@ -216,7 +216,8 @@ exports.getCar = async (req, res) => {
 // Create car
 exports.createCar = async (req, res) => {
   try {
-    const processedData = { ...req.body.carData };
+    const data = { ...req.body };
+    const processedData = {...JSON.parse(data)}; // Deep copy to avoid mutation
     
     // Handle image uploads if present
     if (req.files && req.files.images) {
