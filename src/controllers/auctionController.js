@@ -2043,12 +2043,9 @@ exports.getCompletedAuctions = asyncHandler(async (req, res, next) => {
   const now = new Date();
   
   // Find all auctions that are either marked as completed OR have ended
-  const completedAuctions = await Auction.find({
-    $or: [
-      { status: "completed" },
-      { endTime: { $lt: now } } // Auctions whose end time has passed
-    ]
-  })
+  const completedAuctions = await Auction.find(
+    { endTime: { $lt: now } }
+  )
     .populate({
       path: "car",
       select:
