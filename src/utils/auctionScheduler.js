@@ -5,10 +5,6 @@ const {
   createAuctionWonNotification,
   createAuctionLostNotifications
 } = require('./notificationService');
-const {
-  sendAuctionWinnerEmail,
-  sendAuctionLoserEmails,
-} = require('./emailService');
 
 /**
  * Check for completed auctions and update their status
@@ -70,30 +66,6 @@ const checkCompletedAuctions = async () => {
         } catch (notificationError) {
           console.error(`Error creating notifications for auction ${auction._id}:`, notificationError);
         }
-
-        // Send email notifications for completed auction
-        setImmediate(async () => {
-          try {
-            // Populate auction with car details for email
-            await auction.populate({
-              path: "car",
-              populate: [
-                { path: "make", select: "name" },
-                { path: "model", select: "name" }
-              ]
-            });
-
-            // Send winner email
-            await sendAuctionWinnerEmail(auction, highestBid);
-            
-            // Send loser emails
-            await sendAuctionLoserEmails(auction, highestBid);
-            
-            console.log(`Email notifications sent for auction ${auction._id} completion`);
-          } catch (emailError) {
-            console.error(`Error sending email notifications for auction ${auction._id}:`, emailError);
-          }
-        });
       }
       
       // Update status to completed

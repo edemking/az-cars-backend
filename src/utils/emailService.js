@@ -581,7 +581,7 @@ exports.sendActivationEmail = async (to, activationCode, firstName) => {
 exports.sendBidNotificationEmail = async (to, carTitle, bidAmount, bidderName) => {
   const subject = 'New Bid Received - AZ Cars';
   const heading = 'New Bid Received!';
-  const content = `Exciting news! <strong>${bidderName}</strong> has placed a bid of <strong>$${bidAmount.toLocaleString()}</strong> on your <strong>${carTitle}</strong>. Check your dashboard to see all bids and manage your auction.`;
+  const content = `Exciting news! <strong>${bidderName}</strong> has placed a bid of <strong>AED ${bidAmount.toLocaleString()}</strong> on your <strong>${carTitle}</strong>. Check your dashboard to see all bids and manage your auction.`;
   
   return exports.sendEmail(to, subject, heading, content, 'VIEW AUCTION', config.FRONTEND_URL || 'https://azcars.com', false);
 };
@@ -597,7 +597,7 @@ exports.sendBidNotificationEmail = async (to, carTitle, bidAmount, bidderName) =
 exports.sendAuctionEndEmail = async (to, carTitle, finalBid, winnerName) => {
   const subject = 'Auction Ended - AZ Cars';
   const heading = 'Auction Complete!';
-  const content = `The auction for <strong>${carTitle}</strong> has ended successfully! The winning bid was <strong>$${finalBid.toLocaleString()}</strong> by <strong>${winnerName}</strong>. Thank you for using AZ Cars!`;
+  const content = `The auction for <strong>${carTitle}</strong> has ended successfully! The winning bid was <strong>AED ${finalBid.toLocaleString()}</strong> by <strong>${winnerName}</strong>. Thank you for using AZ Cars!`;
   
   return exports.sendEmail(to, subject, heading, content, 'VIEW RESULTS', config.FRONTEND_URL || 'https://azcars.com', false);
 };
@@ -612,7 +612,7 @@ exports.sendAuctionEndEmail = async (to, carTitle, finalBid, winnerName) => {
 exports.sendWinnerNotificationEmail = async (to, carTitle, winningBid) => {
   const subject = 'Congratulations! You Won - AZ Cars';
   const heading = 'Congratulations!';
-  const content = `You've won the auction for <strong>${carTitle}</strong> with your bid of <strong>$${winningBid.toLocaleString()}</strong>! Please check your dashboard for next steps and payment instructions.`;
+  const content = `You've won the auction for <strong>${carTitle}</strong> with your bid of <strong>AED ${winningBid.toLocaleString()}</strong>! Please check your dashboard for next steps and payment instructions.`;
   
   return exports.sendEmail(to, subject, heading, content, 'VIEW DETAILS', config.FRONTEND_URL || 'https://azcars.com', false);
 };
@@ -621,147 +621,53 @@ exports.sendWinnerNotificationEmail = async (to, carTitle, winningBid) => {
  * Send auction loser notification email
  * @param {string} to - Recipient email
  * @param {string} carTitle - Car title
- * @param {number} finalBid - Final winning bid amount
- * @param {string} winnerName - Name of the winner
+ * @param {number} winningBid - Winning bid amount
  * @returns {Promise} - Resolves with info about the sent email
  */
-exports.sendLoserNotificationEmail = async (to, carTitle, finalBid, winnerName) => {
-  const subject = 'Auction Results - AZ Cars';
-  const heading = 'Auction Ended';
-  const content = `Unfortunately, you didn't win the auction for <strong>${carTitle}</strong>. The winning bid was <strong>$${finalBid.toLocaleString()}</strong> by <strong>${winnerName}</strong>. Don't worry, there are many more amazing cars waiting for you!`;
+exports.sendAuctionLoserEmail = async (to, carTitle, winningBid) => {
+  const subject = 'Auction Ended - AZ Cars';
+  const heading = 'Auction Complete';
+  const content = `The auction for <strong>${carTitle}</strong> has ended. Unfortunately, you were not the winning bidder. The winning bid was <strong>AED ${winningBid.toLocaleString()}</strong>. Don't worry, there are many more exciting auctions coming up!`;
   
   return exports.sendEmail(to, subject, heading, content, 'BROWSE AUCTIONS', config.FRONTEND_URL || 'https://azcars.com', false);
 };
 
 /**
- * Send new bid alert to all users
+ * Send new auction created notification email to all users
  * @param {string} to - Recipient email
  * @param {string} carTitle - Car title
- * @param {number} bidAmount - New bid amount
- * @param {string} bidderName - Name of the bidder
+ * @param {string} carDetails - Car make and model details
+ * @param {number} startingPrice - Starting price of the auction
+ * @param {Date} endTime - End time of the auction
  * @returns {Promise} - Resolves with info about the sent email
  */
-exports.sendNewBidAlertEmail = async (to, carTitle, bidAmount, bidderName) => {
-  const subject = 'New Bid Alert - AZ Cars';
-  const heading = 'New Bid Activity!';
-  const content = `A new bid of <strong>$${bidAmount.toLocaleString()}</strong> has been placed on <strong>${carTitle}</strong> by <strong>${bidderName}</strong>. Check it out and join the bidding action!`;
+exports.sendNewAuctionEmail = async (to, carTitle, carDetails, startingPrice, endTime) => {
+  const subject = 'New Auction Available - AZ Cars';
+  const heading = 'New Auction Live!';
+  const endDate = new Date(endTime).toLocaleDateString('en-US', { 
+    weekday: 'long', 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+  const content = `A new auction is now live! <strong>${carTitle}</strong> (${carDetails}) is available for bidding. Starting price: <strong>AED ${startingPrice.toLocaleString()}</strong>. Auction ends on <strong>${endDate}</strong>. Don't miss out on this opportunity!`;
   
   return exports.sendEmail(to, subject, heading, content, 'VIEW AUCTION', config.FRONTEND_URL || 'https://azcars.com', false);
 };
 
 /**
- * Send emails to all users about a new bid
- * @param {Object} auction - Auction object with populated car details
- * @param {Object} bid - Bid object with populated bidder details
- * @returns {Promise} - Resolves when all emails are sent
+ * Send new bid alert to all bidders in an auction (without showing bidder name)
+ * @param {string} to - Recipient email
+ * @param {string} carTitle - Car title
+ * @param {number} bidAmount - New bid amount
+ * @returns {Promise} - Resolves with info about the sent email
  */
-exports.sendNewBidEmailsToAllUsers = async (auction, bid) => {
-  try {
-    const User = require('../models/User');
-    
-    // Get all active users
-    const users = await User.find({ status: 'active' }).select('email firstName lastName');
-    
-    // Get car title for the email
-    const carTitle = auction.auctionTitle || `${auction.car.make?.name || 'Unknown'} ${auction.car.model?.name || 'Model'} ${auction.car.year || ''}`.trim();
-    const bidderName = `${bid.bidder.firstName} ${bid.bidder.lastName}`;
-    
-    // Send emails to all users (excluding the bidder themselves)
-    const emailPromises = users
-      .filter(user => user._id.toString() !== bid.bidder._id.toString())
-      .map(user => 
-        exports.sendNewBidAlertEmail(user.email, carTitle, bid.amount, bidderName)
-          .catch(error => {
-            console.error(`Failed to send new bid alert email to ${user.email}:`, error);
-            // Continue with other emails even if one fails
-            return null;
-          })
-      );
-    
-    await Promise.all(emailPromises);
-    console.log(`New bid alert emails sent to ${users.length - 1} users for auction ${auction._id}`);
-  } catch (error) {
-    console.error('Error sending new bid emails to all users:', error);
-    throw error;
-  }
-};
-
-/**
- * Send winner email notification
- * @param {Object} auction - Auction object with populated car details
- * @param {Object} winningBid - Winning bid object with populated bidder details
- * @returns {Promise} - Resolves when email is sent
- */
-exports.sendAuctionWinnerEmail = async (auction, winningBid) => {
-  try {
-    const carTitle = auction.auctionTitle || `${auction.car.make?.name || 'Unknown'} ${auction.car.model?.name || 'Model'} ${auction.car.year || ''}`.trim();
-    
-    await exports.sendWinnerNotificationEmail(
-      winningBid.bidder.email,
-      carTitle,
-      winningBid.amount
-    );
-    
-    console.log(`Winner email sent to ${winningBid.bidder.email} for auction ${auction._id}`);
-  } catch (error) {
-    console.error('Error sending winner email:', error);
-    throw error;
-  }
-};
-
-/**
- * Send loser email notifications to all losing bidders
- * @param {Object} auction - Auction object with populated car details
- * @param {Object} winningBid - Winning bid object with populated bidder details
- * @returns {Promise} - Resolves when all emails are sent
- */
-exports.sendAuctionLoserEmails = async (auction, winningBid) => {
-  try {
-    const Bid = require('../models/Bid');
-    
-    // Get all unique bidders who lost (excluding the winner)
-    const losingBids = await Bid.find({
-      auction: auction._id,
-      bidder: { $ne: winningBid.bidder._id }
-    }).populate('bidder', 'email firstName lastName');
-    
-    // Get unique bidders
-    const uniqueLosingBidders = [];
-    const bidderIds = new Set();
-    
-    losingBids.forEach(bid => {
-      if (!bidderIds.has(bid.bidder._id.toString())) {
-        bidderIds.add(bid.bidder._id.toString());
-        uniqueLosingBidders.push(bid.bidder);
-      }
-    });
-    
-    if (uniqueLosingBidders.length === 0) {
-      console.log(`No losing bidders found for auction ${auction._id}`);
-      return;
-    }
-    
-    const carTitle = auction.auctionTitle || `${auction.car.make?.name || 'Unknown'} ${auction.car.model?.name || 'Model'} ${auction.car.year || ''}`.trim();
-    const winnerName = `${winningBid.bidder.firstName} ${winningBid.bidder.lastName}`;
-    
-    // Send emails to all losing bidders
-    const emailPromises = uniqueLosingBidders.map(bidder =>
-      exports.sendLoserNotificationEmail(
-        bidder.email,
-        carTitle,
-        winningBid.amount,
-        winnerName
-      ).catch(error => {
-        console.error(`Failed to send loser email to ${bidder.email}:`, error);
-        // Continue with other emails even if one fails
-        return null;
-      })
-    );
-    
-    await Promise.all(emailPromises);
-    console.log(`Loser emails sent to ${uniqueLosingBidders.length} bidders for auction ${auction._id}`);
-  } catch (error) {
-    console.error('Error sending loser emails:', error);
-    throw error;
-  }
+exports.sendNewBidAlertEmail = async (to, carTitle, bidAmount) => {
+  const subject = 'New Bid Alert - AZ Cars';
+  const heading = 'New Bid Placed!';
+  const content = `A new bid has been placed on <strong>${carTitle}</strong>! The latest bid is <strong>AED ${bidAmount.toLocaleString()}</strong>. Place your bid now to stay in the game!`;
+  
+  return exports.sendEmail(to, subject, heading, content, 'PLACE BID', config.FRONTEND_URL || 'https://azcars.com', false);
 }; 

@@ -3,6 +3,12 @@ const Auction = require('../models/Auction');
 const Bid = require('../models/Bid');
 const User = require('../models/User');
 const { sendPushNotificationToAuctionBidders } = require('./pushNotificationService');
+const { 
+  sendWinnerNotificationEmail, 
+  sendAuctionLoserEmail, 
+  sendNewAuctionEmail, 
+  sendNewBidAlertEmail 
+} = require('./emailService');
 
 /**
  * Create a notification for a user
@@ -72,7 +78,7 @@ const createOutbidNotifications = async (newBid, auction) => {
     const previousBids = await Bid.find({
       auction: auction._id,
       bidder: { $ne: newBid.bidder }
-    }).populate('bidder', 'firstName lastName');
+    }).populate('bidder', 'firstName lastName email');
 
     // Get unique bidders
     const uniqueBidders = [...new Map(previousBids.map(bid => [bid.bidder._id.toString(), bid.bidder])).values()];
@@ -106,6 +112,25 @@ const createOutbidNotifications = async (newBid, auction) => {
     );
 
     await Promise.all(notificationPromises);
+
+    // Send email notifications to all other bidders (new bid alert without showing bidder name)
+    const emailPromises = uniqueBidders.map(async (bidder) => {
+      try {
+        if (bidder.email) {
+          await sendNewBidAlertEmail(
+            bidder.email,
+            auction.auctionTitle,
+            newBid.amount
+          );
+          console.log(`New bid alert email sent to ${bidder.email} for auction ${auction._id}`);
+        }
+      } catch (emailError) {
+        console.error(`Error sending new bid alert email to ${bidder.email}:`, emailError);
+        // Don't fail if individual email fails
+      }
+    });
+
+    await Promise.all(emailPromises);
 
     // Send push notifications to all other bidders
     try {
@@ -141,7 +166,7 @@ const createOutbidNotifications = async (newBid, auction) => {
  */
 const createAuctionWonNotification = async (auction, winningBid) => {
   try {
-    // Get car details
+    // Get car details and winner user info
     const populatedAuction = await Auction.findById(auction._id).populate({
       path: 'car',
       populate: [
@@ -152,6 +177,7 @@ const createAuctionWonNotification = async (auction, winningBid) => {
 
     const carDetails = `${populatedAuction.car.make.name} ${populatedAuction.car.model.name}`;
 
+    // Create in-app notification
     await createNotification({
       user: auction.winner,
       type: 'auction_won',
@@ -165,6 +191,22 @@ const createAuctionWonNotification = async (auction, winningBid) => {
         carDetails: carDetails
       }
     });
+
+    // Send email notification to winner
+    try {
+      const winner = await User.findById(auction.winner).select('email firstName lastName');
+      if (winner && winner.email) {
+        await sendWinnerNotificationEmail(
+          winner.email,
+          auction.auctionTitle,
+          winningBid.amount
+        );
+        console.log(`Winner email sent to ${winner.email} for auction ${auction._id}`);
+      }
+    } catch (emailError) {
+      console.error('Error sending winner email:', emailError);
+      // Don't fail notification creation if email fails
+    }
   } catch (error) {
     console.error('Error creating auction won notification:', error);
   }
@@ -181,7 +223,7 @@ const createAuctionLostNotifications = async (auction, winningBid) => {
     const losingBids = await Bid.find({
       auction: auction._id,
       bidder: { $ne: auction.winner }
-    }).populate('bidder', 'firstName lastName');
+    }).populate('bidder', 'firstName lastName email');
 
     // Get unique losing bidders
     const uniqueLosingBidders = [...new Map(losingBids.map(bid => [bid.bidder._id.toString(), bid.bidder])).values()];
@@ -215,6 +257,25 @@ const createAuctionLostNotifications = async (auction, winningBid) => {
     );
 
     await Promise.all(notificationPromises);
+
+    // Send email notifications to losing bidders
+    const emailPromises = uniqueLosingBidders.map(async (bidder) => {
+      try {
+        if (bidder.email) {
+          await sendAuctionLoserEmail(
+            bidder.email,
+            auction.auctionTitle,
+            winningBid.amount
+          );
+          console.log(`Loser email sent to ${bidder.email} for auction ${auction._id}`);
+        }
+      } catch (emailError) {
+        console.error(`Error sending loser email to ${bidder.email}:`, emailError);
+        // Don't fail if individual email fails
+      }
+    });
+
+    await Promise.all(emailPromises);
   } catch (error) {
     console.error('Error creating auction lost notifications:', error);
   }
@@ -327,21 +388,20 @@ const createNewAuctionNotifications = async (auction) => {
     const carDetails = `${populatedAuction.car.make.name} ${populatedAuction.car.model.name}`;
     const creatorName = `${populatedAuction.createdBy.firstName} ${populatedAuction.createdBy.lastName}`;
 
-    // Get all users who have notification tokens (excluding the auction creator)
-    const usersWithTokens = await User.find({
-      _id: { $ne: auction.createdBy }, // Exclude auction creator
-      notificationToken: { $exists: true, $ne: null }
-    }).select('_id firstName lastName notificationToken');
+    // Get all users (excluding the auction creator)
+    const allUsers = await User.find({
+      _id: { $ne: auction.createdBy } // Exclude auction creator
+    }).select('_id firstName lastName email notificationToken');
 
-    if (usersWithTokens.length === 0) {
-      console.log('No users with notification tokens found for new auction notification');
+    if (allUsers.length === 0) {
+      console.log('No users found for new auction notification');
       return;
     }
 
-    console.log(`Creating new auction notifications for ${usersWithTokens.length} users`);
+    console.log(`Creating new auction notifications for ${allUsers.length} users`);
 
     // Create in-app notifications for all users
-    const notificationPromises = usersWithTokens.map(user => 
+    const notificationPromises = allUsers.map(user => 
       createNotification({
         user: user._id,
         type: 'new_auction_created',
@@ -359,17 +419,41 @@ const createNewAuctionNotifications = async (auction) => {
 
     await Promise.all(notificationPromises);
 
+    // Send email notifications to all users
+    const emailPromises = allUsers.map(async (user) => {
+      try {
+        if (user.email) {
+          await sendNewAuctionEmail(
+            user.email,
+            auction.auctionTitle,
+            carDetails,
+            auction.startingPrice,
+            auction.endTime
+          );
+          console.log(`New auction email sent to ${user.email} for auction ${auction._id}`);
+        }
+      } catch (emailError) {
+        console.error(`Error sending new auction email to ${user.email}:`, emailError);
+        // Don't fail if individual email fails
+      }
+    });
+
+    await Promise.all(emailPromises);
+
     // Send push notifications in the background
     setImmediate(async () => {
       try {
-        console.log(`🚀 Initiating push notifications for new auction ${auction._id} to ${usersWithTokens.length} users`);
-        const { sendPushNotificationToUsersForNewAuction } = require('./pushNotificationService');
-        const results = await sendPushNotificationToUsersForNewAuction(auction, populatedAuction, carDetails, usersWithTokens);
-        console.log(`📊 Push notification results for auction ${auction._id}:`, {
-          total: results.length,
-          successful: results.filter(r => r.success).length,
-          failed: results.filter(r => !r.success).length
-        });
+        const usersWithTokens = allUsers.filter(user => user.notificationToken);
+        if (usersWithTokens.length > 0) {
+          console.log(`🚀 Initiating push notifications for new auction ${auction._id} to ${usersWithTokens.length} users`);
+          const { sendPushNotificationToUsersForNewAuction } = require('./pushNotificationService');
+          const results = await sendPushNotificationToUsersForNewAuction(auction, populatedAuction, carDetails, usersWithTokens);
+          console.log(`📊 Push notification results for auction ${auction._id}:`, {
+            total: results.length,
+            successful: results.filter(r => r.success).length,
+            failed: results.filter(r => !r.success).length
+          });
+        }
       } catch (pushError) {
         console.error('❌ Error sending push notifications for new auction:', pushError);
         console.error('Push notification error details:', pushError.stack);
