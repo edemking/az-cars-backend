@@ -141,6 +141,9 @@ exports.getCars = async (req, res) => {
       filter.isApproved = false;
     }
     
+    // Add debug logging
+    console.log('Filter being used:', filter);
+    
     const cars = await Car.find(filter)
       .populate("make")
       .populate("model")
@@ -167,9 +170,32 @@ exports.getCars = async (req, res) => {
       .populate("approvedBy", "name email")
       .populate("archivedBy", "name email")
       .sort({ createdAt: -1 });
-      
-    sendSuccess(res, { data: cars });
+    
+    // Debug logging to see what's actually in the database
+    if (cars.length > 0) {
+      console.log('Sample car data (first car):', {
+        id: cars[0]._id,
+        make: cars[0].make,
+        model: cars[0].model,
+        carDrive: cars[0].carDrive,
+        bodyColor: cars[0].bodyColor,
+        fuelType: cars[0].fuelType,
+        hasComponentSummary: !!cars[0].componentSummary,
+        hasInteriorAndExterior: !!cars[0].interiorAndExterior,
+        allFields: Object.keys(cars[0].toObject())
+      });
+    }
+    
+    sendSuccess(res, { 
+      data: cars,
+      debug: {
+        totalCars: cars.length,
+        filter: filter,
+        sampleCarFields: cars.length > 0 ? Object.keys(cars[0].toObject()) : []
+      }
+    });
   } catch (error) {
+    console.error('Error in getCars:', error);
     sendError(res, { message: error.message });
   }
 };
@@ -1320,5 +1346,45 @@ exports.getModels = async (req, res) => {
       message: "Error fetching models",
       errors: error.message,
     });
+  }
+};
+
+// Diagnostic endpoint to check raw car data
+exports.getDiagnosticCars = async (req, res) => {
+  try {
+    const filter = {};
+    if (req.query.includeArchived !== 'true') {
+      filter.isArchived = false;
+    }
+    
+    // Get raw data without population
+    const rawCars = await Car.find(filter).limit(5).sort({ createdAt: -1 });
+    
+    sendSuccess(res, { 
+      message: "Diagnostic data - raw car documents without population",
+      data: rawCars.map(car => ({
+        _id: car._id,
+        make: car.make,
+        model: car.model,
+        carDrive: car.carDrive,
+        bodyColor: car.bodyColor,
+        fuelType: car.fuelType,
+        country: car.country,
+        vehicleType: car.vehicleType,
+        carOptions: car.carOptions,
+        componentSummary: car.componentSummary,
+        interiorAndExterior: car.interiorAndExterior,
+        year: car.year,
+        price: car.price,
+        mileage: car.mileage,
+        serviceHistory: car.serviceHistory,
+        isApproved: car.isApproved,
+        isArchived: car.isArchived,
+        createdAt: car.createdAt
+      }))
+    });
+  } catch (error) {
+    console.error('Error in getDiagnosticCars:', error);
+    sendError(res, { message: error.message });
   }
 };

@@ -18,6 +18,11 @@ const {
   createNewBidOnAuctionNotification,
   createNewAuctionNotifications,
 } = require("../utils/notificationService");
+const {
+  sendNewBidEmailsToAllUsers,
+  sendAuctionWinnerEmail,
+  sendAuctionLoserEmails,
+} = require("../utils/emailService");
 
 // @desc    Create a new auction
 // @route   POST /api/auctions
@@ -445,6 +450,38 @@ exports.placeBid = asyncHandler(async (req, res, next) => {
     // Don't fail the bid placement if notifications fail
   }
 
+  // Send email notifications
+  setImmediate(async () => {
+    try {
+      // Populate auction with car details for email
+      await auction.populate({
+        path: "car",
+        populate: [
+          { path: "make", select: "name" },
+          { path: "model", select: "name" }
+        ]
+      });
+
+      // Send new bid alert emails to all users
+      await sendNewBidEmailsToAllUsers(auction, bid);
+
+      // If auction completed, send winner and loser emails
+      if (auction.status === "completed") {
+        // Populate winner details
+        await bid.populate("bidder", "email firstName lastName");
+        
+        // Send winner email
+        await sendAuctionWinnerEmail(auction, bid);
+        
+        // Send loser emails
+        await sendAuctionLoserEmails(auction, bid);
+      }
+    } catch (emailError) {
+      console.error("Error sending bid email notifications:", emailError);
+      // Don't fail the bid placement if email notifications fail
+    }
+  });
+
   sendSuccess(res, {
     message: "Bid placed successfully",
     data: {
@@ -546,6 +583,32 @@ exports.buyNowAuction = asyncHandler(async (req, res, next) => {
     console.error("Error creating notifications:", notificationError);
     // Don't fail the buy now if notifications fail
   }
+
+  // Send email notifications
+  setImmediate(async () => {
+    try {
+      // Populate auction with car details for email
+      await auction.populate({
+        path: "car",
+        populate: [
+          { path: "make", select: "name" },
+          { path: "model", select: "name" }
+        ]
+      });
+
+      // Send new bid alert emails to all users
+      await sendNewBidEmailsToAllUsers(auction, bid);
+
+      // Send winner email (auction is already completed)
+      await sendAuctionWinnerEmail(auction, bid);
+      
+      // Send loser emails
+      await sendAuctionLoserEmails(auction, bid);
+    } catch (emailError) {
+      console.error("Error sending buy now email notifications:", emailError);
+      // Don't fail the buy now if email notifications fail
+    }
+  });
 
   sendSuccess(res, {
     message: "Auction purchased successfully",
