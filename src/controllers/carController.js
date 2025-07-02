@@ -1214,7 +1214,6 @@ exports.createMake = async (req, res) => {
   }
 };
 
-
 // Create a new model
 exports.createModel = async (req, res) => {
   try {
@@ -1288,6 +1287,98 @@ exports.createModel = async (req, res) => {
     sendError(res, {
       statusCode: 500,
       message: "Error creating model",
+      errors: error.message,
+    });
+  }
+};
+
+// Delete a make
+exports.deleteMake = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Validate make exists
+    const make = await Make.findById(id);
+    if (!make) {
+      return sendError(res, {
+        statusCode: 404,
+        message: "Make not found",
+      });
+    }
+
+    // Check if there are any models referencing this make
+    const modelsCount = await Model.countDocuments({ make: id });
+    if (modelsCount > 0) {
+      return sendError(res, {
+        statusCode: 409,
+        message: `Cannot delete make. There are ${modelsCount} models associated with this make. Please delete the models first.`,
+      });
+    }
+
+    // Check if there are any cars referencing this make
+    const carsCount = await Car.countDocuments({ make: id });
+    if (carsCount > 0) {
+      return sendError(res, {
+        statusCode: 409,
+        message: `Cannot delete make. There are ${carsCount} cars associated with this make. Please update or delete the cars first.`,
+      });
+    }
+
+    // Delete the make
+    await Make.findByIdAndDelete(id);
+
+    sendSuccess(res, {
+      message: "Make deleted successfully",
+      data: { deletedMake: make.name },
+    });
+  } catch (error) {
+    console.error("Error deleting make:", error);
+    sendError(res, {
+      statusCode: 500,
+      message: "Error deleting make",
+      errors: error.message,
+    });
+  }
+};
+
+// Delete a model
+exports.deleteModel = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Validate model exists
+    const model = await Model.findById(id).populate('make', 'name');
+    if (!model) {
+      return sendError(res, {
+        statusCode: 404,
+        message: "Model not found",
+      });
+    }
+
+    // Check if there are any cars referencing this model
+    const carsCount = await Car.countDocuments({ model: id });
+    if (carsCount > 0) {
+      return sendError(res, {
+        statusCode: 409,
+        message: `Cannot delete model. There are ${carsCount} cars associated with this model. Please update or delete the cars first.`,
+      });
+    }
+
+    // Delete the model
+    await Model.findByIdAndDelete(id);
+
+    sendSuccess(res, {
+      message: "Model deleted successfully",
+      data: { 
+        deletedModel: model.name,
+        make: model.make?.name || 'Unknown'
+      },
+    });
+  } catch (error) {
+    console.error("Error deleting model:", error);
+    sendError(res, {
+      statusCode: 500,
+      message: "Error deleting model",
       errors: error.message,
     });
   }

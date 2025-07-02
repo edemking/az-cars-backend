@@ -27,6 +27,10 @@ router.post('/validate', carController.validateCarData);
 router.post('/makes', protect, carController.createMake);
 router.post('/models', protect, carController.createModel);
 
+// Make and Model deletion routes (protected)
+router.delete('/makes/:id', protect, carController.deleteMake);
+router.delete('/models/:id', protect, carController.deleteModel);
+
 // Protected routes - only authenticated users can modify
 router.post('/', protect, uploadCarImages, carController.createCar);
 router.put('/:id', protect, uploadCarImages, carController.updateCar);
