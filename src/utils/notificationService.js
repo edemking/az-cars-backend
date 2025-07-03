@@ -114,6 +114,8 @@ const createOutbidNotifications = async (newBid, auction) => {
     await Promise.all(notificationPromises);
 
     // Send email notifications to all other bidders (new bid alert without showing bidder name)
+    // DISABLED: Auction activity emails disabled as requested
+    /*
     const emailPromises = uniqueBidders.map(async (bidder) => {
       try {
         if (bidder.email) {
@@ -131,6 +133,7 @@ const createOutbidNotifications = async (newBid, auction) => {
     });
 
     await Promise.all(emailPromises);
+    */
 
     // Send push notifications to all other bidders
     try {
@@ -193,6 +196,8 @@ const createAuctionWonNotification = async (auction, winningBid) => {
     });
 
     // Send email notification to winner
+    // DISABLED: Auction activity emails disabled as requested
+    /*
     try {
       const winner = await User.findById(auction.winner).select('email firstName lastName');
       if (winner && winner.email) {
@@ -207,6 +212,7 @@ const createAuctionWonNotification = async (auction, winningBid) => {
       console.error('Error sending winner email:', emailError);
       // Don't fail notification creation if email fails
     }
+    */
   } catch (error) {
     console.error('Error creating auction won notification:', error);
   }
@@ -259,6 +265,8 @@ const createAuctionLostNotifications = async (auction, winningBid) => {
     await Promise.all(notificationPromises);
 
     // Send email notifications to losing bidders
+    // DISABLED: Auction activity emails disabled as requested
+    /*
     const emailPromises = uniqueLosingBidders.map(async (bidder) => {
       try {
         if (bidder.email) {
@@ -276,6 +284,7 @@ const createAuctionLostNotifications = async (auction, winningBid) => {
     });
 
     await Promise.all(emailPromises);
+    */
   } catch (error) {
     console.error('Error creating auction lost notifications:', error);
   }
@@ -420,6 +429,8 @@ const createNewAuctionNotifications = async (auction) => {
     await Promise.all(notificationPromises);
 
     // Send email notifications to all users
+    // DISABLED: Auction activity emails disabled as requested
+    /*
     const emailPromises = allUsers.map(async (user) => {
       try {
         if (user.email) {
@@ -439,6 +450,7 @@ const createNewAuctionNotifications = async (auction) => {
     });
 
     await Promise.all(emailPromises);
+    */
 
     // Send push notifications in the background
     setImmediate(async () => {
