@@ -6,7 +6,7 @@ const { upload } = require('../utils/fileUpload');
 
 // Configure car image upload middleware
 const uploadCarImages = upload.fields([
-  { name: 'images', maxCount: 10 } // Allow up to 10 images per upload
+  { name: 'images', maxCount: 40 } // Allow up to 10 images per upload
 ]);
 
 // Public routes - anyone can view cars

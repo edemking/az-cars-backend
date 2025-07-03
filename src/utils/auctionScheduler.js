@@ -47,10 +47,16 @@ const checkCompletedAuctions = async () => {
         
         console.log(`Auction ${auction._id} winner: ${highestBid.bidder._id}`);
         
-        // Emit auction completion event
+        // Emit auction completion event (without bidder name)
         emitAuctionCompleted(auction._id.toString(), {
-          winner: highestBid.bidder,
-          finalBid: highestBid,
+          winner: { _id: highestBid.bidder._id }, // Only include ID, not full user info  
+          finalBid: {
+            _id: highestBid._id,
+            auction: highestBid.auction,
+            amount: highestBid.amount,
+            time: highestBid.time,
+            isWinningBid: highestBid.isWinningBid
+          },
           auction: auction
         });
 

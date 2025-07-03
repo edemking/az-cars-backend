@@ -1,7 +1,7 @@
-const nodemailer = require('nodemailer');
-const config = require('../config/config');
-const fs = require('fs');
-const path = require('path');
+const nodemailer = require("nodemailer");
+const config = require("../config/config");
+const fs = require("fs");
+const path = require("path");
 
 // Create a transporter using environment variables
 const transporter = nodemailer.createTransport({
@@ -22,9 +22,16 @@ const transporter = nodemailer.createTransport({
  * @param {boolean} isCode - Whether to show code section instead of button
  * @returns {string} - Complete HTML email template
  */
-const getEmailTemplate = (title, heading, content, codeOrButton = '', buttonLink = '', isCode = false) => {
+const getEmailTemplate = (
+  title,
+  heading,
+  content,
+  codeOrButton = "",
+  buttonLink = "",
+  isCode = false
+) => {
   const currentYear = new Date().getFullYear();
-  
+
   return `
     <!DOCTYPE html>
     <html lang="en">
@@ -224,7 +231,9 @@ const getEmailTemplate = (title, heading, content, codeOrButton = '', buttonLink
           <h1 class="heading">${heading}</h1>
           <p class="message">${content}</p>
           
-          ${isCode ? `
+          ${
+            isCode
+              ? `
             <div class="code-section">
               <div class="code-label">Verification Code</div>
               <div class="code-value">${codeOrButton}</div>
@@ -232,9 +241,11 @@ const getEmailTemplate = (title, heading, content, codeOrButton = '', buttonLink
             <div class="security-note">
               <strong>Security Note:</strong> This code will expire in 1 hour. Never share this code with anyone.
             </div>
-          ` : `
+          `
+              : `
             <a href="${buttonLink}" class="button">${codeOrButton}</a>
-          `}
+          `
+          }
         </div>
         
         <div class="divider"></div>
@@ -269,7 +280,7 @@ const getEmailTemplate = (title, heading, content, codeOrButton = '', buttonLink
  */
 const getWelcomeEmailTemplate = (title, heading, content, credentialsHtml) => {
   const currentYear = new Date().getFullYear();
-  
+
   return `
     <!DOCTYPE html>
     <html lang="en">
@@ -432,7 +443,9 @@ const getWelcomeEmailTemplate = (title, heading, content, credentialsHtml) => {
           
           ${credentialsHtml}
           
-          <a href="${config.FRONTEND_URL || 'https://azcars.com'}" class="button">LOGIN NOW</a>
+          <a href="${
+            config.FRONTEND_URL || "https://azcars.com"
+          }" class="button">LOGIN NOW</a>
         </div>
         
         <div class="divider"></div>
@@ -468,11 +481,26 @@ const getWelcomeEmailTemplate = (title, heading, content, credentialsHtml) => {
  * @param {boolean} isCode - Whether to show code section instead of button
  * @returns {Promise} - Resolves with info about the sent email
  */
-exports.sendEmail = async (to, subject, heading, content, codeOrButton = '', buttonLink = '', isCode = false) => {
-  const html = getEmailTemplate(subject, heading, content, codeOrButton, buttonLink, isCode);
-  
-  const logoPath = path.join(__dirname, '../../assets/icon.png');
-  
+exports.sendEmail = async (
+  to,
+  subject,
+  heading,
+  content,
+  codeOrButton = "",
+  buttonLink = "",
+  isCode = false
+) => {
+  const html = getEmailTemplate(
+    subject,
+    heading,
+    content,
+    codeOrButton,
+    buttonLink,
+    isCode
+  );
+
+  const logoPath = path.join(__dirname, "../../assets/icon.png");
+
   const mailOptions = {
     from: `"AZ Cars" <${config.EMAIL_USER}>`,
     to,
@@ -480,11 +508,11 @@ exports.sendEmail = async (to, subject, heading, content, codeOrButton = '', but
     html,
     attachments: [
       {
-        filename: 'logo.png',
+        filename: "logo.png",
         path: logoPath,
-        cid: 'logo' // Referenced in the HTML template
-      }
-    ]
+        cid: "logo", // Referenced in the HTML template
+      },
+    ],
   };
 
   return transporter.sendMail(mailOptions);
@@ -497,11 +525,12 @@ exports.sendEmail = async (to, subject, heading, content, codeOrButton = '', but
  * @returns {Promise} - Resolves with info about the sent email
  */
 exports.sendPasswordResetEmail = async (to, otp) => {
-  const subject = 'Password Reset Request - AZ Cars';
-  const heading = 'Reset Your Password';
-  const content = 'You requested to reset your password. Please use the verification code below to proceed. If you didn\'t request this, please ignore this email.';
-  
-  return exports.sendEmail(to, subject, heading, content, otp, '', true);
+  const subject = "Password Reset Request - AZ Cars";
+  const heading = "Reset Your Password";
+  const content =
+    "You requested to reset your password. Please use the verification code below to proceed. If you didn't request this, please ignore this email.";
+
+  return exports.sendEmail(to, subject, heading, content, otp, "", true);
 };
 
 /**
@@ -512,10 +541,10 @@ exports.sendPasswordResetEmail = async (to, otp) => {
  * @returns {Promise} - Resolves with info about the sent email
  */
 exports.sendWelcomeEmail = async (to, password, firstName) => {
-  const subject = 'Welcome to AZ Cars!';
+  const subject = "Welcome to AZ Cars!";
   const heading = `Welcome ${firstName}!`;
   const content = `Thank you for joining AZ Cars! Your account has been created successfully. Please use the credentials below to access your account:`;
-  
+
   // Create custom HTML with distinct credential display
   const credentialsHtml = `
     <div style="background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%); border: 2px solid #FF0076; border-radius: 12px; padding: 30px; margin: 30px 0; text-align: left;">
@@ -532,12 +561,17 @@ exports.sendWelcomeEmail = async (to, password, firstName) => {
       <strong>Important:</strong> This is a temporary password. Please login and change it immediately for security reasons.
     </div>
   `;
-  
+
   // Modify the email template to include credentials
-  const html = getWelcomeEmailTemplate(subject, heading, content, credentialsHtml);
-  
-  const logoPath = path.join(__dirname, '../../assets/icon.png');
-  
+  const html = getWelcomeEmailTemplate(
+    subject,
+    heading,
+    content,
+    credentialsHtml
+  );
+
+  const logoPath = path.join(__dirname, "../../assets/icon.png");
+
   const mailOptions = {
     from: `"AZ Cars" <${config.EMAIL_USER}>`,
     to,
@@ -545,11 +579,11 @@ exports.sendWelcomeEmail = async (to, password, firstName) => {
     html,
     attachments: [
       {
-        filename: 'logo.png',
+        filename: "logo.png",
         path: logoPath,
-        cid: 'logo'
-      }
-    ]
+        cid: "logo",
+      },
+    ],
   };
 
   return transporter.sendMail(mailOptions);
@@ -563,11 +597,20 @@ exports.sendWelcomeEmail = async (to, password, firstName) => {
  * @returns {Promise} - Resolves with info about the sent email
  */
 exports.sendActivationEmail = async (to, activationCode, firstName) => {
-  const subject = 'Activate Your AZ Cars Account';
+  const subject = "Activate Your AZ Cars Account";
   const heading = `Welcome ${firstName}!`;
-  const content = 'Welcome to AZ Cars! Please use the activation code below to verify your account and complete your registration.';
-  
-  return exports.sendEmail(to, subject, heading, content, activationCode, '', true);
+  const content =
+    "Welcome to AZ Cars! Please use the activation code below to verify your account and complete your registration.";
+
+  return exports.sendEmail(
+    to,
+    subject,
+    heading,
+    content,
+    activationCode,
+    "",
+    true
+  );
 };
 
 /**
@@ -578,12 +621,25 @@ exports.sendActivationEmail = async (to, activationCode, firstName) => {
  * @param {string} bidderName - Name of the bidder
  * @returns {Promise} - Resolves with info about the sent email
  */
-exports.sendBidNotificationEmail = async (to, carTitle, bidAmount, bidderName) => {
-  const subject = 'New Bid Received - AZ Cars';
-  const heading = 'New Bid Received!';
+exports.sendBidNotificationEmail = async (
+  to,
+  carTitle,
+  bidAmount,
+  bidderName
+) => {
+  const subject = "New Bid Received - AZ Cars";
+  const heading = "New Bid Received!";
   const content = `Exciting news! <strong>${bidderName}</strong> has placed a bid of <strong>AED ${bidAmount.toLocaleString()}</strong> on your <strong>${carTitle}</strong>. Check your dashboard to see all bids and manage your auction.`;
-  
-  return exports.sendEmail(to, subject, heading, content, 'VIEW AUCTION', config.FRONTEND_URL || 'https://azcars.com', false);
+
+  return exports.sendEmail(
+    to,
+    subject,
+    heading,
+    content,
+    "VIEW AUCTION",
+    config.FRONTEND_URL || "https://azcars.com",
+    false
+  );
 };
 
 /**
@@ -595,11 +651,19 @@ exports.sendBidNotificationEmail = async (to, carTitle, bidAmount, bidderName) =
  * @returns {Promise} - Resolves with info about the sent email
  */
 exports.sendAuctionEndEmail = async (to, carTitle, finalBid, winnerName) => {
-  const subject = 'Auction Ended - AZ Cars';
-  const heading = 'Auction Complete!';
+  const subject = "Auction Ended - AZ Cars";
+  const heading = "Auction Complete!";
   const content = `The auction for <strong>${carTitle}</strong> has ended successfully! The winning bid was <strong>AED ${finalBid.toLocaleString()}</strong> by <strong>${winnerName}</strong>. Thank you for using AZ Cars!`;
-  
-  return exports.sendEmail(to, subject, heading, content, 'VIEW RESULTS', config.FRONTEND_URL || 'https://azcars.com', false);
+
+  return exports.sendEmail(
+    to,
+    subject,
+    heading,
+    content,
+    "VIEW RESULTS",
+    config.FRONTEND_URL || "https://azcars.com",
+    false
+  );
 };
 
 /**
@@ -610,11 +674,19 @@ exports.sendAuctionEndEmail = async (to, carTitle, finalBid, winnerName) => {
  * @returns {Promise} - Resolves with info about the sent email
  */
 exports.sendWinnerNotificationEmail = async (to, carTitle, winningBid) => {
-  const subject = 'Congratulations! You Won - AZ Cars';
-  const heading = 'Congratulations!';
+  const subject = "Congratulations! You Won - AZ Cars";
+  const heading = "Congratulations!";
   const content = `You've won the auction for <strong>${carTitle}</strong> with your bid of <strong>AED ${winningBid.toLocaleString()}</strong>! Please check your dashboard for next steps and payment instructions.`;
-  
-  return exports.sendEmail(to, subject, heading, content, 'VIEW DETAILS', config.FRONTEND_URL || 'https://azcars.com', false);
+
+  return exports.sendEmail(
+    to,
+    subject,
+    heading,
+    content,
+    "VIEW DETAILS",
+    config.FRONTEND_URL || "https://azcars.com",
+    false
+  );
 };
 
 /**
@@ -625,11 +697,19 @@ exports.sendWinnerNotificationEmail = async (to, carTitle, winningBid) => {
  * @returns {Promise} - Resolves with info about the sent email
  */
 exports.sendAuctionLoserEmail = async (to, carTitle, winningBid) => {
-  const subject = 'Auction Ended - AZ Cars';
-  const heading = 'Auction Complete';
+  const subject = "Auction Ended - AZ Cars";
+  const heading = "Auction Complete";
   const content = `The auction for <strong>${carTitle}</strong> has ended. Unfortunately, you were not the winning bidder. The winning bid was <strong>AED ${winningBid.toLocaleString()}</strong>. Don't worry, there are many more exciting auctions coming up!`;
-  
-  return exports.sendEmail(to, subject, heading, content, 'BROWSE AUCTIONS', config.FRONTEND_URL || 'https://azcars.com', false);
+
+  return exports.sendEmail(
+    to,
+    subject,
+    heading,
+    content,
+    "BROWSE AUCTIONS",
+    config.FRONTEND_URL || "https://azcars.com",
+    false
+  );
 };
 
 /**
@@ -641,20 +721,34 @@ exports.sendAuctionLoserEmail = async (to, carTitle, winningBid) => {
  * @param {Date} endTime - End time of the auction
  * @returns {Promise} - Resolves with info about the sent email
  */
-exports.sendNewAuctionEmail = async (to, carTitle, carDetails, startingPrice, endTime) => {
-  const subject = 'New Auction Available - AZ Cars';
-  const heading = 'New Auction Live!';
-  const endDate = new Date(endTime).toLocaleDateString('en-US', { 
-    weekday: 'long', 
-    year: 'numeric', 
-    month: 'long', 
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
+exports.sendNewAuctionEmail = async (
+  to,
+  carTitle,
+  carDetails,
+  startingPrice,
+  endTime
+) => {
+  const subject = "New Auction Available - AZ Cars";
+  const heading = "New Auction Live!";
+  const endDate = new Date(endTime).toLocaleDateString("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   });
   const content = `A new auction is now live! <strong>${carTitle}</strong> (${carDetails}) is available for bidding. Starting price: <strong>AED ${startingPrice.toLocaleString()}</strong>. Auction ends on <strong>${endDate}</strong>. Don't miss out on this opportunity!`;
-  
-  return exports.sendEmail(to, subject, heading, content, 'VIEW AUCTION', config.FRONTEND_URL || 'https://azcars.com', false);
+
+  return exports.sendEmail(
+    to,
+    subject,
+    heading,
+    content,
+    "VIEW AUCTION",
+    config.FRONTEND_URL || "https://azcars.com",
+    false
+  );
 };
 
 /**
@@ -665,9 +759,17 @@ exports.sendNewAuctionEmail = async (to, carTitle, carDetails, startingPrice, en
  * @returns {Promise} - Resolves with info about the sent email
  */
 exports.sendNewBidAlertEmail = async (to, carTitle, bidAmount) => {
-  const subject = 'New Bid Alert - AZ Cars';
-  const heading = 'New Bid Placed!';
+  const subject = "New Bid Alert - AZ Cars";
+  const heading = "New Bid Placed!";
   const content = `A new bid has been placed on <strong>${carTitle}</strong>! The latest bid is <strong>AED ${bidAmount.toLocaleString()}</strong>. Place your bid now to stay in the game!`;
-  
-  return exports.sendEmail(to, subject, heading, content, 'PLACE BID', config.FRONTEND_URL || 'https://azcars.com', false);
-}; 
+
+  return exports.sendEmail(
+    to,
+    subject,
+    heading,
+    content,
+    "PLACE BID",
+    config.FRONTEND_URL || "https://azcars.com",
+    false
+  );
+};
