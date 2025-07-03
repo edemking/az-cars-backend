@@ -2231,9 +2231,9 @@ exports.getAllAuctionHistory = asyncHandler(async (req, res, next) => {
   const queryFilters = {};
 
   // Filter by status if provided
-  if (req.query.status) {
-    queryFilters.status = req.query.status;
-  }
+  // if (req.query.status) {
+  //   queryFilters.status = req.query.status;
+  // }
 
   // Filter by type if provided
   if (req.query.type) {
@@ -2250,6 +2250,13 @@ exports.getAllAuctionHistory = asyncHandler(async (req, res, next) => {
       queryFilters.endTime.$lte = new Date(req.query.endDate);
     }
   }
+
+  const now = new Date();
+
+  // Ensure we only get auctions that have ended
+  queryFilters.endTime = {
+    $lt: now, // Only get auctions that have ended
+  };
 
   // Get total count for pagination
   const total = await Auction.countDocuments(queryFilters);
