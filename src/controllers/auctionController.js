@@ -384,6 +384,9 @@ exports.placeBid = asyncHandler(async (req, res, next) => {
     }
   );
 
+  // Populate the bid with bidder information for real-time updates
+  await bid.populate("bidder", "firstName lastName");
+
   // Update auction with new highest bid
   auction.currentHighestBid = amount;
   auction.totalBids += 1;
@@ -394,32 +397,19 @@ exports.placeBid = asyncHandler(async (req, res, next) => {
     auction.winner = req.user.id;
     await bid.save();
 
-    // Emit auction completion event (without bidder name)
+    // Emit auction completion event
     emitAuctionCompleted(auction._id.toString(), {
-      winner: { _id: req.user.id }, // Only include ID, not full user info
-      finalBid: {
-        _id: bid._id,
-        auction: bid.auction,
-        amount: bid.amount,
-        time: bid.time,
-        isWinningBid: bid.isWinningBid
-      },
+      winner: req.user,
+      finalBid: bid,
       auction: auction,
     });
   }
 
   await auction.save();
 
-  // Emit real-time bid update to all clients watching this auction (without bidder name)
+  // Emit real-time bid update to all clients watching this auction
   emitNewBid(auction._id.toString(), {
-    bid: {
-      _id: bid._id,
-      auction: bid.auction,
-      amount: bid.amount,
-      time: bid.time,
-      isWinningBid: bid.isWinningBid
-      // Deliberately excluding bidder information
-    },
+    bid: bid,
     auction: {
       _id: auction._id,
       currentHighestBid: auction.currentHighestBid,
@@ -454,9 +444,6 @@ exports.placeBid = asyncHandler(async (req, res, next) => {
     console.error("Error creating notifications:", notificationError);
     // Don't fail the bid placement if notifications fail
   }
-
-  // Populate the bid with bidder information for API response only
-  await bid.populate("bidder", "firstName lastName");
 
   sendSuccess(res, {
     message: "Bid placed successfully",
@@ -523,6 +510,9 @@ exports.buyNowAuction = asyncHandler(async (req, res, next) => {
     }
   );
 
+  // Populate the bid with bidder information for real-time updates
+  await bid.populate("bidder", "firstName lastName");
+
   // Complete the auction immediately
   auction.status = "completed";
   auction.winner = req.user.id;
@@ -531,16 +521,10 @@ exports.buyNowAuction = asyncHandler(async (req, res, next) => {
 
   await auction.save();
 
-  // Emit auction completion event (without bidder name)
+  // Emit auction completion event
   emitAuctionCompleted(auction._id.toString(), {
-    winner: { _id: req.user.id }, // Only include ID, not full user info
-    finalBid: {
-      _id: bid._id,
-      auction: bid.auction,
-      amount: bid.amount,
-      time: bid.time,
-      isWinningBid: bid.isWinningBid
-    },
+    winner: req.user,
+    finalBid: bid,
     auction: auction,
   });
 
@@ -562,9 +546,6 @@ exports.buyNowAuction = asyncHandler(async (req, res, next) => {
     console.error("Error creating notifications:", notificationError);
     // Don't fail the buy now if notifications fail
   }
-
-  // Populate the bid with bidder information for API response only
-  await bid.populate("bidder", "firstName lastName");
 
   sendSuccess(res, {
     message: "Auction purchased successfully",
@@ -1988,12 +1969,10 @@ exports.getUnsoldAuctions = asyncHandler(async (req, res, next) => {
 // @route   GET /api/auctions/completed
 // @access  Public
 exports.getCompletedAuctions = asyncHandler(async (req, res, next) => {
-  const now = new Date();
-  
-  // Find all auctions that are either marked as completed OR have ended
-  const completedAuctions = await Auction.find(
-    { endTime: { $lt: now } }
-  )
+  // Find all completed auctions (both sold and unsold)
+  const completedAuctions = await Auction.find({
+    status: "completed",
+  })
     .populate({
       path: "car",
       select:
