@@ -54,4 +54,21 @@ const generateSimplePassword = (length = 8) => {
   return password.split('').sort(() => 0.5 - Math.random()).join('');
 };
 
-module.exports = { generatePassword, generateSimplePassword }; 
+/**
+ * Generates a numeric-only password of specified length
+ * @param {number} length - Length of the password (default: 8)
+ * @returns {string} - Generated numeric password
+ */
+const generateNumericPassword = (length = 8) => {
+  const numbers = '0123456789';
+  let password = '';
+  
+  // Generate random numeric password
+  for (let i = 0; i < length; i++) {
+    password += numbers.charAt(Math.floor(Math.random() * numbers.length));
+  }
+  
+  return password;
+};
+
+module.exports = { generatePassword, generateSimplePassword, generateNumericPassword }; 
