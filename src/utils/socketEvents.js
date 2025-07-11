@@ -9,9 +9,19 @@
  */
 const emitNewBid = (auctionId, bidData) => {
   if (global.io) {
+    // Create a sanitized bid object without bidder's name
+    const sanitizedBid = {
+      _id: bidData.bid._id,
+      auction: bidData.bid.auction,
+      bidder: bidData.bid.bidder ? bidData.bid.bidder._id : bidData.bid.bidder,
+      amount: bidData.bid.amount,
+      time: bidData.bid.time,
+      isWinningBid: bidData.bid.isWinningBid
+    };
+
     global.io.to(`auction-${auctionId}`).emit('new-bid', {
       auctionId,
-      bid: bidData.bid,
+      bid: sanitizedBid,
       auction: bidData.auction,
       timestamp: new Date()
     });
@@ -42,10 +52,26 @@ const emitAuctionUpdate = (auctionId, auctionData) => {
  */
 const emitAuctionCompleted = (auctionId, completionData) => {
   if (global.io) {
+    // Create sanitized completion data without bidder's name
+    const sanitizedWinner = completionData.winner ? {
+      _id: completionData.winner._id || completionData.winner
+    } : null;
+
+    const sanitizedFinalBid = completionData.finalBid ? {
+      _id: completionData.finalBid._id,
+      auction: completionData.finalBid.auction,
+      bidder: completionData.finalBid.bidder ? 
+        (completionData.finalBid.bidder._id || completionData.finalBid.bidder) : 
+        completionData.finalBid.bidder,
+      amount: completionData.finalBid.amount,
+      time: completionData.finalBid.time,
+      isWinningBid: completionData.finalBid.isWinningBid
+    } : null;
+
     global.io.to(`auction-${auctionId}`).emit('auction-completed', {
       auctionId,
-      winner: completionData.winner,
-      finalBid: completionData.finalBid,
+      winner: sanitizedWinner,
+      finalBid: sanitizedFinalBid,
       auction: completionData.auction,
       timestamp: new Date()
     });
