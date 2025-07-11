@@ -45,6 +45,23 @@ const ratingSchema = new mongoose.Schema(
   { _id: false }
 );
 
+// Define component item schema that includes both rating and comment
+const componentItemSchema = new mongoose.Schema(
+  {
+    rating: { 
+      type: mongoose.Schema.Types.ObjectId, 
+      ref: "Rating",
+      required: false
+    },
+    comment: {
+      type: String,
+      required: false,
+      maxlength: 500
+    }
+  },
+  { _id: false }
+);
+
 const interiorAndExteriorSchema = new mongoose.Schema(
   {
     condition: {
@@ -159,29 +176,29 @@ const carSchema = new mongoose.Schema({
     required: false,
   },
   componentSummary: {
-    windows: { type: mongoose.Schema.Types.ObjectId, ref: "Rating" },
-    tires: { type: mongoose.Schema.Types.ObjectId, ref: "Rating" },
-    brakes: { type: mongoose.Schema.Types.ObjectId, ref: "Rating" },
-    battery: { type: mongoose.Schema.Types.ObjectId, ref: "Rating" },
-    engine: { type: mongoose.Schema.Types.ObjectId, ref: "Rating" },
-    transmission: { type: mongoose.Schema.Types.ObjectId, ref: "Rating" },
-    suspension: { type: mongoose.Schema.Types.ObjectId, ref: "Rating" },
-    body: { type: mongoose.Schema.Types.ObjectId, ref: "Rating" },
-    interior: { type: mongoose.Schema.Types.ObjectId, ref: "Rating" },
-    exterior: { type: mongoose.Schema.Types.ObjectId, ref: "Rating" },
-    ac: { type: mongoose.Schema.Types.ObjectId, ref: "Rating" },
-    electrical: { type: mongoose.Schema.Types.ObjectId, ref: "Rating" },
-    centralLock: { type: mongoose.Schema.Types.ObjectId, ref: "Rating" },
-    audio: { type: mongoose.Schema.Types.ObjectId, ref: "Rating" },
-    navigation: { type: mongoose.Schema.Types.ObjectId, ref: "Rating" },
-    seats: { type: mongoose.Schema.Types.ObjectId, ref: "Rating" },
-    sunroof: { type: mongoose.Schema.Types.ObjectId, ref: "Rating" },
-    paint: { type: mongoose.Schema.Types.ObjectId, ref: "Rating" },
-    dashboard: { type: mongoose.Schema.Types.ObjectId, ref: "Rating" },
-    lights: { type: mongoose.Schema.Types.ObjectId, ref: "Rating" },
-    steering: { type: mongoose.Schema.Types.ObjectId, ref: "Rating" },
-    exhaust: { type: mongoose.Schema.Types.ObjectId, ref: "Rating" },
-    clutch: { type: mongoose.Schema.Types.ObjectId, ref: "Rating" },
+    windows: componentItemSchema,
+    tires: componentItemSchema,
+    brakes: componentItemSchema,
+    battery: componentItemSchema,
+    engine: componentItemSchema,
+    transmission: componentItemSchema,
+    suspension: componentItemSchema,
+    body: componentItemSchema,
+    interior: componentItemSchema,
+    exterior: componentItemSchema,
+    ac: componentItemSchema,
+    electrical: componentItemSchema,
+    centralLock: componentItemSchema,
+    audio: componentItemSchema,
+    navigation: componentItemSchema,
+    seats: componentItemSchema,
+    sunroof: componentItemSchema,
+    paint: componentItemSchema,
+    dashboard: componentItemSchema,
+    lights: componentItemSchema,
+    steering: componentItemSchema,
+    exhaust: componentItemSchema,
+    clutch: componentItemSchema,
   },
   interiorAndExterior: {
     frontBumber: { type: mongoose.Schema.Types.ObjectId, ref: "CarCondition" },
