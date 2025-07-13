@@ -48,16 +48,94 @@ const ratingSchema = new mongoose.Schema(
 // Define component item schema that includes both rating and comment
 const componentItemSchema = new mongoose.Schema(
   {
-    rating: { 
-      type: mongoose.Schema.Types.ObjectId, 
+    rating: {
+      type: mongoose.Schema.Types.ObjectId,
       ref: "Rating",
-      required: false
+      required: false,
     },
     comment: {
       type: String,
       required: false,
-      maxlength: 500
-    }
+      maxlength: 500,
+    },
+  },
+  { _id: false }
+);
+
+// Define condition item schema that includes both condition and comment
+const conditionItemSchema = new mongoose.Schema(
+  {
+    condition: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "CarCondition",
+      required: false,
+    },
+    comment: {
+      type: String,
+      required: false,
+      maxlength: 500,
+    },
+  },
+  { _id: false }
+);
+
+// Define interior feature schemas for navigation, sunroof, seatType, and interiorColor
+const navigationSchema = new mongoose.Schema(
+  {
+    hasNavigation: {
+      type: Boolean,
+      required: false,
+    },
+    comment: {
+      type: String,
+      required: false,
+      maxlength: 500,
+    },
+  },
+  { _id: false }
+);
+
+const sunroofSchema = new mongoose.Schema(
+  {
+    hasSunroof: {
+      type: Boolean,
+      required: false,
+    },
+    comment: {
+      type: String,
+      required: false,
+      maxlength: 500,
+    },
+  },
+  { _id: false }
+);
+
+const seatTypeSchema = new mongoose.Schema(
+  {
+    seatType: {
+      type: String,
+      required: false,
+    },
+    comment: {
+      type: String,
+      required: false,
+      maxlength: 500,
+    },
+  },
+  { _id: false }
+);
+
+const interiorColorSchema = new mongoose.Schema(
+  {
+    interiorColor: {
+      type: String,
+      required: false,
+    },
+    comment: {
+      type: String,
+      required: false,
+      maxlength: 500,
+    },
   },
   { _id: false }
 );
@@ -201,80 +279,32 @@ const carSchema = new mongoose.Schema({
     clutch: componentItemSchema,
   },
   interiorAndExterior: {
-    frontBumber: { type: mongoose.Schema.Types.ObjectId, ref: "CarCondition" },
-    bonnet: { type: mongoose.Schema.Types.ObjectId, ref: "CarCondition" },
-    roof: { type: mongoose.Schema.Types.ObjectId, ref: "CarCondition" },
-    reerBumber: { type: mongoose.Schema.Types.ObjectId, ref: "CarCondition" },
-    driverSideFrontWing: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "CarCondition",
-    },
-    driverSideFrontDoor: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "CarCondition",
-    },
-    driverSideRearDoor: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "CarCondition",
-    },
-    driverRearQuarter: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "CarCondition",
-    },
-    passengerSideFrontWing: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "CarCondition",
-    },
-    passengerSideFrontDoor: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "CarCondition",
-    },
-    passengerSideRearDoor: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "CarCondition",
-    },
-    passengerRearQuarter: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "CarCondition",
-    },
-    driverSideFrontTyre: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "CarCondition",
-    },
-    driverSideRearTyre: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "CarCondition",
-    },
-    passengerSideFrontTyre: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "CarCondition",
-    },
-    passengerSideRearTyre: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "CarCondition",
-    },
-    trunk: { type: mongoose.Schema.Types.ObjectId, ref: "CarCondition" },
-    frontGlass: { type: mongoose.Schema.Types.ObjectId, ref: "CarCondition" },
-    rearGlass: { type: mongoose.Schema.Types.ObjectId, ref: "CarCondition" },
-    leftGlass: { type: mongoose.Schema.Types.ObjectId, ref: "CarCondition" },
-    rightGlass: { type: mongoose.Schema.Types.ObjectId, ref: "CarCondition" },
+    frontBumber: conditionItemSchema,
+    bonnet: conditionItemSchema,
+    roof: conditionItemSchema,
+    reerBumber: conditionItemSchema,
+    driverSideFrontWing: conditionItemSchema,
+    driverSideFrontDoor: conditionItemSchema,
+    driverSideRearDoor: conditionItemSchema,
+    driverRearQuarter: conditionItemSchema,
+    passengerSideFrontWing: conditionItemSchema,
+    passengerSideFrontDoor: conditionItemSchema,
+    passengerSideRearDoor: conditionItemSchema,
+    passengerRearQuarter: conditionItemSchema,
+    driverSideFrontTyre: conditionItemSchema,
+    driverSideRearTyre: conditionItemSchema,
+    passengerSideFrontTyre: conditionItemSchema,
+    passengerSideRearTyre: conditionItemSchema,
+    trunk: conditionItemSchema,
+    frontGlass: conditionItemSchema,
+    rearGlass: conditionItemSchema,
+    leftGlass: conditionItemSchema,
+    rightGlass: conditionItemSchema,
     interior: {
-      navigation: {
-        type: Boolean,
-        required: false,
-      },
-      sunroof: {
-        type: Boolean,
-        required: false,
-      },
-      seatType: {
-        type: String,
-        required: false,
-      },
-      interiorColor: {
-        type: String,
-        required: false,
-      },
+      navigation: navigationSchema,
+      sunroof: sunroofSchema,
+      seatType: seatTypeSchema,
+      interiorColor: interiorColorSchema,
     },
   },
   images: {
