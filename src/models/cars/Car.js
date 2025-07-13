@@ -140,6 +140,40 @@ const interiorColorSchema = new mongoose.Schema(
   { _id: false }
 );
 
+// Define service history schema that includes both boolean value and comment
+const serviceHistoryItemSchema = new mongoose.Schema(
+  {
+    hasServiceHistory: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
+    comment: {
+      type: String,
+      required: false,
+      maxlength: 500,
+    },
+  },
+  { _id: false }
+);
+
+// Define warranty schema that includes both warranty status and comment
+const warrantyItemSchema = new mongoose.Schema(
+  {
+    hasWarranty: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
+    comment: {
+      type: String,
+      required: false,
+      maxlength: 500,
+    },
+  },
+  { _id: false }
+);
+
 const interiorAndExteriorSchema = new mongoose.Schema(
   {
     condition: {
@@ -209,20 +243,13 @@ const carSchema = new mongoose.Schema({
     min: 1,
     max: 16,
   },
-  serviceHistory: {
-    type: Boolean,
-    required: false,
-    default: false,
-  },
+  serviceHistory: serviceHistoryItemSchema,
   country: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Country",
     required: false,
   },
-  warranty: {
-    type: String,
-    required: false,
-  },
+  warranty: warrantyItemSchema,
   engineSize: {
     type: Number,
     required: false,

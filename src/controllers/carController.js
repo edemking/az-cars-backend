@@ -36,18 +36,79 @@ const validateCarData = async (carData) => {
     }
   });
 
-  // Handle serviceHistory as boolean
+  // Handle serviceHistory as object with hasServiceHistory boolean and comment
   if (carData.serviceHistory !== undefined) {
-    if (typeof carData.serviceHistory === 'string') {
-      if (carData.serviceHistory.toLowerCase() === 'true') {
-        carData.serviceHistory = true;
-      } else if (carData.serviceHistory.toLowerCase() === 'false') {
-        carData.serviceHistory = false;
+    if (typeof carData.serviceHistory === 'object' && carData.serviceHistory !== null) {
+      // Handle nested object structure
+      if (carData.serviceHistory.hasServiceHistory !== undefined) {
+        if (typeof carData.serviceHistory.hasServiceHistory === 'string') {
+          if (carData.serviceHistory.hasServiceHistory.toLowerCase() === 'true') {
+            carData.serviceHistory.hasServiceHistory = true;
+          } else if (carData.serviceHistory.hasServiceHistory.toLowerCase() === 'false') {
+            carData.serviceHistory.hasServiceHistory = false;
+          } else {
+            errors.push(`serviceHistory.hasServiceHistory must be a boolean (true/false), received: "${carData.serviceHistory.hasServiceHistory}"`);
+          }
+        } else if (typeof carData.serviceHistory.hasServiceHistory !== 'boolean') {
+          errors.push(`serviceHistory.hasServiceHistory must be a boolean, received: ${typeof carData.serviceHistory.hasServiceHistory}`);
+        }
+      }
+      
+      // Validate comment field if present
+      if (carData.serviceHistory.comment !== undefined && typeof carData.serviceHistory.comment !== 'string') {
+        errors.push(`serviceHistory.comment must be a string, received: ${typeof carData.serviceHistory.comment}`);
+      }
+    } else if (typeof carData.serviceHistory === 'string') {
+      // Handle backward compatibility - convert simple boolean string to object
+      const hasServiceHistory = carData.serviceHistory.toLowerCase() === 'true';
+      if (carData.serviceHistory.toLowerCase() === 'true' || carData.serviceHistory.toLowerCase() === 'false') {
+        carData.serviceHistory = { hasServiceHistory };
       } else {
         errors.push(`serviceHistory must be a boolean (true/false), received: "${carData.serviceHistory}"`);
       }
-    } else if (typeof carData.serviceHistory !== 'boolean') {
-      errors.push(`serviceHistory must be a boolean, received: ${typeof carData.serviceHistory}`);
+    } else if (typeof carData.serviceHistory === 'boolean') {
+      // Handle backward compatibility - convert simple boolean to object
+      carData.serviceHistory = { hasServiceHistory: carData.serviceHistory };
+    } else {
+      errors.push(`serviceHistory must be an object or boolean, received: ${typeof carData.serviceHistory}`);
+    }
+  }
+
+  // Handle warranty as object with hasWarranty boolean and comment
+  if (carData.warranty !== undefined) {
+    if (typeof carData.warranty === 'object' && carData.warranty !== null) {
+      // Handle nested object structure
+      if (carData.warranty.hasWarranty !== undefined) {
+        if (typeof carData.warranty.hasWarranty === 'string') {
+          if (carData.warranty.hasWarranty.toLowerCase() === 'true') {
+            carData.warranty.hasWarranty = true;
+          } else if (carData.warranty.hasWarranty.toLowerCase() === 'false') {
+            carData.warranty.hasWarranty = false;
+          } else {
+            errors.push(`warranty.hasWarranty must be a boolean (true/false), received: "${carData.warranty.hasWarranty}"`);
+          }
+        } else if (typeof carData.warranty.hasWarranty !== 'boolean') {
+          errors.push(`warranty.hasWarranty must be a boolean, received: ${typeof carData.warranty.hasWarranty}`);
+        }
+      }
+      
+      // Validate comment field if present
+      if (carData.warranty.comment !== undefined && typeof carData.warranty.comment !== 'string') {
+        errors.push(`warranty.comment must be a string, received: ${typeof carData.warranty.comment}`);
+      }
+    } else if (typeof carData.warranty === 'string') {
+      // Handle backward compatibility - convert simple boolean string to object
+      const hasWarranty = carData.warranty.toLowerCase() === 'true';
+      if (carData.warranty.toLowerCase() === 'true' || carData.warranty.toLowerCase() === 'false') {
+        carData.warranty = { hasWarranty };
+      } else {
+        errors.push(`warranty must be a boolean (true/false), received: "${carData.warranty}"`);
+      }
+    } else if (typeof carData.warranty === 'boolean') {
+      // Handle backward compatibility - convert simple boolean to object
+      carData.warranty = { hasWarranty: carData.warranty };
+    } else {
+      errors.push(`warranty must be an object or boolean, received: ${typeof carData.warranty}`);
     }
   }
 
