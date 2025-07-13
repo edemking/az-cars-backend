@@ -1,5 +1,5 @@
 const Car = require("../models/cars/Car");
-const { getFileUrl, getFileUrls } = require("../utils/fileUpload");
+const { getFileUrl, getFileUrls, deleteFile } = require("../utils/fileUpload");
 const fs = require("fs");
 const path = require("path");
 const Make = require("../models/cars/Make");
@@ -253,6 +253,19 @@ exports.createCar = async (req, res) => {
         return sendError(res, {
           statusCode: 400,
           message: "Error uploading images",
+          errors: { details: error.message }
+        });
+      }
+    }
+
+    // Handle video uploads if present
+    if (req.files && req.files.videos) {
+      try {
+        processedData.videos = await getFileUrls(req, req.files.videos);
+      } catch (error) {
+        return sendError(res, {
+          statusCode: 400,
+          message: "Error uploading videos",
           errors: { details: error.message }
         });
       }
@@ -516,6 +529,35 @@ exports.updateCar = async (req, res) => {
       }
     }
 
+    // Handle video uploads if present
+    if (req.files && req.files.videos) {
+      try {
+        const newVideos = await getFileUrls(req, req.files.videos);
+
+        // If we want to append to existing videos
+        if (validatedUpdates.appendVideos === "true") {
+          const existingCar = await Car.findById(req.params.id);
+          if (existingCar) {
+            validatedUpdates.videos = [...(existingCar.videos || []), ...newVideos];
+          } else {
+            validatedUpdates.videos = newVideos;
+          }
+        } else {
+          // Replace existing videos
+          validatedUpdates.videos = newVideos;
+        }
+
+        // Remove appendVideos from updates as it's not part of the model
+        delete validatedUpdates.appendVideos;
+      } catch (error) {
+        return sendError(res, {
+          statusCode: 400,
+          message: "Error uploading videos",
+          errors: { details: error.message }
+        });
+      }
+    }
+
     const car = await Car.findByIdAndUpdate(req.params.id, validatedUpdates, {
       new: true,
       runValidators: true,
@@ -656,6 +698,103 @@ exports.deleteCarImage = async (req, res) => {
     sendSuccess(res, {
       message: "Image deleted successfully",
       data: { images: car.images },
+    });
+  } catch (error) {
+    sendError(res, {
+      statusCode: 400,
+      message: error.message,
+    });
+  }
+};
+
+// Upload car videos
+exports.uploadCarVideos = async (req, res) => {
+  try {
+    if (!req.files || !req.files.videos) {
+      return sendError(res, {
+        statusCode: 400,
+        message: "No videos uploaded",
+      });
+    }
+
+    const carId = req.params.id;
+    const car = await Car.findById(carId);
+
+    if (!car) {
+      return sendError(res, {
+        statusCode: 404,
+        message: "Car not found",
+      });
+    }
+
+    try {
+      // Get URLs for the uploaded videos
+      const videoUrls = await getFileUrls(req, req.files.videos);
+
+      // Update car with new videos
+      if (req.body.replace === "true") {
+        // Delete old videos from S3 if replacing
+        if (car.videos && car.videos.length > 0) {
+          await Promise.all(car.videos.map(videoUrl => deleteFile(videoUrl)));
+        }
+        // Replace all videos
+        car.videos = videoUrls;
+      } else {
+        // Append to existing videos
+        car.videos = [...(car.videos || []), ...videoUrls];
+      }
+
+      await car.save();
+
+      sendSuccess(res, {
+        message: "Videos uploaded successfully",
+        data: { videos: car.videos },
+      });
+    } catch (error) {
+      return sendError(res, {
+        statusCode: 400,
+        message: "Error uploading videos",
+        errors: { details: error.message }
+      });
+    }
+  } catch (error) {
+    sendError(res, {
+      statusCode: 400,
+      message: error.message,
+    });
+  }
+};
+
+// Delete car video
+exports.deleteCarVideo = async (req, res) => {
+  try {
+    const { id, videoUrl } = req.params;
+    const decodedVideoUrl = decodeURIComponent(videoUrl);
+
+    const car = await Car.findById(id);
+    if (!car) {
+      return sendError(res, {
+        statusCode: 404,
+        message: "Car not found",
+      });
+    }
+
+    // Remove the video URL from the car's videos array
+    car.videos = (car.videos || []).filter(video => video !== decodedVideoUrl);
+
+    // Delete the video from S3
+    try {
+      await deleteFile(decodedVideoUrl);
+    } catch (error) {
+      console.error("Error deleting video from S3:", error);
+      // Continue with updating the car even if S3 deletion fails
+    }
+
+    await car.save();
+
+    sendSuccess(res, {
+      message: "Video deleted successfully",
+      data: { videos: car.videos },
     });
   } catch (error) {
     sendError(res, {

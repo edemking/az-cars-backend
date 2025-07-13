@@ -4,16 +4,17 @@ const { uploadToS3, deleteFromS3, getKeyFromUrl } = require('./s3Upload');
 // Configure multer to use memory storage instead of disk storage
 const storage = multer.memoryStorage();
 
-// File filter to allow only images
+// File filter to allow images, videos, and PDFs
 const fileFilter = (req, file, cb) => {
-  const allowedFileTypes = /jpeg|jpg|png|gif|pdf/;
+  const allowedFileTypes = /jpeg|jpg|png|gif|pdf|mp4|mov|avi|wmv|flv|webm|mkv|m4v/;
   const extname = allowedFileTypes.test(file.originalname.toLowerCase());
-  const mimetype = allowedFileTypes.test(file.mimetype);
+  const mimetype = allowedFileTypes.test(file.mimetype) || 
+                   file.mimetype.startsWith('video/');
 
   if (extname && mimetype) {
     return cb(null, true);
   } else {
-    cb(new Error('Only image files (jpeg, jpg, png, gif) and PDF files are allowed!'));
+    cb(new Error('Only image files (jpeg, jpg, png, gif), video files (mp4, mov, avi, wmv, flv, webm, mkv, m4v) and PDF files are allowed!'));
   }
 };
 
@@ -21,7 +22,7 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({
   storage: storage,
   limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB file size limit
+    fileSize: 100 * 1024 * 1024 // 100MB file size limit to accommodate videos
   },
   fileFilter: fileFilter
 });

@@ -4,9 +4,10 @@ const carController = require('../controllers/carController');
 const { protect } = require('../middleware/auth');
 const { upload } = require('../utils/fileUpload');
 
-// Configure car image upload middleware
-const uploadCarImages = upload.fields([
-  { name: 'images', maxCount: 40 } // Allow up to 10 images per upload
+// Configure car media upload middleware (images and videos)
+const uploadCarMedia = upload.fields([
+  { name: 'images', maxCount: 40 }, // Allow up to 40 images per upload
+  { name: 'videos', maxCount: 10 }  // Allow up to 10 videos per upload
 ]);
 
 // Public routes - anyone can view cars
@@ -32,13 +33,15 @@ router.delete('/makes/:id', protect, carController.deleteMake);
 router.delete('/models/:id', protect, carController.deleteModel);
 
 // Protected routes - only authenticated users can modify
-router.post('/', protect, uploadCarImages, carController.createCar);
-router.put('/:id', protect, uploadCarImages, carController.updateCar);
+router.post('/', protect, uploadCarMedia, carController.createCar);
+router.put('/:id', protect, uploadCarMedia, carController.updateCar);
 router.delete('/:id', protect, carController.deleteCar);
 
-// Car image management routes
-router.post('/:id/images', protect, uploadCarImages, carController.uploadCarImages);
+// Car media management routes
+router.post('/:id/images', protect, uploadCarMedia, carController.uploadCarImages);
 router.delete('/:id/images/:imageUrl', protect, carController.deleteCarImage);
+router.post('/:id/videos', protect, uploadCarMedia, carController.uploadCarVideos);
+router.delete('/:id/videos/:videoUrl', protect, carController.deleteCarVideo);
 
 // Car approval routes
 router.put('/:id/approve', protect, carController.approveCar);

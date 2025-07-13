@@ -23,7 +23,7 @@ function getS3Key(fieldname, filename) {
     folder = 'ids';
   } else if (fieldname.includes('profile') || fieldname === 'profilePicture') {
     folder = 'profiles';
-  } else if (fieldname.includes('car') || fieldname === 'images') {
+  } else if (fieldname.includes('car') || fieldname === 'images' || fieldname === 'videos') {
     folder = 'cars';
   }
   

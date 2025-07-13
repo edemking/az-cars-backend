@@ -311,6 +311,10 @@ const carSchema = new mongoose.Schema({
     type: [String],
     default: [],
   },
+  videos: {
+    type: [String],
+    default: [],
+  },
   isApproved: {
     type: Boolean,
     default: false,
