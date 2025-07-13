@@ -332,6 +332,19 @@ exports.createCar = async (req, res) => {
       }
     }
 
+    // Handle PDF uploads if present
+    if (req.files && req.files.pdfs) {
+      try {
+        processedData.pdfs = await getFileUrls(req, req.files.pdfs);
+      } catch (error) {
+        return sendError(res, {
+          statusCode: 400,
+          message: "Error uploading PDFs",
+          errors: { details: error.message }
+        });
+      }
+    }
+
     // Data preprocessing and validation
     const { isValid, errors, warnings, processedData: validatedData } = await validateCarData(processedData);
 
@@ -619,6 +632,35 @@ exports.updateCar = async (req, res) => {
       }
     }
 
+    // Handle PDF uploads if present
+    if (req.files && req.files.pdfs) {
+      try {
+        const newPdfs = await getFileUrls(req, req.files.pdfs);
+
+        // If we want to append to existing PDFs
+        if (validatedUpdates.appendPdfs === "true") {
+          const existingCar = await Car.findById(req.params.id);
+          if (existingCar) {
+            validatedUpdates.pdfs = [...(existingCar.pdfs || []), ...newPdfs];
+          } else {
+            validatedUpdates.pdfs = newPdfs;
+          }
+        } else {
+          // Replace existing PDFs
+          validatedUpdates.pdfs = newPdfs;
+        }
+
+        // Remove appendPdfs from updates as it's not part of the model
+        delete validatedUpdates.appendPdfs;
+      } catch (error) {
+        return sendError(res, {
+          statusCode: 400,
+          message: "Error uploading PDFs",
+          errors: { details: error.message }
+        });
+      }
+    }
+
     const car = await Car.findByIdAndUpdate(req.params.id, validatedUpdates, {
       new: true,
       runValidators: true,
@@ -856,6 +898,103 @@ exports.deleteCarVideo = async (req, res) => {
     sendSuccess(res, {
       message: "Video deleted successfully",
       data: { videos: car.videos },
+    });
+  } catch (error) {
+    sendError(res, {
+      statusCode: 400,
+      message: error.message,
+    });
+  }
+};
+
+// Upload car PDFs
+exports.uploadCarPdfs = async (req, res) => {
+  try {
+    if (!req.files || !req.files.pdfs) {
+      return sendError(res, {
+        statusCode: 400,
+        message: "No PDFs uploaded",
+      });
+    }
+
+    const carId = req.params.id;
+    const car = await Car.findById(carId);
+
+    if (!car) {
+      return sendError(res, {
+        statusCode: 404,
+        message: "Car not found",
+      });
+    }
+
+    try {
+      // Get URLs for the uploaded PDFs
+      const pdfUrls = await getFileUrls(req, req.files.pdfs);
+
+      // Update car with new PDFs
+      if (req.body.replace === "true") {
+        // Delete old PDFs from S3 if replacing
+        if (car.pdfs && car.pdfs.length > 0) {
+          await Promise.all(car.pdfs.map(pdfUrl => deleteFile(pdfUrl)));
+        }
+        // Replace all PDFs
+        car.pdfs = pdfUrls;
+      } else {
+        // Append to existing PDFs
+        car.pdfs = [...(car.pdfs || []), ...pdfUrls];
+      }
+
+      await car.save();
+
+      sendSuccess(res, {
+        message: "PDFs uploaded successfully",
+        data: { pdfs: car.pdfs },
+      });
+    } catch (error) {
+      return sendError(res, {
+        statusCode: 400,
+        message: "Error uploading PDFs",
+        errors: { details: error.message }
+      });
+    }
+  } catch (error) {
+    sendError(res, {
+      statusCode: 400,
+      message: error.message,
+    });
+  }
+};
+
+// Delete car PDF
+exports.deleteCarPdf = async (req, res) => {
+  try {
+    const { id, pdfUrl } = req.params;
+    const decodedPdfUrl = decodeURIComponent(pdfUrl);
+
+    const car = await Car.findById(id);
+    if (!car) {
+      return sendError(res, {
+        statusCode: 404,
+        message: "Car not found",
+      });
+    }
+
+    // Remove the PDF URL from the car's pdfs array
+    car.pdfs = (car.pdfs || []).filter(pdf => pdf !== decodedPdfUrl);
+
+    // Delete the PDF from S3
+    try {
+      await deleteFile(decodedPdfUrl);
+    } catch (error) {
+      console.error("Error deleting PDF from S3:", error);
+      // Continue with updating the car even if S3 deletion fails
+    }
+
+    await car.save();
+
+    sendSuccess(res, {
+      message: "PDF deleted successfully",
+      data: { pdfs: car.pdfs },
     });
   } catch (error) {
     sendError(res, {

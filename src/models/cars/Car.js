@@ -342,6 +342,10 @@ const carSchema = new mongoose.Schema({
     type: [String],
     default: [],
   },
+  pdfs: {
+    type: [String],
+    default: [],
+  },
   isApproved: {
     type: Boolean,
     default: false,
