@@ -187,18 +187,136 @@ exports.getAuction = asyncHandler(async (req, res, next) => {
           path: "transmission",
         },
         {
-          path: "componentSummary",
-          populate: {
-            path: "windows tires brakes battery engine transmission suspension body interior exterior ac electrical centralLock audio navigation seats sunroof paint dashboard lights steering exhaust clutch",
-            model: "Rating",
-          },
+          path: "componentSummary.windows.rating",
         },
         {
-          path: "interiorAndExterior",
-          populate: {
-            path: "frontBumber bonnet roof reerBumber driverSideFrontWing driverSideFrontDoor driverSideRearDoor driverRearQuarter passengerSideFrontWing passengerSideFrontDoor passengerSideRearDoor passengerRearQuarter driverSideFrontTyre driverSideRearTyre passengerSideFrontTyre passengerSideRearTyre trunk frontGlass rearGlass leftGlass rightGlass",
-            model: "CarCondition",
-          },
+          path: "componentSummary.tires.rating",
+        },
+        {
+          path: "componentSummary.brakes.rating",
+        },
+        {
+          path: "componentSummary.battery.rating",
+        },
+        {
+          path: "componentSummary.engine.rating",
+        },
+        {
+          path: "componentSummary.transmission.rating",
+        },
+        {
+          path: "componentSummary.suspension.rating",
+        },
+        {
+          path: "componentSummary.body.rating",
+        },
+        {
+          path: "componentSummary.interior.rating",
+        },
+        {
+          path: "componentSummary.exterior.rating",
+        },
+        {
+          path: "componentSummary.ac.rating",
+        },
+        {
+          path: "componentSummary.electrical.rating",
+        },
+        {
+          path: "componentSummary.centralLock.rating",
+        },
+        {
+          path: "componentSummary.audio.rating",
+        },
+        {
+          path: "componentSummary.navigation.rating",
+        },
+        {
+          path: "componentSummary.seats.rating",
+        },
+        {
+          path: "componentSummary.sunroof.rating",
+        },
+        {
+          path: "componentSummary.paint.rating",
+        },
+        {
+          path: "componentSummary.dashboard.rating",
+        },
+        {
+          path: "componentSummary.lights.rating",
+        },
+        {
+          path: "componentSummary.steering.rating",
+        },
+        {
+          path: "componentSummary.exhaust.rating",
+        },
+        {
+          path: "componentSummary.clutch.rating",
+        },
+        {
+          path: "interiorAndExterior.frontBumber.condition",
+        },
+        {
+          path: "interiorAndExterior.bonnet.condition",
+        },
+        {
+          path: "interiorAndExterior.roof.condition",
+        },
+        {
+          path: "interiorAndExterior.reerBumber.condition",
+        },
+        {
+          path: "interiorAndExterior.driverSideFrontWing.condition",
+        },
+        {
+          path: "interiorAndExterior.driverSideFrontDoor.condition",
+        },
+        {
+          path: "interiorAndExterior.driverSideRearDoor.condition",
+        },
+        {
+          path: "interiorAndExterior.driverRearQuarter.condition",
+        },
+        {
+          path: "interiorAndExterior.passengerSideFrontWing.condition",
+        },
+        {
+          path: "interiorAndExterior.passengerSideFrontDoor.condition",
+        },
+        {
+          path: "interiorAndExterior.passengerSideRearDoor.condition",
+        },
+        {
+          path: "interiorAndExterior.passengerRearQuarter.condition",
+        },
+        {
+          path: "interiorAndExterior.driverSideFrontTyre.condition",
+        },
+        {
+          path: "interiorAndExterior.driverSideRearTyre.condition",
+        },
+        {
+          path: "interiorAndExterior.passengerSideFrontTyre.condition",
+        },
+        {
+          path: "interiorAndExterior.passengerSideRearTyre.condition",
+        },
+        {
+          path: "interiorAndExterior.trunk.condition",
+        },
+        {
+          path: "interiorAndExterior.frontGlass.condition",
+        },
+        {
+          path: "interiorAndExterior.rearGlass.condition",
+        },
+        {
+          path: "interiorAndExterior.leftGlass.condition",
+        },
+        {
+          path: "interiorAndExterior.rightGlass.condition",
         },
       ],
     })
