@@ -318,18 +318,6 @@ exports.getAuction = asyncHandler(async (req, res, next) => {
         {
           path: "interiorAndExterior.rightGlass.condition",
         },
-        {
-          path: "interiorAndExterior.interior.navigation",
-        },
-        {
-          path: "interiorAndExterior.interior.sunroof",
-        },
-        {
-          path: "interiorAndExterior.interior.seatType",
-        },
-        {
-          path: "interiorAndExterior.interior.interiorColor",
-        },
       ],
     })
     .populate("createdBy", "firstName lastName profilePicture")
@@ -1889,22 +1877,13 @@ exports.getAuctionResults = asyncHandler(async (req, res, next) => {
           model: "CarCondition",
           select: "condition",
         },
-        {
-          path: "interiorAndExterior.interior.navigation",
-        },
-        {
-          path: "interiorAndExterior.interior.sunroof",
-        },
-        {
-          path: "interiorAndExterior.interior.seatType",
-        },
-        {
-          path: "interiorAndExterior.interior.interiorColor",
-        },
       ],
     })
     .populate("createdBy", "firstName lastName email profilePicture")
-    .populate("winner", "firstName lastName email profilePicture phoneNumber, country");
+    .populate(
+      "winner",
+      "firstName lastName email profilePicture phoneNumber, country"
+    );
 
   if (!auction) {
     return next(
@@ -1914,7 +1893,10 @@ exports.getAuctionResults = asyncHandler(async (req, res, next) => {
 
   // Get all bids for this auction, sorted by amount (highest first)
   const allBids = await Bid.find({ auction: req.params.id })
-    .populate("bidder", "firstName lastName email profilePicture phoneNumber country")
+    .populate(
+      "bidder",
+      "firstName lastName email profilePicture phoneNumber country"
+    )
     .sort({ amount: -1, createdAt: 1 });
 
   // Get the winning bid (highest bid)
@@ -2241,7 +2223,10 @@ exports.getCompletedAuctionsWithBidders = asyncHandler(
     const allBids = await Bid.find({
       auction: { $in: auctionIds },
     })
-      .populate("bidder", "firstName lastName email profilePicture phoneNumber country")
+      .populate(
+        "bidder",
+        "firstName lastName email profilePicture phoneNumber country"
+      )
       .sort({ auction: 1, amount: -1 }); // Sort by auction, then highest bid first
 
     // Group bids by auction

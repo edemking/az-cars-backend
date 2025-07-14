@@ -556,6 +556,32 @@ exports.createCar = async (req, res) => {
       }
     }
 
+    // Handle root-level interior object and move it to interiorAndExterior.interior
+    if (validatedData.interior) {
+      console.log("Processing root-level interior object:", validatedData.interior);
+      
+      // Initialize interiorAndExterior if it doesn't exist
+      if (!validatedData.interiorAndExterior) {
+        validatedData.interiorAndExterior = {};
+      }
+      
+      // Move interior object to the correct nested location
+      validatedData.interiorAndExterior.interior = validatedData.interior;
+      
+      // Fix the typo in interiorColor field name if it exists
+      if (validatedData.interiorAndExterior.interior.interiorColor && 
+          validatedData.interiorAndExterior.interior.interiorColor.interior) {
+        validatedData.interiorAndExterior.interior.interiorColor.interiorColor = 
+          validatedData.interiorAndExterior.interior.interiorColor.interior;
+        delete validatedData.interiorAndExterior.interior.interiorColor.interior;
+      }
+      
+      // Remove the root-level interior object as it's now properly nested
+      delete validatedData.interior;
+      
+      console.log("Moved interior data to interiorAndExterior.interior:", validatedData.interiorAndExterior.interior);
+    }
+
     // Log the processed data before saving
     console.log("Processed car data:", {
       ...validatedData,
@@ -749,6 +775,32 @@ exports.updateCar = async (req, res) => {
           errors: { details: error.message }
         });
       }
+    }
+
+    // Handle root-level interior object and move it to interiorAndExterior.interior (same as createCar)
+    if (validatedUpdates.interior) {
+      console.log("Processing root-level interior object in update:", validatedUpdates.interior);
+      
+      // Initialize interiorAndExterior if it doesn't exist
+      if (!validatedUpdates.interiorAndExterior) {
+        validatedUpdates.interiorAndExterior = {};
+      }
+      
+      // Move interior object to the correct nested location
+      validatedUpdates.interiorAndExterior.interior = validatedUpdates.interior;
+      
+      // Fix the typo in interiorColor field name if it exists
+      if (validatedUpdates.interiorAndExterior.interior.interiorColor && 
+          validatedUpdates.interiorAndExterior.interior.interiorColor.interior) {
+        validatedUpdates.interiorAndExterior.interior.interiorColor.interiorColor = 
+          validatedUpdates.interiorAndExterior.interior.interiorColor.interior;
+        delete validatedUpdates.interiorAndExterior.interior.interiorColor.interior;
+      }
+      
+      // Remove the root-level interior object as it's now properly nested
+      delete validatedUpdates.interior;
+      
+      console.log("Moved interior data to interiorAndExterior.interior in update:", validatedUpdates.interiorAndExterior.interior);
     }
 
     const car = await Car.findByIdAndUpdate(req.params.id, validatedUpdates, {
