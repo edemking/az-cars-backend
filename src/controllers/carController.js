@@ -214,20 +214,50 @@ exports.getCars = async (req, res) => {
       .populate("fuelType")
       .populate("country")
       .populate("vehicleType")
-      .populate({
-        path: "componentSummary",
-        populate: {
-          path: "windows tires brakes battery engine transmission suspension body interior exterior ac electrical centralLock audio navigation seats sunroof paint dashboard lights steering exhaust clutch",
-          model: "Rating",
-        },
-      })
-      .populate({
-        path: "interiorAndExterior",
-        populate: {
-          path: "frontBumber bonnet roof reerBumber driverSideFrontWing driverSideFrontDoor driverSideRearDoor driverRearQuarter passengerSideFrontWing passengerSideFrontDoor passengerSideRearDoor passengerRearQuarter driverSideFrontTyre driverSideRearTyre passengerSideFrontTyre passengerSideRearTyre trunk frontGlass rearGlass leftGlass rightGlass",
-          model: "CarCondition",
-        },
-      })
+      .populate("componentSummary.windows.rating")
+      .populate("componentSummary.tires.rating")
+      .populate("componentSummary.brakes.rating")
+      .populate("componentSummary.battery.rating")
+      .populate("componentSummary.engine.rating")
+      .populate("componentSummary.transmission.rating")
+      .populate("componentSummary.suspension.rating")
+      .populate("componentSummary.body.rating")
+      .populate("componentSummary.interior.rating")
+      .populate("componentSummary.exterior.rating")
+      .populate("componentSummary.ac.rating")
+      .populate("componentSummary.electrical.rating")
+      .populate("componentSummary.centralLock.rating")
+      .populate("componentSummary.audio.rating")
+      .populate("componentSummary.navigation.rating")
+      .populate("componentSummary.seats.rating")
+      .populate("componentSummary.sunroof.rating")
+      .populate("componentSummary.paint.rating")
+      .populate("componentSummary.dashboard.rating")
+      .populate("componentSummary.lights.rating")
+      .populate("componentSummary.steering.rating")
+      .populate("componentSummary.exhaust.rating")
+      .populate("componentSummary.clutch.rating")
+      .populate("interiorAndExterior.frontBumber.condition")
+      .populate("interiorAndExterior.bonnet.condition")
+      .populate("interiorAndExterior.roof.condition")
+      .populate("interiorAndExterior.reerBumber.condition")
+      .populate("interiorAndExterior.driverSideFrontWing.condition")
+      .populate("interiorAndExterior.driverSideFrontDoor.condition")
+      .populate("interiorAndExterior.driverSideRearDoor.condition")
+      .populate("interiorAndExterior.driverRearQuarter.condition")
+      .populate("interiorAndExterior.passengerSideFrontWing.condition")
+      .populate("interiorAndExterior.passengerSideFrontDoor.condition")
+      .populate("interiorAndExterior.passengerSideRearDoor.condition")
+      .populate("interiorAndExterior.passengerRearQuarter.condition")
+      .populate("interiorAndExterior.driverSideFrontTyre.condition")
+      .populate("interiorAndExterior.driverSideRearTyre.condition")
+      .populate("interiorAndExterior.passengerSideFrontTyre.condition")
+      .populate("interiorAndExterior.passengerSideRearTyre.condition")
+      .populate("interiorAndExterior.trunk.condition")
+      .populate("interiorAndExterior.frontGlass.condition")
+      .populate("interiorAndExterior.rearGlass.condition")
+      .populate("interiorAndExterior.leftGlass.condition")
+      .populate("interiorAndExterior.rightGlass.condition")
       .populate("approvedBy", "name email")
       .populate("archivedBy", "name email")
       .sort({ createdAt: -1 });
@@ -273,20 +303,50 @@ exports.getCar = async (req, res) => {
       .populate("fuelType")
       .populate("country")
       .populate("vehicleType")
-      .populate({
-        path: "componentSummary",
-        populate: {
-          path: "windows tires brakes battery engine transmission suspension body interior exterior ac electrical centralLock audio navigation seats sunroof paint dashboard lights steering exhaust clutch",
-          model: "Rating",
-        },
-      })
-      .populate({
-        path: "interiorAndExterior",
-        populate: {
-          path: "frontBumber bonnet roof reerBumber driverSideFrontWing driverSideFrontDoor driverSideRearDoor driverRearQuarter passengerSideFrontWing passengerSideFrontDoor passengerSideRearDoor passengerRearQuarter driverSideFrontTyre driverSideRearTyre passengerSideFrontTyre passengerSideRearTyre trunk frontGlass rearGlass leftGlass rightGlass",
-          model: "CarCondition",
-        },
-      });
+      .populate("componentSummary.windows.rating")
+      .populate("componentSummary.tires.rating")
+      .populate("componentSummary.brakes.rating")
+      .populate("componentSummary.battery.rating")
+      .populate("componentSummary.engine.rating")
+      .populate("componentSummary.transmission.rating")
+      .populate("componentSummary.suspension.rating")
+      .populate("componentSummary.body.rating")
+      .populate("componentSummary.interior.rating")
+      .populate("componentSummary.exterior.rating")
+      .populate("componentSummary.ac.rating")
+      .populate("componentSummary.electrical.rating")
+      .populate("componentSummary.centralLock.rating")
+      .populate("componentSummary.audio.rating")
+      .populate("componentSummary.navigation.rating")
+      .populate("componentSummary.seats.rating")
+      .populate("componentSummary.sunroof.rating")
+      .populate("componentSummary.paint.rating")
+      .populate("componentSummary.dashboard.rating")
+      .populate("componentSummary.lights.rating")
+      .populate("componentSummary.steering.rating")
+      .populate("componentSummary.exhaust.rating")
+      .populate("componentSummary.clutch.rating")
+      .populate("interiorAndExterior.frontBumber.condition")
+      .populate("interiorAndExterior.bonnet.condition")
+      .populate("interiorAndExterior.roof.condition")
+      .populate("interiorAndExterior.reerBumber.condition")
+      .populate("interiorAndExterior.driverSideFrontWing.condition")
+      .populate("interiorAndExterior.driverSideFrontDoor.condition")
+      .populate("interiorAndExterior.driverSideRearDoor.condition")
+      .populate("interiorAndExterior.driverRearQuarter.condition")
+      .populate("interiorAndExterior.passengerSideFrontWing.condition")
+      .populate("interiorAndExterior.passengerSideFrontDoor.condition")
+      .populate("interiorAndExterior.passengerSideRearDoor.condition")
+      .populate("interiorAndExterior.passengerRearQuarter.condition")
+      .populate("interiorAndExterior.driverSideFrontTyre.condition")
+      .populate("interiorAndExterior.driverSideRearTyre.condition")
+      .populate("interiorAndExterior.passengerSideFrontTyre.condition")
+      .populate("interiorAndExterior.passengerSideRearTyre.condition")
+      .populate("interiorAndExterior.trunk.condition")
+      .populate("interiorAndExterior.frontGlass.condition")
+      .populate("interiorAndExterior.rearGlass.condition")
+      .populate("interiorAndExterior.leftGlass.condition")
+      .populate("interiorAndExterior.rightGlass.condition");
 
     if (!car) {
       return sendError(res, {
@@ -521,20 +581,50 @@ exports.createCar = async (req, res) => {
       .populate("fuelType")
       .populate("country")
       .populate("vehicleType")
-      .populate({
-        path: "componentSummary",
-        populate: {
-          path: "windows tires brakes battery engine transmission suspension body interior exterior ac electrical centralLock audio navigation seats sunroof paint dashboard lights steering exhaust clutch",
-          model: "Rating",
-        },
-      })
-      .populate({
-        path: "interiorAndExterior",
-        populate: {
-          path: "frontBumber bonnet roof reerBumber driverSideFrontWing driverSideFrontDoor driverSideRearDoor driverRearQuarter passengerSideFrontWing passengerSideFrontDoor passengerSideRearDoor passengerRearQuarter driverSideFrontTyre driverSideRearTyre passengerSideFrontTyre passengerSideRearTyre trunk frontGlass rearGlass leftGlass rightGlass",
-          model: "CarCondition",
-        },
-      });
+      .populate("componentSummary.windows.rating")
+      .populate("componentSummary.tires.rating")
+      .populate("componentSummary.brakes.rating")
+      .populate("componentSummary.battery.rating")
+      .populate("componentSummary.engine.rating")
+      .populate("componentSummary.transmission.rating")
+      .populate("componentSummary.suspension.rating")
+      .populate("componentSummary.body.rating")
+      .populate("componentSummary.interior.rating")
+      .populate("componentSummary.exterior.rating")
+      .populate("componentSummary.ac.rating")
+      .populate("componentSummary.electrical.rating")
+      .populate("componentSummary.centralLock.rating")
+      .populate("componentSummary.audio.rating")
+      .populate("componentSummary.navigation.rating")
+      .populate("componentSummary.seats.rating")
+      .populate("componentSummary.sunroof.rating")
+      .populate("componentSummary.paint.rating")
+      .populate("componentSummary.dashboard.rating")
+      .populate("componentSummary.lights.rating")
+      .populate("componentSummary.steering.rating")
+      .populate("componentSummary.exhaust.rating")
+      .populate("componentSummary.clutch.rating")
+      .populate("interiorAndExterior.frontBumber.condition")
+      .populate("interiorAndExterior.bonnet.condition")
+      .populate("interiorAndExterior.roof.condition")
+      .populate("interiorAndExterior.reerBumber.condition")
+      .populate("interiorAndExterior.driverSideFrontWing.condition")
+      .populate("interiorAndExterior.driverSideFrontDoor.condition")
+      .populate("interiorAndExterior.driverSideRearDoor.condition")
+      .populate("interiorAndExterior.driverRearQuarter.condition")
+      .populate("interiorAndExterior.passengerSideFrontWing.condition")
+      .populate("interiorAndExterior.passengerSideFrontDoor.condition")
+      .populate("interiorAndExterior.passengerSideRearDoor.condition")
+      .populate("interiorAndExterior.passengerRearQuarter.condition")
+      .populate("interiorAndExterior.driverSideFrontTyre.condition")
+      .populate("interiorAndExterior.driverSideRearTyre.condition")
+      .populate("interiorAndExterior.passengerSideFrontTyre.condition")
+      .populate("interiorAndExterior.passengerSideRearTyre.condition")
+      .populate("interiorAndExterior.trunk.condition")
+      .populate("interiorAndExterior.frontGlass.condition")
+      .populate("interiorAndExterior.rearGlass.condition")
+      .populate("interiorAndExterior.leftGlass.condition")
+      .populate("interiorAndExterior.rightGlass.condition");
 
     sendSuccess(res, {
       statusCode: 201,
@@ -1367,20 +1457,50 @@ exports.searchCars = async (req, res) => {
                  .populate('fuelType', 'name')
                  .populate('country', 'name')
                  .populate('vehicleType', 'name category')
-                 .populate({
-                   path: 'componentSummary',
-                   populate: {
-                     path: 'windows tires brakes battery engine transmission suspension body interior exterior ac electrical centralLock audio navigation seats sunroof paint dashboard lights steering exhaust clutch',
-                     model: 'Rating'
-                   }
-                 })
-                 .populate({
-                   path: 'interiorAndExterior',
-                   populate: {
-                     path: 'frontBumber bonnet roof reerBumber driverSideFrontWing driverSideFrontDoor driverSideRearDoor driverRearQuarter passengerSideFrontWing passengerSideFrontDoor passengerSideRearDoor passengerRearQuarter driverSideFrontTyre driverSideRearTyre passengerSideFrontTyre passengerSideRearTyre trunk frontGlass rearGlass leftGlass rightGlass',
-                     model: 'CarCondition'
-                   }
-                 })
+                 .populate("componentSummary.windows.rating")
+                 .populate("componentSummary.tires.rating")
+                 .populate("componentSummary.brakes.rating")
+                 .populate("componentSummary.battery.rating")
+                 .populate("componentSummary.engine.rating")
+                 .populate("componentSummary.transmission.rating")
+                 .populate("componentSummary.suspension.rating")
+                 .populate("componentSummary.body.rating")
+                 .populate("componentSummary.interior.rating")
+                 .populate("componentSummary.exterior.rating")
+                 .populate("componentSummary.ac.rating")
+                 .populate("componentSummary.electrical.rating")
+                 .populate("componentSummary.centralLock.rating")
+                 .populate("componentSummary.audio.rating")
+                 .populate("componentSummary.navigation.rating")
+                 .populate("componentSummary.seats.rating")
+                 .populate("componentSummary.sunroof.rating")
+                 .populate("componentSummary.paint.rating")
+                 .populate("componentSummary.dashboard.rating")
+                 .populate("componentSummary.lights.rating")
+                 .populate("componentSummary.steering.rating")
+                 .populate("componentSummary.exhaust.rating")
+                 .populate("componentSummary.clutch.rating")
+                 .populate("interiorAndExterior.frontBumber.condition")
+                 .populate("interiorAndExterior.bonnet.condition")
+                 .populate("interiorAndExterior.roof.condition")
+                 .populate("interiorAndExterior.reerBumber.condition")
+                 .populate("interiorAndExterior.driverSideFrontWing.condition")
+                 .populate("interiorAndExterior.driverSideFrontDoor.condition")
+                 .populate("interiorAndExterior.driverSideRearDoor.condition")
+                 .populate("interiorAndExterior.driverRearQuarter.condition")
+                 .populate("interiorAndExterior.passengerSideFrontWing.condition")
+                 .populate("interiorAndExterior.passengerSideFrontDoor.condition")
+                 .populate("interiorAndExterior.passengerSideRearDoor.condition")
+                 .populate("interiorAndExterior.passengerRearQuarter.condition")
+                 .populate("interiorAndExterior.driverSideFrontTyre.condition")
+                 .populate("interiorAndExterior.driverSideRearTyre.condition")
+                 .populate("interiorAndExterior.passengerSideFrontTyre.condition")
+                 .populate("interiorAndExterior.passengerSideRearTyre.condition")
+                 .populate("interiorAndExterior.trunk.condition")
+                 .populate("interiorAndExterior.frontGlass.condition")
+                 .populate("interiorAndExterior.rearGlass.condition")
+                 .populate("interiorAndExterior.leftGlass.condition")
+                 .populate("interiorAndExterior.rightGlass.condition")
                  .populate('approvedBy', 'name email')
                  .populate('archivedBy', 'name email');
 
