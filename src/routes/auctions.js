@@ -23,6 +23,7 @@ const {
   getCompletedAuctions,
   getCompletedAuctionsWithBidders,
   getAllAuctionHistory,
+  getEndedAuctionHistory,
   getCompletedBidsForAuction,
 } = require("../controllers/auctionController");
 
@@ -71,6 +72,8 @@ router.route("/completed").get(getCompletedAuctions);
 router.route("/completed-with-bidders").get(getCompletedAuctionsWithBidders);
 
 router.route("/history").get(getAllAuctionHistory);
+
+router.route("/ended-history").get(getEndedAuctionHistory);
 
 router.route("/dashboard").get(protect, getDashboardData);
 // .get(getDashboardData);
