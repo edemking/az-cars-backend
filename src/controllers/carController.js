@@ -154,32 +154,50 @@ const validateCarData = async (carData) => {
     errors.push('transmission must be either "Automatic" or "Manual"');
   }
 
-  // Validate interiorAndExterior nested fields
-  if (carData.interiorAndExterior && typeof carData.interiorAndExterior === 'object') {
-    const interiorAndExterior = carData.interiorAndExterior;
+  // Validate interior nested fields
+  if (carData.interior && typeof carData.interior === 'object') {
+    const interior = carData.interior;
     
-    // Validate interior nested object
-    if (interiorAndExterior.interior && typeof interiorAndExterior.interior === 'object') {
-      const interior = interiorAndExterior.interior;
-      
-      // Validate navigation as boolean
-      if (interior.navigation !== undefined && typeof interior.navigation !== 'boolean') {
-        errors.push(`interiorAndExterior.interior.navigation must be a boolean, received: ${typeof interior.navigation}`);
+    // Validate navigation object
+    if (interior.navigation && typeof interior.navigation === 'object') {
+      if (interior.navigation.hasNavigation !== undefined && typeof interior.navigation.hasNavigation !== 'boolean') {
+        errors.push(`interior.navigation.hasNavigation must be a boolean, received: ${typeof interior.navigation.hasNavigation}`);
       }
-      
-      // Validate sunroof as boolean
-      if (interior.sunroof !== undefined && typeof interior.sunroof !== 'boolean') {
-        errors.push(`interiorAndExterior.interior.sunroof must be a boolean, received: ${typeof interior.sunroof}`);
+      if (interior.navigation.comment && typeof interior.navigation.comment !== 'string') {
+        errors.push('interior.navigation.comment must be a string');
       }
-      
-      // seatType and interiorColor are strings, no specific validation needed beyond type checking
-      if (interior.seatType && typeof interior.seatType !== 'string') {
-        errors.push('interiorAndExterior.interior.seatType must be a string');
+    }
+    
+    // Validate sunroof object
+    if (interior.sunroof && typeof interior.sunroof === 'object') {
+      if (interior.sunroof.hasSunroof !== undefined && typeof interior.sunroof.hasSunroof !== 'boolean') {
+        errors.push(`interior.sunroof.hasSunroof must be a boolean, received: ${typeof interior.sunroof.hasSunroof}`);
       }
-      
-      if (interior.interiorColor && typeof interior.interiorColor !== 'string') {
-        errors.push('interiorAndExterior.interior.interiorColor must be a string');
+      if (interior.sunroof.comment && typeof interior.sunroof.comment !== 'string') {
+        errors.push('interior.sunroof.comment must be a string');
       }
+    }
+    
+    // Validate seatType object
+    if (interior.seatType && typeof interior.seatType === 'object') {
+      if (interior.seatType.seatType && typeof interior.seatType.seatType !== 'string') {
+        errors.push('interior.seatType.seatType must be a string');
+      }
+      if (interior.seatType.comment && typeof interior.seatType.comment !== 'string') {
+        errors.push('interior.seatType.comment must be a string');
+      }
+    }
+    
+    // Validate interiorColor object
+    if (interior.interiorColor && typeof interior.interiorColor === 'object') {
+      if (interior.interiorColor.interior && typeof interior.interiorColor.interior !== 'string') {
+        errors.push('interior.interiorColor.interior must be a string');
+      }
+      if (interior.interiorColor.comment && typeof interior.interiorColor.comment !== 'string') {
+        errors.push('interior.interiorColor.comment must be a string');
+      }
+    } else if (interior.interiorColor && typeof interior.interiorColor !== 'object') {
+      errors.push('interior.interiorColor must be an object');
     }
   }
 
@@ -556,30 +574,9 @@ exports.createCar = async (req, res) => {
       }
     }
 
-    // Handle root-level interior object and move it to interiorAndExterior.interior
+    // Handle root-level interior object - no need to move it since model expects it at root level
     if (validatedData.interior) {
       console.log("Processing root-level interior object:", validatedData.interior);
-      
-      // Initialize interiorAndExterior if it doesn't exist
-      if (!validatedData.interiorAndExterior) {
-        validatedData.interiorAndExterior = {};
-      }
-      
-      // Move interior object to the correct nested location
-      validatedData.interiorAndExterior.interior = validatedData.interior;
-      
-      // Fix the typo in interiorColor field name if it exists
-      if (validatedData.interiorAndExterior.interior.interiorColor && 
-          validatedData.interiorAndExterior.interior.interiorColor.interior) {
-        validatedData.interiorAndExterior.interior.interiorColor.interiorColor = 
-          validatedData.interiorAndExterior.interior.interiorColor.interior;
-        delete validatedData.interiorAndExterior.interior.interiorColor.interior;
-      }
-      
-      // Remove the root-level interior object as it's now properly nested
-      delete validatedData.interior;
-      
-      console.log("Moved interior data to interiorAndExterior.interior:", validatedData.interiorAndExterior.interior);
     }
 
     // Log the processed data before saving
@@ -777,30 +774,9 @@ exports.updateCar = async (req, res) => {
       }
     }
 
-    // Handle root-level interior object and move it to interiorAndExterior.interior (same as createCar)
+    // Handle root-level interior object - no need to move it since model expects it at root level
     if (validatedUpdates.interior) {
       console.log("Processing root-level interior object in update:", validatedUpdates.interior);
-      
-      // Initialize interiorAndExterior if it doesn't exist
-      if (!validatedUpdates.interiorAndExterior) {
-        validatedUpdates.interiorAndExterior = {};
-      }
-      
-      // Move interior object to the correct nested location
-      validatedUpdates.interiorAndExterior.interior = validatedUpdates.interior;
-      
-      // Fix the typo in interiorColor field name if it exists
-      if (validatedUpdates.interiorAndExterior.interior.interiorColor && 
-          validatedUpdates.interiorAndExterior.interior.interiorColor.interior) {
-        validatedUpdates.interiorAndExterior.interior.interiorColor.interiorColor = 
-          validatedUpdates.interiorAndExterior.interior.interiorColor.interior;
-        delete validatedUpdates.interiorAndExterior.interior.interiorColor.interior;
-      }
-      
-      // Remove the root-level interior object as it's now properly nested
-      delete validatedUpdates.interior;
-      
-      console.log("Moved interior data to interiorAndExterior.interior in update:", validatedUpdates.interiorAndExterior.interior);
     }
 
     const car = await Car.findByIdAndUpdate(req.params.id, validatedUpdates, {

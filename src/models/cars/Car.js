@@ -127,7 +127,7 @@ const seatTypeSchema = new mongoose.Schema(
 
 const interiorColorSchema = new mongoose.Schema(
   {
-    interiorColor: {
+    interior: {
       type: String,
       required: false,
     },
@@ -327,12 +327,12 @@ const carSchema = new mongoose.Schema({
     rearGlass: conditionItemSchema,
     leftGlass: conditionItemSchema,
     rightGlass: conditionItemSchema,
-    interior: {
-      navigation: navigationSchema,
-      sunroof: sunroofSchema,
-      seatType: seatTypeSchema,
-      interiorColor: interiorColorSchema,
-    },
+  },
+  interior: {
+    navigation: navigationSchema,
+    sunroof: sunroofSchema,
+    seatType: seatTypeSchema,
+    interiorColor: interiorColorSchema,
   },
   images: {
     type: [String],
