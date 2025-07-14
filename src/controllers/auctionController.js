@@ -318,6 +318,18 @@ exports.getAuction = asyncHandler(async (req, res, next) => {
         {
           path: "interiorAndExterior.rightGlass.condition",
         },
+        {
+          path: "interiorAndExterior.interior.navigation",
+        },
+        {
+          path: "interiorAndExterior.interior.sunroof",
+        },
+        {
+          path: "interiorAndExterior.interior.seatType",
+        },
+        {
+          path: "interiorAndExterior.interior.interiorColor",
+        },
       ],
     })
     .populate("createdBy", "firstName lastName profilePicture")
@@ -1876,6 +1888,18 @@ exports.getAuctionResults = asyncHandler(async (req, res, next) => {
           path: "interiorAndExterior.passengerRearQuarter",
           model: "CarCondition",
           select: "condition",
+        },
+        {
+          path: "interiorAndExterior.interior.navigation",
+        },
+        {
+          path: "interiorAndExterior.interior.sunroof",
+        },
+        {
+          path: "interiorAndExterior.interior.seatType",
+        },
+        {
+          path: "interiorAndExterior.interior.interiorColor",
         },
       ],
     })
