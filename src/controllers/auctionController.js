@@ -2583,11 +2583,12 @@ exports.getCompletedBidsForAuction = asyncHandler(async (req, res, next) => {
     );
   }
 
-  // Only return bids for completed or cancelled auctions
-  if (auction.status !== "completed" && auction.status !== "cancelled") {
+  // Only return bids for auctions that have ended based on endTime
+  const now = new Date();
+  if (auction.endTime >= now) {
     return next(
       new ErrorResponse(
-        `Cannot retrieve completed bids for an active auction. Auction status: ${auction.status}`,
+        `Cannot retrieve completed bids for an auction that hasn't ended yet. Auction ends at: ${auction.endTime}`,
         400
       )
     );
