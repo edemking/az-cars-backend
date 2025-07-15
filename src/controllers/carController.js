@@ -1779,6 +1779,95 @@ exports.createModel = async (req, res) => {
   }
 };
 
+// Create ratings in bulk
+exports.createBulkRatings = async (req, res) => {
+  try {
+    const { ratings } = req.body;
+
+    // Validate input
+    if (!ratings || !Array.isArray(ratings) || ratings.length === 0) {
+      return sendError(res, {
+        statusCode: 400,
+        message: "Ratings array is required and must contain at least one rating",
+      });
+    }
+
+    // Validate each rating object
+    const validationErrors = [];
+    const validValues = ["Good", "Average", "Above Average"];
+
+    for (let i = 0; i < ratings.length; i++) {
+      const rating = ratings[i];
+      
+      if (!rating.name || typeof rating.name !== 'string' || rating.name.trim() === '') {
+        validationErrors.push(`Rating ${i + 1}: name is required and must be a non-empty string`);
+      }
+      
+      if (!rating.value || !validValues.includes(rating.value)) {
+        validationErrors.push(`Rating ${i + 1}: value must be one of: ${validValues.join(', ')}`);
+      }
+    }
+
+    if (validationErrors.length > 0) {
+      return sendError(res, {
+        statusCode: 400,
+        message: "Validation failed",
+        errors: validationErrors,
+      });
+    }
+
+    // Check for duplicate names in the input array
+    const inputNames = ratings.map(r => r.name.trim().toLowerCase());
+    const duplicateNames = inputNames.filter((name, index) => inputNames.indexOf(name) !== index);
+    
+    if (duplicateNames.length > 0) {
+      return sendError(res, {
+        statusCode: 400,
+        message: "Duplicate names found in the input array",
+        errors: [`Duplicate names: ${[...new Set(duplicateNames)].join(', ')}`],
+      });
+    }
+
+    // Check for existing ratings with the same names
+    const existingRatings = await Rating.find({
+      name: { $in: ratings.map(r => r.name.trim()) }
+    });
+
+    if (existingRatings.length > 0) {
+      return sendError(res, {
+        statusCode: 409,
+        message: "Some ratings already exist",
+        errors: [`Existing ratings: ${existingRatings.map(r => r.name).join(', ')}`],
+      });
+    }
+
+    // Prepare ratings for insertion
+    const ratingsToCreate = ratings.map(rating => ({
+      name: rating.name.trim(),
+      value: rating.value
+    }));
+
+    // Create ratings in bulk
+    const createdRatings = await Rating.insertMany(ratingsToCreate);
+
+    sendSuccess(res, {
+      statusCode: 201,
+      message: `Successfully created ${createdRatings.length} ratings`,
+      data: {
+        created: createdRatings,
+        count: createdRatings.length
+      },
+    });
+  } catch (error) {
+    console.error("Error creating bulk ratings:", error);
+    sendError(res, {
+      statusCode: 500,
+      message: "Error creating bulk ratings",
+      errors: error.message,
+    });
+  }
+};
+
 // Delete a make
 exports.deleteMake = async (req, res) => {
   try {

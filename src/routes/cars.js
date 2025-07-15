@@ -29,6 +29,9 @@ router.post('/validate', carController.validateCarData);
 router.post('/makes', protect, carController.createMake);
 router.post('/models', protect, carController.createModel);
 
+// Bulk ratings creation route (protected)
+router.post('/ratings/bulk', protect, carController.createBulkRatings);
+
 // Make and Model deletion routes (protected)
 router.delete('/makes/:id', protect, carController.deleteMake);
 router.delete('/models/:id', protect, carController.deleteModel);
