@@ -2094,13 +2094,31 @@ exports.getUnsoldAuctions = asyncHandler(async (req, res, next) => {
 // @access  Public
 exports.getCompletedAuctions = asyncHandler(async (req, res, next) => {
   const now = new Date();
-  // Find all completed auctions (both sold and unsold)
-  const completedAuctions = await Auction.find({
+  
+  // Build query for completed auctions
+  const query = {
     $or: [
       { status: "completed" },
       { endTime: { $lt: now } } // Auctions whose end time has passed
     ]
-  })
+  };
+
+  // Filter by auctionStatus if provided
+  if (req.query.auctionStatus) {
+    const validStatuses = ['Car Sold', 'Car Bought', 'Following Up'];
+    if (!validStatuses.includes(req.query.auctionStatus)) {
+      return next(
+        new ErrorResponse(
+          `Invalid auction status. Must be one of: ${validStatuses.join(', ')}`,
+          400
+        )
+      );
+    }
+    query.auctionStatus = req.query.auctionStatus;
+  }
+
+  // Find all completed auctions (both sold and unsold)
+  const completedAuctions = await Auction.find(query)
     .populate({
       path: "car",
       select:

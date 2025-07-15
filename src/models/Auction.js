@@ -76,6 +76,11 @@ const AuctionSchema = new mongoose.Schema({
   totalBids: {
     type: Number,
     default: 0
+  },
+  auctionStatus: {
+    type: String,
+    enum: ['Car Sold', 'Car Bought', 'Following Up'],
+    default: 'Car Bought'
   }
 }, { timestamps: true });
 
