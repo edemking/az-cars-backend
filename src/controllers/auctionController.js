@@ -2093,9 +2093,13 @@ exports.getUnsoldAuctions = asyncHandler(async (req, res, next) => {
 // @route   GET /api/auctions/completed
 // @access  Public
 exports.getCompletedAuctions = asyncHandler(async (req, res, next) => {
+  const now = new Date();
   // Find all completed auctions (both sold and unsold)
   const completedAuctions = await Auction.find({
-    status: "completed",
+    $or: [
+      { status: "completed" },
+      { endTime: { $lt: now } } // Auctions whose end time has passed
+    ]
   })
     .populate({
       path: "car",
