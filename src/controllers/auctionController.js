@@ -2890,17 +2890,10 @@ exports.reauctionAuction = asyncHandler(async (req, res, next) => {
     );
   }
 
-  // Check if auction is completed/ended
-  if (auction.status === "active") {
+  // Check if auction has ended (endTime has passed)
+  if (new Date() <= auction.endTime) {
     return next(
-      new ErrorResponse("Cannot re-auction an active auction", 400)
-    );
-  }
-
-  // Check if auction is cancelled
-  if (auction.status === "cancelled") {
-    return next(
-      new ErrorResponse("Cannot re-auction a cancelled auction", 400)
+      new ErrorResponse("Cannot re-auction an auction that hasn't ended yet", 400)
     );
   }
 
