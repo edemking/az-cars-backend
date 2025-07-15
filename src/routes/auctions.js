@@ -25,6 +25,7 @@ const {
   getAllAuctionHistory,
   getEndedAuctionHistory,
   getCompletedBidsForAuction,
+  reauctionAuction,
 } = require("../controllers/auctionController");
 
 // Import the auction scheduler
@@ -90,6 +91,8 @@ router
 router.route("/:id/bid").post(protect, placeBid);
 
 router.route("/:id/buy-now").post(protect, buyNowAuction);
+
+router.route("/:id/reauction").post(protect, reauctionAuction);
 
 router.route("/:id/bids").get(getAuctionBids);
 

@@ -2855,3 +2855,98 @@ exports.getCompletedBidsForAuction = asyncHandler(async (req, res, next) => {
     },
   });
 });
+
+// @desc    Re-auction an ended auction
+// @route   POST /api/auctions/:id/reauction
+// @access  Private
+exports.reauctionAuction = asyncHandler(async (req, res, next) => {
+  const { duration } = req.body;
+
+  // Validate duration is provided
+  if (!duration) {
+    return next(new ErrorResponse("Please provide a duration", 400));
+  }
+
+  // Validate duration has at least one positive value
+  if (
+    (!duration.hours || duration.hours <= 0) &&
+    (!duration.minutes || duration.minutes <= 0) &&
+    (!duration.seconds || duration.seconds <= 0)
+  ) {
+    return next(
+      new ErrorResponse(
+        "Duration must have at least one positive value for hours, minutes, or seconds",
+        400
+      )
+    );
+  }
+
+  // Find the auction
+  const auction = await Auction.findById(req.params.id);
+
+  if (!auction) {
+    return next(
+      new ErrorResponse(`Auction not found with id of ${req.params.id}`, 404)
+    );
+  }
+
+  // Check if auction is completed/ended
+  if (auction.status === "active") {
+    return next(
+      new ErrorResponse("Cannot re-auction an active auction", 400)
+    );
+  }
+
+  // Check if auction is cancelled
+  if (auction.status === "cancelled") {
+    return next(
+      new ErrorResponse("Cannot re-auction a cancelled auction", 400)
+    );
+  }
+
+  // Only auction creator or admin can re-auction
+  if (
+    auction.createdBy.toString() !== req.user.id &&
+    req.user.role !== "admin"
+  ) {
+    return next(
+      new ErrorResponse("Not authorized to re-auction this auction", 401)
+    );
+  }
+
+  // Update auction details
+  auction.duration = {
+    hours: duration.hours || 0,
+    minutes: duration.minutes || 0,
+    seconds: duration.seconds || 0,
+  };
+
+  // Reset auction status and times
+  auction.status = "active";
+  auction.startTime = new Date();
+  auction.winner = undefined;
+
+  // The pre-save hook will calculate the new endTime based on duration and startTime
+  await auction.save();
+
+  // Send re-auction notifications to all previous bidders
+  setImmediate(async () => {
+    try {
+      await createReauctionNotifications(auction);
+      console.log(
+        `Re-auction notifications triggered for auction ${auction._id}`
+      );
+    } catch (notificationError) {
+      console.error(
+        "Error creating re-auction notifications:",
+        notificationError
+      );
+      // Don't fail re-auction if notifications fail
+    }
+  });
+
+  sendSuccess(res, {
+    message: "Auction re-auctioned successfully",
+    data: auction,
+  });
+});

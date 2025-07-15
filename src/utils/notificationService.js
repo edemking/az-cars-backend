@@ -477,6 +477,109 @@ const createNewAuctionNotifications = async (auction) => {
   }
 };
 
+/**
+ * Create notifications for re-auctioning an ended auction and send push notifications to all bidders
+ * @param {Object} auction - The re-auctioned auction object
+ */
+const createReauctionNotifications = async (auction) => {
+  try {
+    // Get auction with car details populated
+    const populatedAuction = await Auction.findById(auction._id).populate({
+      path: 'car',
+      populate: [
+        { path: 'make', select: 'name' },
+        { path: 'model', select: 'name' }
+      ]
+    }).populate('createdBy', 'firstName lastName');
+
+    const carDetails = `${populatedAuction.car.make.name} ${populatedAuction.car.model.name}`;
+
+    // Find all users who have previously bid on this auction
+    const previousBids = await Bid.find({
+      auction: auction._id,
+    }).populate('bidder', 'firstName lastName email notificationToken');
+
+    // Get unique bidders
+    const uniqueBidders = [...new Map(previousBids.map(bid => [bid.bidder._id.toString(), bid.bidder])).values()];
+
+    if (uniqueBidders.length === 0) {
+      console.log('No previous bidders found for re-auction notification');
+      return;
+    }
+
+    console.log(`Creating re-auction notifications for ${uniqueBidders.length} bidders`);
+
+    // Create in-app notifications for all previous bidders
+    const notificationPromises = uniqueBidders.map(bidder => 
+      createNotification({
+        user: bidder._id,
+        type: 'new_auction_created',
+        title: 'Auction Re-opened!',
+        description: `The auction for ${auction.auctionTitle} (${carDetails}) has been re-opened. Starting price: AED ${auction.startingPrice.toLocaleString()}`,
+        auction: auction._id,
+        metadata: {
+          auctionTitle: auction.auctionTitle,
+          carDetails: carDetails,
+          startingPrice: auction.startingPrice,
+          isReauction: true
+        }
+      })
+    );
+
+    await Promise.all(notificationPromises);
+
+    // Send push notifications to all previous bidders
+    setImmediate(async () => {
+      try {
+        const biddersWithTokens = uniqueBidders.filter(bidder => bidder.notificationToken);
+        if (biddersWithTokens.length > 0) {
+          console.log(`🚀 Initiating push notifications for re-auction ${auction._id} to ${biddersWithTokens.length} bidders`);
+          
+          // Calculate auction end time for better description
+          const endTime = new Date(auction.endTime);
+          const now = new Date();
+          const durationHours = Math.ceil((endTime - now) / (1000 * 60 * 60));
+
+          const { sendPushNotificationsToUsers } = require('./pushNotificationService');
+          
+          // Prepare notification data
+          const notificationData = {
+            title: "Auction Re-opened! 🔄",
+            body: `${carDetails} auction is back! Starting bid: AED ${auction.startingPrice.toLocaleString()}. Auction ends in ${durationHours}h.`,
+            sound: "default",
+            data: {
+              type: "auction_reopened",
+              auctionId: auction._id.toString(),
+              auctionTitle: auction.auctionTitle,
+              carDetails: carDetails,
+              startingPrice: auction.startingPrice,
+              endTime: auction.endTime.toISOString(),
+              auctionType: auction.type,
+              isReauction: true,
+            },
+          };
+
+          // Extract user IDs from bidders with tokens
+          const userIds = biddersWithTokens.map((bidder) => bidder._id.toString());
+
+          const results = await sendPushNotificationsToUsers(userIds, notificationData);
+          console.log(`📊 Push notification results for re-auction ${auction._id}:`, {
+            total: results.length,
+            successful: results.filter(r => r.success).length,
+            failed: results.filter(r => !r.success).length
+          });
+        }
+      } catch (pushError) {
+        console.error('❌ Error sending push notifications for re-auction:', pushError);
+        console.error('Push notification error details:', pushError.stack);
+      }
+    });
+
+  } catch (error) {
+    console.error('Error creating re-auction notifications:', error);
+  }
+};
+
 module.exports = {
   createNotification,
   createBidPlacedNotification,
@@ -485,5 +588,6 @@ module.exports = {
   createAuctionLostNotifications,
   createAuctionEndingSoonNotifications,
   createNewBidOnAuctionNotification,
-  createNewAuctionNotifications
+  createNewAuctionNotifications,
+  createReauctionNotifications
 }; 
