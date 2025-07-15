@@ -1868,6 +1868,192 @@ exports.createBulkRatings = async (req, res) => {
   }
 };
 
+// Create a new country
+exports.createCountry = async (req, res) => {
+  try {
+    const { name } = req.body;
+
+    // Validate required fields
+    if (!name) {
+      return sendError(res, {
+        statusCode: 400,
+        message: "Country name is required",
+      });
+    }
+
+    // Check if country already exists
+    const existingCountry = await Country.findOne({ name: name.trim() });
+    if (existingCountry) {
+      return sendError(res, {
+        statusCode: 409,
+        message: "Country with this name already exists",
+      });
+    }
+
+    // Create new country
+    const country = new Country({
+      name: name.trim(),
+    });
+
+    await country.save();
+
+    sendSuccess(res, {
+      statusCode: 201,
+      message: "Country created successfully",
+      data: country,
+    });
+  } catch (error) {
+    console.error("Error creating country:", error);
+    sendError(res, {
+      statusCode: 500,
+      message: "Error creating country",
+      errors: error.message,
+    });
+  }
+};
+
+// Delete a country
+exports.deleteCountry = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Validate country exists
+    const country = await Country.findById(id);
+    if (!country) {
+      return sendError(res, {
+        statusCode: 404,
+        message: "Country not found",
+      });
+    }
+
+    // Check if there are any cars referencing this country
+    const carsCount = await Car.countDocuments({ country: id });
+    if (carsCount > 0) {
+      return sendError(res, {
+        statusCode: 409,
+        message: `Cannot delete country. There are ${carsCount} cars associated with this country. Please update or delete the cars first.`,
+      });
+    }
+
+    // Delete the country
+    await Country.findByIdAndDelete(id);
+
+    sendSuccess(res, {
+      message: "Country deleted successfully",
+      data: { deletedCountry: country.name },
+    });
+  } catch (error) {
+    console.error("Error deleting country:", error);
+    sendError(res, {
+      statusCode: 500,
+      message: "Error deleting country",
+      errors: error.message,
+    });
+  }
+};
+
+// Create countries in bulk
+exports.createBulkCountries = async (req, res) => {
+  try {
+    const { countries } = req.body;
+
+    // Validate input
+    if (!countries || !Array.isArray(countries) || countries.length === 0) {
+      return sendError(res, {
+        statusCode: 400,
+        message: "Countries array is required and must contain at least one country",
+      });
+    }
+
+    // Validate each country object
+    const validationErrors = [];
+
+    for (let i = 0; i < countries.length; i++) {
+      const country = countries[i];
+      
+      if (!country.name || typeof country.name !== 'string' || country.name.trim() === '') {
+        validationErrors.push(`Country ${i + 1}: name is required and must be a non-empty string`);
+      }
+    }
+
+    if (validationErrors.length > 0) {
+      return sendError(res, {
+        statusCode: 400,
+        message: "Validation failed",
+        errors: validationErrors,
+      });
+    }
+
+    // Check for duplicate names in the input array
+    const inputNames = countries.map(c => c.name.trim().toLowerCase());
+    const duplicateNames = inputNames.filter((name, index) => inputNames.indexOf(name) !== index);
+    
+    if (duplicateNames.length > 0) {
+      return sendError(res, {
+        statusCode: 400,
+        message: "Duplicate names found in the input array",
+        errors: [`Duplicate names: ${[...new Set(duplicateNames)].join(', ')}`],
+      });
+    }
+
+    // Check for existing countries with the same names
+    const existingCountries = await Country.find({
+      name: { $in: countries.map(c => c.name.trim()) }
+    });
+
+    if (existingCountries.length > 0) {
+      return sendError(res, {
+        statusCode: 409,
+        message: "Some countries already exist",
+        errors: [`Existing countries: ${existingCountries.map(c => c.name).join(', ')}`],
+      });
+    }
+
+    // Prepare countries for insertion
+    const countriesToCreate = countries.map(country => ({
+      name: country.name.trim()
+    }));
+
+    // Create countries in bulk
+    const createdCountries = await Country.insertMany(countriesToCreate);
+
+    sendSuccess(res, {
+      statusCode: 201,
+      message: `Successfully created ${createdCountries.length} countries`,
+      data: {
+        created: createdCountries,
+        count: createdCountries.length
+      },
+    });
+  } catch (error) {
+    console.error("Error creating bulk countries:", error);
+    sendError(res, {
+      statusCode: 500,
+      message: "Error creating bulk countries",
+      errors: error.message,
+    });
+  }
+};
+
+// Get all countries
+exports.getCountries = async (req, res) => {
+  try {
+    const countries = await Country.find({}).sort({ name: 1 });
+    
+    sendSuccess(res, {
+      data: countries,
+      message: `Found ${countries.length} countries`,
+    });
+  } catch (error) {
+    console.error("Error fetching countries:", error);
+    sendError(res, {
+      statusCode: 500,
+      message: "Error fetching countries",
+      errors: error.message,
+    });
+  }
+};
+
 // Delete a make
 exports.deleteMake = async (req, res) => {
   try {

@@ -20,6 +20,7 @@ router.get('/brand/model/:modelId', carController.getBrandByModel);
 router.get('/models/brand/:brandId', carController.getModelsByBrand);
 router.get('/makes', carController.getMakes);
 router.get('/models', carController.getModels);
+router.get('/countries', carController.getCountries);
 router.get('/:id', carController.getCar);
 
 // Debugging route - validate car data without creating
@@ -31,6 +32,11 @@ router.post('/models', protect, carController.createModel);
 
 // Bulk ratings creation route (protected)
 router.post('/ratings/bulk', protect, carController.createBulkRatings);
+
+// Country management routes (protected)
+router.post('/countries', protect, carController.createCountry);
+router.post('/countries/bulk', protect, carController.createBulkCountries);
+router.delete('/countries/:id', protect, carController.deleteCountry);
 
 // Make and Model deletion routes (protected)
 router.delete('/makes/:id', protect, carController.deleteMake);
