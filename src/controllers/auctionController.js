@@ -17,6 +17,7 @@ const {
   createAuctionLostNotifications,
   createNewBidOnAuctionNotification,
   createNewAuctionNotifications,
+  createReauctionNotifications,
 } = require("../utils/notificationService");
 
 // @desc    Create a new auction

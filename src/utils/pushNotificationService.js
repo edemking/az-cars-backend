@@ -49,7 +49,8 @@ const sendPushNotificationToUser = async (userId, notificationData) => {
     // Construct the message
     const message = {
       to: pushToken,
-      sound: notificationData.sound || "default",
+      // sound: notificationData.sound || "default",
+      sound: "notification.mp3",
       title: notificationData.title,
       body: notificationData.body,
       data: notificationData.data || {},
@@ -132,7 +133,8 @@ const sendPushNotificationsToUsers = async (userIds, notificationData) => {
       // Construct the message
       const message = {
         to: pushToken,
-        sound: notificationData.sound || "default",
+        // sound: notificationData.sound || "default",
+        sound: "notification.mp3",
         title: notificationData.title,
         body: notificationData.body,
         data: notificationData.data || {},
@@ -296,7 +298,8 @@ const sendPushNotificationToUsersForNewAuction = async (
     const notificationData = {
       title: "New Auction Available! 🚗",
       body: `${carDetails} auction just started! Starting bid: AED ${auction.startingPrice.toLocaleString()}. Auction ends in ${durationHours}h.`,
-      sound: "default",
+      // sound: "default",
+      sound: "notification.mp3",
       data: {
         type: "new_auction_created",
         auctionId: auction._id.toString(),

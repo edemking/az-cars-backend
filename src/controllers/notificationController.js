@@ -238,7 +238,8 @@ exports.testPushNotification = asyncHandler(async (req, res, next) => {
     // Construct the message
     const message = {
       to: token,
-      sound: sound || "default",
+      // sound: sound || "default",
+      sound: "notification.mp3",
       title: title,
       body: body,
       data: data || { test: true },
