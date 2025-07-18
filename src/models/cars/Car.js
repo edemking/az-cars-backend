@@ -287,7 +287,7 @@ const carSchema = new mongoose.Schema({
     brakes: componentItemSchema,
     battery: componentItemSchema,
     engine: componentItemSchema,
-    transmission: componentItemSchema,
+    gearBox: componentItemSchema,
     suspension: componentItemSchema,
     body: componentItemSchema,
     interiorButtons: componentItemSchema,
