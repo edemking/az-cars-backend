@@ -226,6 +226,10 @@ const carSchema = new mongoose.Schema({
     type: Number,
     required: false,
   },
+  numberOfSeats: {
+    type: Number,
+    required: false,
+  },
   carOptions: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "CarOption",
@@ -380,6 +384,38 @@ const carSchema = new mongoose.Schema({
   createdAt: {
     type: Date,
     default: Date.now,
+  },
+  lastServiced: {
+    type: Date,
+    required: false,
+  },
+  servicePack: {
+    type: Boolean,
+    required: false,
+  },
+  mortgage: {
+    type: Boolean,
+    required: false,
+  },
+  numberOfSeats: {
+    type: Number,
+    required: false,
+  },
+  locationCity: {
+    type: String,
+    required: false,
+  },
+  registeredCityPlate: {
+    type: String,
+    required: false,
+  },
+  options: {
+    type: String,
+    required: false,
+  },
+  overallComments: {
+    type: String,
+    required: false,
   },
 });
 
