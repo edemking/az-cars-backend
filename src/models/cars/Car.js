@@ -397,10 +397,6 @@ const carSchema = new mongoose.Schema({
     type: Boolean,
     required: false,
   },
-  numberOfSeats: {
-    type: Number,
-    required: false,
-  },
   locationCity: {
     type: String,
     required: false,
