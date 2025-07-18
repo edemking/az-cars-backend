@@ -188,7 +188,7 @@ exports.getAuction = asyncHandler(async (req, res, next) => {
           path: "transmission",
         },
         {
-          path: "componentSummary.windows.rating",
+          path: "componentSummary.windowsSunroof.rating",
         },
         {
           path: "componentSummary.tires.rating",
@@ -212,7 +212,7 @@ exports.getAuction = asyncHandler(async (req, res, next) => {
           path: "componentSummary.body.rating",
         },
         {
-          path: "componentSummary.interior.rating",
+          path: "componentSummary.interiorButtons.rating",
         },
         {
           path: "componentSummary.exterior.rating",
@@ -233,7 +233,7 @@ exports.getAuction = asyncHandler(async (req, res, next) => {
           path: "componentSummary.navigation.rating",
         },
         {
-          path: "componentSummary.seats.rating",
+          path: "componentSummary.frontSeats.rating",
         },
         {
           path: "componentSummary.sunroof.rating",
@@ -1704,7 +1704,7 @@ exports.getAuctionResults = asyncHandler(async (req, res, next) => {
           select: "name description",
         },
         {
-          path: "componentSummary.windows",
+          path: "componentSummary.windowsSunroof",
           model: "Rating",
           select: "rating",
         },
@@ -1744,7 +1744,7 @@ exports.getAuctionResults = asyncHandler(async (req, res, next) => {
           select: "rating",
         },
         {
-          path: "componentSummary.interior",
+          path: "componentSummary.interiorButtons",
           model: "Rating",
           select: "rating",
         },
@@ -1779,7 +1779,7 @@ exports.getAuctionResults = asyncHandler(async (req, res, next) => {
           select: "rating",
         },
         {
-          path: "componentSummary.seats",
+          path: "componentSummary.frontSeats",
           model: "Rating",
           select: "rating",
         },
