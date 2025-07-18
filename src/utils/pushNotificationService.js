@@ -289,15 +289,38 @@ const sendPushNotificationToUsersForNewAuction = async (
       `📤 Sending push notifications about new auction to ${usersWithTokens.length} users`
     );
 
-    // Calculate auction end time for better description
+    // Calculate exact auction end time for better description
     const endTime = new Date(auction.endTime);
     const now = new Date();
-    const durationHours = Math.ceil((endTime - now) / (1000 * 60 * 60));
+    const timeDifferenceMs = endTime - now;
+    
+    // Format time remaining precisely
+    const formatTimeRemaining = (milliseconds) => {
+      const seconds = Math.floor(milliseconds / 1000);
+      const minutes = Math.floor(seconds / 60);
+      const hours = Math.floor(minutes / 60);
+      const days = Math.floor(hours / 24);
+      
+      if (days > 0) {
+        const remainingHours = hours % 24;
+        return remainingHours > 0 ? `${days}d ${remainingHours}h` : `${days}d`;
+      } else if (hours > 0) {
+        const remainingMinutes = minutes % 60;
+        return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`;
+      } else if (minutes > 0) {
+        const remainingSeconds = seconds % 60;
+        return remainingSeconds > 0 ? `${minutes}m ${remainingSeconds}s` : `${minutes}m`;
+      } else {
+        return `${seconds}s`;
+      }
+    };
+    
+    const timeRemaining = formatTimeRemaining(timeDifferenceMs);
 
     // Prepare notification data
     const notificationData = {
       title: "New Auction Available! 🚗",
-      body: `${carDetails} auction just started! Starting bid: AED ${auction.startingPrice.toLocaleString()}. Auction ends in ${durationHours}h.`,
+      body: `${carDetails} auction just started! Starting bid: AED ${auction.startingPrice.toLocaleString()}. Auction ends in ${timeRemaining}.`,
       // sound: "default",
       sound: "notification.mp3",
       data: {

@@ -372,6 +372,11 @@ const carSchema = new mongoose.Schema({
     ref: "User",
     default: null,
   },
+  addedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+  },
   archivedAt: {
     type: Date,
     default: null,
