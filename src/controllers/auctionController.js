@@ -188,6 +188,10 @@ exports.getAuction = asyncHandler(async (req, res, next) => {
           path: "transmission",
         },
         {
+          path: "vehicleType",
+          select: "name description",
+        },
+        {
           path: "componentSummary.windowsSunroof.rating",
         },
         {
