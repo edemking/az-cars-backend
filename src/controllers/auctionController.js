@@ -339,6 +339,41 @@ exports.getAuction = asyncHandler(async (req, res, next) => {
     .populate("bidder", "firstName lastName profilePicture")
     .sort({ amount: -1 });
 
+  // Ensure all interiorAndExterior fields are present in the response
+  const interiorAndExteriorDefaults = {
+    frontBumber: { condition: null, comment: "" },
+    bonnet: { condition: null, comment: "" },
+    roof: { condition: null, comment: "" },
+    reerBumber: { condition: null, comment: "" },
+    driverSideFrontWing: { condition: null, comment: "" },
+    driverSideFrontDoor: { condition: null, comment: "" },
+    driverSideRearDoor: { condition: null, comment: "" },
+    driverRearQuarter: { condition: null, comment: "" },
+    passengerSideFrontWing: { condition: null, comment: "" },
+    passengerSideFrontDoor: { condition: null, comment: "" },
+    passengerSideRearDoor: { condition: null, comment: "" },
+    passengerRearQuarter: { condition: null, comment: "" },
+    driverSideFrontTyre: { condition: null, comment: "" },
+    driverSideRearTyre: { condition: null, comment: "" },
+    passengerSideFrontTyre: { condition: null, comment: "" },
+    passengerSideRearTyre: { condition: null, comment: "" },
+    trunk: { condition: null, comment: "" },
+    frontGlass: { condition: null, comment: "" },
+    rearGlass: { condition: null, comment: "" },
+    leftGlass: { condition: null, comment: "" },
+    rightGlass: { condition: null, comment: "" },
+  };
+
+  // Merge existing interiorAndExterior data with defaults to ensure all fields are present
+  if (auction.car && auction.car.interiorAndExterior) {
+    auction.car.interiorAndExterior = {
+      ...interiorAndExteriorDefaults,
+      ...auction.car.interiorAndExterior.toObject(),
+    };
+  } else if (auction.car) {
+    auction.car.interiorAndExterior = interiorAndExteriorDefaults;
+  }
+
   sendSuccess(res, {
     data: {
       ...auction._doc,
