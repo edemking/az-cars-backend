@@ -400,6 +400,7 @@ exports.getCars = async (req, res) => {
       .populate("componentSummary.backSeats.rating")
       .populate("componentSummary.clutch.rating")
       .populate("componentSummary.fourWDSystem.rating")
+      .populate("componentSummary.dashLight.rating")
       .populate("interiorAndExterior.frontBumber.condition")
       .populate("interiorAndExterior.bonnet.condition")
       .populate("interiorAndExterior.roof.condition")
