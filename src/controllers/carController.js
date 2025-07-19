@@ -837,8 +837,8 @@ exports.updateCar = async (req, res) => {
   try {
     const updates = { ...req.body };
     const processedData = {
-      ...JSON.parse(data.carData),
-      ...JSON.parse(data.carData).vehicleInformation,
+      ...JSON.parse(updates.carData),
+      ...JSON.parse(updates.carData).vehicleInformation,
     }; // Deep copy to avoid mutation
 
     // Apply the same validation logic as createCar for consistency
@@ -847,7 +847,7 @@ exports.updateCar = async (req, res) => {
       errors,
       warnings,
       processedData: validatedData,
-    } = await validateCarData(updates);
+    } = await validateCarData(processedData);
 
     if (!isValid) {
       return sendError(res, {
