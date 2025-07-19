@@ -231,10 +231,12 @@ const carSchema = new mongoose.Schema({
     required: false,
   },
   carOptions: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "CarOption",
+    type: String,
     required: false,
-    default: null,
+    // type: mongoose.Schema.Types.ObjectId,
+    // ref: "CarOption",
+    // required: false,
+    // default: null,
   },
   fuelType: {
     type: mongoose.Schema.Types.ObjectId,

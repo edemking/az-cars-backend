@@ -10,7 +10,7 @@ const carOptionSchema = new mongoose.Schema({
   category: {
     type: String,
     enum: ['Safety', 'Entertainment', 'Comfort', 'Performance', 'Exterior', 'Interior', 'Other'],
-    required: true
+    required: false
   },
   description: {
     type: String,
