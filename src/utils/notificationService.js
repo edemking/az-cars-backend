@@ -547,7 +547,7 @@ const createReauctionNotifications = async (auction) => {
             title: "Auction Re-opened! 🔄",
             body: `${carDetails} auction is back! Starting bid: AED ${auction.startingPrice.toLocaleString()}. Auction ends in ${durationHours}h.`,
             // sound: "default",
-            sound: "notification.mp3",
+            sound: "notification.wav",
             data: {
               type: "auction_reopened",
               auctionId: auction._id.toString(),
