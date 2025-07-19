@@ -23,185 +23,326 @@ const validateCarData = async (carData) => {
 
   // Define optional ObjectId fields (no longer required)
   const objectIdFields = [
-    'make', 'model', 'carDrive', 'bodyColor', 'carOptions', 
-    'fuelType', 'country', 'vehicleType'
+    "make",
+    "model",
+    "carDrive",
+    "bodyColor",
+    "carOptions",
+    "fuelType",
+    "country",
+    "vehicleType",
   ];
 
   // Convert empty strings to null for ObjectId fields and validate format
-  objectIdFields.forEach(field => {
-    if (carData[field] === '' || carData[field] === 'null' || carData[field] === 'undefined') {
+  objectIdFields.forEach((field) => {
+    if (
+      carData[field] === "" ||
+      carData[field] === "null" ||
+      carData[field] === "undefined"
+    ) {
       carData[field] = null;
-    } else if (carData[field] && typeof carData[field] === 'string' && carData[field].length !== 24) {
-      errors.push(`${field} must be a valid ObjectId (24 characters), received: "${carData[field]}" (${carData[field].length} characters)`);
+    } else if (
+      carData[field] &&
+      typeof carData[field] === "string" &&
+      carData[field].length !== 24
+    ) {
+      errors.push(
+        `${field} must be a valid ObjectId (24 characters), received: "${carData[field]}" (${carData[field].length} characters)`
+      );
     }
   });
 
   // Handle serviceHistory as object with hasServiceHistory boolean and comment
   if (carData.serviceHistory !== undefined) {
-    if (typeof carData.serviceHistory === 'object' && carData.serviceHistory !== null) {
+    if (
+      typeof carData.serviceHistory === "object" &&
+      carData.serviceHistory !== null
+    ) {
       // Handle nested object structure
       if (carData.serviceHistory.hasServiceHistory !== undefined) {
-        if (typeof carData.serviceHistory.hasServiceHistory === 'string') {
-          if (carData.serviceHistory.hasServiceHistory.toLowerCase() === 'true') {
+        if (typeof carData.serviceHistory.hasServiceHistory === "string") {
+          if (
+            carData.serviceHistory.hasServiceHistory.toLowerCase() === "true"
+          ) {
             carData.serviceHistory.hasServiceHistory = true;
-          } else if (carData.serviceHistory.hasServiceHistory.toLowerCase() === 'false') {
+          } else if (
+            carData.serviceHistory.hasServiceHistory.toLowerCase() === "false"
+          ) {
             carData.serviceHistory.hasServiceHistory = false;
           } else {
-            errors.push(`serviceHistory.hasServiceHistory must be a boolean (true/false), received: "${carData.serviceHistory.hasServiceHistory}"`);
+            errors.push(
+              `serviceHistory.hasServiceHistory must be a boolean (true/false), received: "${carData.serviceHistory.hasServiceHistory}"`
+            );
           }
-        } else if (typeof carData.serviceHistory.hasServiceHistory !== 'boolean') {
-          errors.push(`serviceHistory.hasServiceHistory must be a boolean, received: ${typeof carData.serviceHistory.hasServiceHistory}`);
+        } else if (
+          typeof carData.serviceHistory.hasServiceHistory !== "boolean"
+        ) {
+          errors.push(
+            `serviceHistory.hasServiceHistory must be a boolean, received: ${typeof carData
+              .serviceHistory.hasServiceHistory}`
+          );
         }
       }
-      
+
       // Validate comment field if present
-      if (carData.serviceHistory.comment !== undefined && typeof carData.serviceHistory.comment !== 'string') {
-        errors.push(`serviceHistory.comment must be a string, received: ${typeof carData.serviceHistory.comment}`);
+      if (
+        carData.serviceHistory.comment !== undefined &&
+        typeof carData.serviceHistory.comment !== "string"
+      ) {
+        errors.push(
+          `serviceHistory.comment must be a string, received: ${typeof carData
+            .serviceHistory.comment}`
+        );
       }
-    } else if (typeof carData.serviceHistory === 'string') {
+    } else if (typeof carData.serviceHistory === "string") {
       // Handle backward compatibility - convert simple boolean string to object
-      const hasServiceHistory = carData.serviceHistory.toLowerCase() === 'true';
-      if (carData.serviceHistory.toLowerCase() === 'true' || carData.serviceHistory.toLowerCase() === 'false') {
+      const hasServiceHistory = carData.serviceHistory.toLowerCase() === "true";
+      if (
+        carData.serviceHistory.toLowerCase() === "true" ||
+        carData.serviceHistory.toLowerCase() === "false"
+      ) {
         carData.serviceHistory = { hasServiceHistory };
       } else {
-        errors.push(`serviceHistory must be a boolean (true/false), received: "${carData.serviceHistory}"`);
+        errors.push(
+          `serviceHistory must be a boolean (true/false), received: "${carData.serviceHistory}"`
+        );
       }
-    } else if (typeof carData.serviceHistory === 'boolean') {
+    } else if (typeof carData.serviceHistory === "boolean") {
       // Handle backward compatibility - convert simple boolean to object
       carData.serviceHistory = { hasServiceHistory: carData.serviceHistory };
     } else {
-      errors.push(`serviceHistory must be an object or boolean, received: ${typeof carData.serviceHistory}`);
+      errors.push(
+        `serviceHistory must be an object or boolean, received: ${typeof carData.serviceHistory}`
+      );
     }
   }
 
   // Handle warranty as object with hasWarranty boolean and comment
   if (carData.warranty !== undefined) {
-    if (typeof carData.warranty === 'object' && carData.warranty !== null) {
+    if (typeof carData.warranty === "object" && carData.warranty !== null) {
       // Handle nested object structure
       if (carData.warranty.hasWarranty !== undefined) {
-        if (typeof carData.warranty.hasWarranty === 'string') {
-          if (carData.warranty.hasWarranty.toLowerCase() === 'true') {
+        if (typeof carData.warranty.hasWarranty === "string") {
+          if (carData.warranty.hasWarranty.toLowerCase() === "true") {
             carData.warranty.hasWarranty = true;
-          } else if (carData.warranty.hasWarranty.toLowerCase() === 'false') {
+          } else if (carData.warranty.hasWarranty.toLowerCase() === "false") {
             carData.warranty.hasWarranty = false;
           } else {
-            errors.push(`warranty.hasWarranty must be a boolean (true/false), received: "${carData.warranty.hasWarranty}"`);
+            errors.push(
+              `warranty.hasWarranty must be a boolean (true/false), received: "${carData.warranty.hasWarranty}"`
+            );
           }
-        } else if (typeof carData.warranty.hasWarranty !== 'boolean') {
-          errors.push(`warranty.hasWarranty must be a boolean, received: ${typeof carData.warranty.hasWarranty}`);
+        } else if (typeof carData.warranty.hasWarranty !== "boolean") {
+          errors.push(
+            `warranty.hasWarranty must be a boolean, received: ${typeof carData
+              .warranty.hasWarranty}`
+          );
         }
       }
-      
+
       // Validate comment field if present
-      if (carData.warranty.comment !== undefined && typeof carData.warranty.comment !== 'string') {
-        errors.push(`warranty.comment must be a string, received: ${typeof carData.warranty.comment}`);
+      if (
+        carData.warranty.comment !== undefined &&
+        typeof carData.warranty.comment !== "string"
+      ) {
+        errors.push(
+          `warranty.comment must be a string, received: ${typeof carData
+            .warranty.comment}`
+        );
       }
-    } else if (typeof carData.warranty === 'string') {
+    } else if (typeof carData.warranty === "string") {
       // Handle backward compatibility - convert simple boolean string to object
-      const hasWarranty = carData.warranty.toLowerCase() === 'true';
-      if (carData.warranty.toLowerCase() === 'true' || carData.warranty.toLowerCase() === 'false') {
+      const hasWarranty = carData.warranty.toLowerCase() === "true";
+      if (
+        carData.warranty.toLowerCase() === "true" ||
+        carData.warranty.toLowerCase() === "false"
+      ) {
         carData.warranty = { hasWarranty };
       } else {
-        errors.push(`warranty must be a boolean (true/false), received: "${carData.warranty}"`);
+        errors.push(
+          `warranty must be a boolean (true/false), received: "${carData.warranty}"`
+        );
       }
-    } else if (typeof carData.warranty === 'boolean') {
+    } else if (typeof carData.warranty === "boolean") {
       // Handle backward compatibility - convert simple boolean to object
       carData.warranty = { hasWarranty: carData.warranty };
     } else {
-      errors.push(`warranty must be an object or boolean, received: ${typeof carData.warranty}`);
+      errors.push(
+        `warranty must be an object or boolean, received: ${typeof carData.warranty}`
+      );
     }
   }
 
-  ['year', 'price', 'mileage', 'numberOfKeys', 'engineSize', 'cylinder'].forEach(field => {
-    if (carData[field] !== undefined && carData[field] !== null && carData[field] !== '') {
-      if (typeof carData[field] === 'string') {
+  [
+    "year",
+    "price",
+    "mileage",
+    "numberOfKeys",
+    "engineSize",
+    "cylinder",
+  ].forEach((field) => {
+    if (
+      carData[field] !== undefined &&
+      carData[field] !== null &&
+      carData[field] !== ""
+    ) {
+      if (typeof carData[field] === "string") {
         const numValue = Number(carData[field]);
         if (!isNaN(numValue)) {
           carData[field] = numValue;
         } else {
-          errors.push(`${field} must be a valid number, received: "${carData[field]}"`);
+          errors.push(
+            `${field} must be a valid number, received: "${carData[field]}"`
+          );
         }
       }
     }
   });
 
   // Optional validation for data types
-  if (carData.year && (typeof carData.year !== 'number' || carData.year < 1900 || carData.year > new Date().getFullYear() + 1)) {
-    errors.push(`year must be a valid number between 1900 and ${new Date().getFullYear() + 1}`);
+  if (
+    carData.year &&
+    (typeof carData.year !== "number" ||
+      carData.year < 1900 ||
+      carData.year > new Date().getFullYear() + 1)
+  ) {
+    errors.push(
+      `year must be a valid number between 1900 and ${
+        new Date().getFullYear() + 1
+      }`
+    );
   }
 
-  if (carData.price && (typeof carData.price !== 'number' || carData.price < 0)) {
-    errors.push('price must be a positive number');
+  if (
+    carData.price &&
+    (typeof carData.price !== "number" || carData.price < 0)
+  ) {
+    errors.push("price must be a positive number");
   }
 
-  if (carData.mileage && (typeof carData.mileage !== 'number' || carData.mileage < 0)) {
-    errors.push('mileage must be a positive number');
+  if (
+    carData.mileage &&
+    (typeof carData.mileage !== "number" || carData.mileage < 0)
+  ) {
+    errors.push("mileage must be a positive number");
   }
 
-  if (carData.numberOfKeys && (typeof carData.numberOfKeys !== 'number' || carData.numberOfKeys < 0)) {
-    errors.push('numberOfKeys must be a positive number');
+  if (
+    carData.numberOfKeys &&
+    (typeof carData.numberOfKeys !== "number" || carData.numberOfKeys < 0)
+  ) {
+    errors.push("numberOfKeys must be a positive number");
   }
 
-  if (carData.engineSize && (typeof carData.engineSize !== 'number' || carData.engineSize < 0)) {
-    errors.push('engineSize must be a positive number');
+  if (
+    carData.engineSize &&
+    (typeof carData.engineSize !== "number" || carData.engineSize < 0)
+  ) {
+    errors.push("engineSize must be a positive number");
   }
 
-  if (carData.cylinder && (typeof carData.cylinder !== 'number' || carData.cylinder < 1 || carData.cylinder > 16)) {
-    errors.push('cylinder must be a number between 1 and 16');
+  if (
+    carData.cylinder &&
+    (typeof carData.cylinder !== "number" ||
+      carData.cylinder < 1 ||
+      carData.cylinder > 16)
+  ) {
+    errors.push("cylinder must be a number between 1 and 16");
   }
 
-  if (carData.transmission && !['Automatic', 'Manual'].includes(carData.transmission)) {
+  if (
+    carData.transmission &&
+    !["Automatic", "Manual"].includes(carData.transmission)
+  ) {
     errors.push('transmission must be either "Automatic" or "Manual"');
   }
 
   // Validate interior nested fields
-  if (carData.interior && typeof carData.interior === 'object') {
+  if (carData.interior && typeof carData.interior === "object") {
     const interior = carData.interior;
-    
+
     // Validate navigation object
-    if (interior.navigation && typeof interior.navigation === 'object') {
-      if (interior.navigation.hasNavigation !== undefined && typeof interior.navigation.hasNavigation !== 'boolean') {
-        errors.push(`interior.navigation.hasNavigation must be a boolean, received: ${typeof interior.navigation.hasNavigation}`);
+    if (interior.navigation && typeof interior.navigation === "object") {
+      if (
+        interior.navigation.hasNavigation !== undefined &&
+        typeof interior.navigation.hasNavigation !== "boolean"
+      ) {
+        errors.push(
+          `interior.navigation.hasNavigation must be a boolean, received: ${typeof interior
+            .navigation.hasNavigation}`
+        );
       }
-      if (interior.navigation.comment && typeof interior.navigation.comment !== 'string') {
-        errors.push('interior.navigation.comment must be a string');
+      if (
+        interior.navigation.comment &&
+        typeof interior.navigation.comment !== "string"
+      ) {
+        errors.push("interior.navigation.comment must be a string");
       }
     }
-    
+
     // Validate sunroof object
-    if (interior.sunroof && typeof interior.sunroof === 'object') {
-      if (interior.sunroof.hasSunroof !== undefined && typeof interior.sunroof.hasSunroof !== 'boolean') {
-        errors.push(`interior.sunroof.hasSunroof must be a boolean, received: ${typeof interior.sunroof.hasSunroof}`);
+    if (interior.sunroof && typeof interior.sunroof === "object") {
+      if (
+        interior.sunroof.hasSunroof !== undefined &&
+        typeof interior.sunroof.hasSunroof !== "boolean"
+      ) {
+        errors.push(
+          `interior.sunroof.hasSunroof must be a boolean, received: ${typeof interior
+            .sunroof.hasSunroof}`
+        );
       }
-      if (interior.sunroof.comment && typeof interior.sunroof.comment !== 'string') {
-        errors.push('interior.sunroof.comment must be a string');
+      if (
+        interior.sunroof.comment &&
+        typeof interior.sunroof.comment !== "string"
+      ) {
+        errors.push("interior.sunroof.comment must be a string");
       }
     }
-    
+
     // Validate seatType object
-    if (interior.seatType && typeof interior.seatType === 'object') {
-      if (interior.seatType.seatType && typeof interior.seatType.seatType !== 'string') {
-        errors.push('interior.seatType.seatType must be a string');
+    if (interior.seatType && typeof interior.seatType === "object") {
+      if (
+        interior.seatType.seatType &&
+        typeof interior.seatType.seatType !== "string"
+      ) {
+        errors.push("interior.seatType.seatType must be a string");
       }
-      if (interior.seatType.comment && typeof interior.seatType.comment !== 'string') {
-        errors.push('interior.seatType.comment must be a string');
+      if (
+        interior.seatType.comment &&
+        typeof interior.seatType.comment !== "string"
+      ) {
+        errors.push("interior.seatType.comment must be a string");
       }
     }
-    
+
     // Validate interiorColor object
-    if (interior.interiorColor && typeof interior.interiorColor === 'object') {
-      if (interior.interiorColor.interior && typeof interior.interiorColor.interior !== 'string') {
-        errors.push('interior.interiorColor.interior must be a string');
+    if (interior.interiorColor && typeof interior.interiorColor === "object") {
+      if (
+        interior.interiorColor.interior &&
+        typeof interior.interiorColor.interior !== "string"
+      ) {
+        errors.push("interior.interiorColor.interior must be a string");
       }
-      if (interior.interiorColor.comment && typeof interior.interiorColor.comment !== 'string') {
-        errors.push('interior.interiorColor.comment must be a string');
+      if (
+        interior.interiorColor.comment &&
+        typeof interior.interiorColor.comment !== "string"
+      ) {
+        errors.push("interior.interiorColor.comment must be a string");
       }
-    } else if (interior.interiorColor && typeof interior.interiorColor !== 'object') {
-      errors.push('interior.interiorColor must be an object');
+    } else if (
+      interior.interiorColor &&
+      typeof interior.interiorColor !== "object"
+    ) {
+      errors.push("interior.interiorColor must be an object");
     }
   }
 
-  return { isValid: errors.length === 0, errors, warnings, processedData: carData };
+  return {
+    isValid: errors.length === 0,
+    errors,
+    warnings,
+    processedData: carData,
+  };
 };
 
 // Get all cars
@@ -209,20 +350,20 @@ exports.getCars = async (req, res) => {
   try {
     // Add filter to exclude archived cars by default unless explicitly requested
     const filter = {};
-    if (req.query.includeArchived !== 'true') {
+    if (req.query.includeArchived !== "true") {
       filter.isArchived = false;
     }
-    
+
     // Allow filtering by approval status
-    if (req.query.approved === 'true') {
+    if (req.query.approved === "true") {
       filter.isApproved = true;
-    } else if (req.query.approved === 'false') {
+    } else if (req.query.approved === "false") {
       filter.isApproved = false;
     }
-    
+
     // Add debug logging
-    console.log('Filter being used:', filter);
-    
+    console.log("Filter being used:", filter);
+
     const cars = await Car.find(filter)
       .populate("make")
       .populate("model")
@@ -280,10 +421,10 @@ exports.getCars = async (req, res) => {
       .populate("archivedBy", "name email")
       .populate("addedBy", "firstName lastName email")
       .sort({ createdAt: -1 });
-    
+
     // Debug logging to see what's actually in the database
     if (cars.length > 0) {
-      console.log('Sample car data (first car):', {
+      console.log("Sample car data (first car):", {
         id: cars[0]._id,
         make: cars[0].make,
         model: cars[0].model,
@@ -292,20 +433,20 @@ exports.getCars = async (req, res) => {
         fuelType: cars[0].fuelType,
         hasComponentSummary: !!cars[0].componentSummary,
         hasInteriorAndExterior: !!cars[0].interiorAndExterior,
-        allFields: Object.keys(cars[0].toObject())
+        allFields: Object.keys(cars[0].toObject()),
       });
     }
-    
-    sendSuccess(res, { 
+
+    sendSuccess(res, {
       data: cars,
       debug: {
         totalCars: cars.length,
         filter: filter,
-        sampleCarFields: cars.length > 0 ? Object.keys(cars[0].toObject()) : []
-      }
+        sampleCarFields: cars.length > 0 ? Object.keys(cars[0].toObject()) : [],
+      },
     });
   } catch (error) {
-    console.error('Error in getCars:', error);
+    console.error("Error in getCars:", error);
     sendError(res, { message: error.message });
   }
 };
@@ -384,8 +525,11 @@ exports.getCar = async (req, res) => {
 exports.createCar = async (req, res) => {
   try {
     const data = { ...req.body };
-    const processedData = {...JSON.parse(data.carData), ...JSON.parse(data.carData).vehicleInformation}; // Deep copy to avoid mutation
-    
+    const processedData = {
+      ...JSON.parse(data.carData),
+      ...JSON.parse(data.carData).vehicleInformation,
+    }; // Deep copy to avoid mutation
+
     // Handle image uploads if present
     if (req.files && req.files.images) {
       try {
@@ -394,7 +538,7 @@ exports.createCar = async (req, res) => {
         return sendError(res, {
           statusCode: 400,
           message: "Error uploading images",
-          errors: { details: error.message }
+          errors: { details: error.message },
         });
       }
     }
@@ -407,7 +551,7 @@ exports.createCar = async (req, res) => {
         return sendError(res, {
           statusCode: 400,
           message: "Error uploading videos",
-          errors: { details: error.message }
+          errors: { details: error.message },
         });
       }
     }
@@ -420,13 +564,18 @@ exports.createCar = async (req, res) => {
         return sendError(res, {
           statusCode: 400,
           message: "Error uploading PDFs",
-          errors: { details: error.message }
+          errors: { details: error.message },
         });
       }
     }
 
     // Data preprocessing and validation
-    const { isValid, errors, warnings, processedData: validatedData } = await validateCarData(processedData);
+    const {
+      isValid,
+      errors,
+      warnings,
+      processedData: validatedData,
+    } = await validateCarData(processedData);
 
     if (!isValid) {
       return sendError(res, {
@@ -480,7 +629,10 @@ exports.createCar = async (req, res) => {
         fields.forEach((field) => {
           if (parsedSummary[field]) {
             // Handle empty strings or invalid values
-            if (parsedSummary[field] === "" || parsedSummary[field] === "null") {
+            if (
+              parsedSummary[field] === "" ||
+              parsedSummary[field] === "null"
+            ) {
               // Skip empty values - they're optional
               return;
             }
@@ -522,44 +674,46 @@ exports.createCar = async (req, res) => {
 
         // Transform flat interior fields to nested structure
         const interiorAndExterior = validatedData.interiorAndExterior;
-        
+
         // Check if we have interior fields at the top level that need to be nested
         const interiorFields = {
           navigation: interiorAndExterior.navigationSystem,
           sunroof: interiorAndExterior.sunroof,
           seatType: interiorAndExterior.seatsType,
-          interiorColor: interiorAndExterior.interiorColor
+          interiorColor: interiorAndExterior.interiorColor,
         };
-        
+
         // Only create interior object if we have interior fields
-        const hasInteriorFields = Object.values(interiorFields).some(value => value !== undefined);
-        
+        const hasInteriorFields = Object.values(interiorFields).some(
+          (value) => value !== undefined
+        );
+
         if (hasInteriorFields) {
           // Create the nested interior object
           interiorAndExterior.interior = {};
-          
+
           // Move fields to interior object and remove from top level
           if (interiorFields.navigation !== undefined) {
             interiorAndExterior.interior.navigation = interiorFields.navigation;
             delete interiorAndExterior.navigationSystem;
           }
-          
+
           if (interiorFields.sunroof !== undefined) {
             interiorAndExterior.interior.sunroof = interiorFields.sunroof;
             delete interiorAndExterior.sunroof;
           }
-          
+
           if (interiorFields.seatType !== undefined) {
             interiorAndExterior.interior.seatType = interiorFields.seatType;
             delete interiorAndExterior.seatsType;
           }
-          
+
           if (interiorFields.interiorColor !== undefined) {
-            interiorAndExterior.interior.interiorColor = interiorFields.interiorColor;
+            interiorAndExterior.interior.interiorColor =
+              interiorFields.interiorColor;
             delete interiorAndExterior.interiorColor;
           }
         }
-        
       } catch (e) {
         console.error("Error parsing interiorAndExterior:", e);
         return sendError(res, {
@@ -578,7 +732,10 @@ exports.createCar = async (req, res) => {
 
     // Handle root-level interior object - no need to move it since model expects it at root level
     if (validatedData.interior) {
-      console.log("Processing root-level interior object:", validatedData.interior);
+      console.log(
+        "Processing root-level interior object:",
+        validatedData.interior
+      );
     }
 
     // Set the addedBy field to the authenticated user
@@ -593,7 +750,9 @@ exports.createCar = async (req, res) => {
       interiorAndExterior: validatedData.interiorAndExterior
         ? "Present (parsed)"
         : "Not present",
-      images: validatedData.images ? `${validatedData.images.length} images` : "No images",
+      images: validatedData.images
+        ? `${validatedData.images.length} images`
+        : "No images",
     });
 
     const car = new Car(validatedData);
@@ -677,9 +836,18 @@ exports.createCar = async (req, res) => {
 exports.updateCar = async (req, res) => {
   try {
     const updates = { ...req.body };
+    const processedData = {
+      ...JSON.parse(data.carData),
+      ...JSON.parse(data.carData).vehicleInformation,
+    }; // Deep copy to avoid mutation
 
     // Apply the same validation logic as createCar for consistency
-    const { isValid, errors, warnings, processedData } = await validateCarData(updates);
+    const {
+      isValid,
+      errors,
+      warnings,
+      processedData: validatedData,
+    } = await validateCarData(updates);
 
     if (!isValid) {
       return sendError(res, {
@@ -691,7 +859,7 @@ exports.updateCar = async (req, res) => {
     }
 
     // Use the processed data instead of raw body
-    const validatedUpdates = processedData;
+    const validatedUpdates = validatedData;
 
     // Handle image uploads if present
     if (req.files && req.files.images) {
@@ -717,7 +885,7 @@ exports.updateCar = async (req, res) => {
         return sendError(res, {
           statusCode: 400,
           message: "Error uploading images",
-          errors: { details: error.message }
+          errors: { details: error.message },
         });
       }
     }
@@ -731,7 +899,10 @@ exports.updateCar = async (req, res) => {
         if (validatedUpdates.appendVideos === "true") {
           const existingCar = await Car.findById(req.params.id);
           if (existingCar) {
-            validatedUpdates.videos = [...(existingCar.videos || []), ...newVideos];
+            validatedUpdates.videos = [
+              ...(existingCar.videos || []),
+              ...newVideos,
+            ];
           } else {
             validatedUpdates.videos = newVideos;
           }
@@ -746,7 +917,7 @@ exports.updateCar = async (req, res) => {
         return sendError(res, {
           statusCode: 400,
           message: "Error uploading videos",
-          errors: { details: error.message }
+          errors: { details: error.message },
         });
       }
     }
@@ -775,14 +946,17 @@ exports.updateCar = async (req, res) => {
         return sendError(res, {
           statusCode: 400,
           message: "Error uploading PDFs",
-          errors: { details: error.message }
+          errors: { details: error.message },
         });
       }
     }
 
     // Handle root-level interior object - no need to move it since model expects it at root level
     if (validatedUpdates.interior) {
-      console.log("Processing root-level interior object in update:", validatedUpdates.interior);
+      console.log(
+        "Processing root-level interior object in update:",
+        validatedUpdates.interior
+      );
     }
 
     const car = await Car.findByIdAndUpdate(req.params.id, validatedUpdates, {
@@ -823,7 +997,7 @@ exports.deleteCar = async (req, res) => {
     // Delete all car images from S3
     if (car.images && car.images.length > 0) {
       try {
-        await Promise.all(car.images.map(imageUrl => deleteFile(imageUrl)));
+        await Promise.all(car.images.map((imageUrl) => deleteFile(imageUrl)));
       } catch (error) {
         console.error("Error deleting car images:", error);
         // Continue with car deletion even if image deletion fails
@@ -865,7 +1039,7 @@ exports.uploadCarImages = async (req, res) => {
       if (req.body.replace === "true") {
         // Delete old images from S3 if replacing
         if (car.images && car.images.length > 0) {
-          await Promise.all(car.images.map(imageUrl => deleteFile(imageUrl)));
+          await Promise.all(car.images.map((imageUrl) => deleteFile(imageUrl)));
         }
         // Replace all images
         car.images = imageUrls;
@@ -884,7 +1058,7 @@ exports.uploadCarImages = async (req, res) => {
       return sendError(res, {
         statusCode: 400,
         message: "Error uploading images",
-        errors: { details: error.message }
+        errors: { details: error.message },
       });
     }
   } catch (error) {
@@ -910,7 +1084,7 @@ exports.deleteCarImage = async (req, res) => {
     }
 
     // Remove the image URL from the car's images array
-    car.images = car.images.filter(img => img !== decodedImageUrl);
+    car.images = car.images.filter((img) => img !== decodedImageUrl);
 
     // Delete the image from S3
     try {
@@ -962,7 +1136,7 @@ exports.uploadCarVideos = async (req, res) => {
       if (req.body.replace === "true") {
         // Delete old videos from S3 if replacing
         if (car.videos && car.videos.length > 0) {
-          await Promise.all(car.videos.map(videoUrl => deleteFile(videoUrl)));
+          await Promise.all(car.videos.map((videoUrl) => deleteFile(videoUrl)));
         }
         // Replace all videos
         car.videos = videoUrls;
@@ -981,7 +1155,7 @@ exports.uploadCarVideos = async (req, res) => {
       return sendError(res, {
         statusCode: 400,
         message: "Error uploading videos",
-        errors: { details: error.message }
+        errors: { details: error.message },
       });
     }
   } catch (error) {
@@ -1007,7 +1181,9 @@ exports.deleteCarVideo = async (req, res) => {
     }
 
     // Remove the video URL from the car's videos array
-    car.videos = (car.videos || []).filter(video => video !== decodedVideoUrl);
+    car.videos = (car.videos || []).filter(
+      (video) => video !== decodedVideoUrl
+    );
 
     // Delete the video from S3
     try {
@@ -1059,7 +1235,7 @@ exports.uploadCarPdfs = async (req, res) => {
       if (req.body.replace === "true") {
         // Delete old PDFs from S3 if replacing
         if (car.pdfs && car.pdfs.length > 0) {
-          await Promise.all(car.pdfs.map(pdfUrl => deleteFile(pdfUrl)));
+          await Promise.all(car.pdfs.map((pdfUrl) => deleteFile(pdfUrl)));
         }
         // Replace all PDFs
         car.pdfs = pdfUrls;
@@ -1078,7 +1254,7 @@ exports.uploadCarPdfs = async (req, res) => {
       return sendError(res, {
         statusCode: 400,
         message: "Error uploading PDFs",
-        errors: { details: error.message }
+        errors: { details: error.message },
       });
     }
   } catch (error) {
@@ -1104,7 +1280,7 @@ exports.deleteCarPdf = async (req, res) => {
     }
 
     // Remove the PDF URL from the car's pdfs array
-    car.pdfs = (car.pdfs || []).filter(pdf => pdf !== decodedPdfUrl);
+    car.pdfs = (car.pdfs || []).filter((pdf) => pdf !== decodedPdfUrl);
 
     // Delete the PDF from S3
     try {
@@ -1179,12 +1355,12 @@ exports.getReferenceData = async (req, res) => {
           { name: "Vinyl", value: "Vinyl" },
           { name: "Alcantara", value: "Alcantara" },
           { name: "Synthetic Leather", value: "Synthetic Leather" },
-          { name: "Cloth", value: "Cloth" }
+          { name: "Cloth", value: "Cloth" },
         ],
         transmissions: [
           { name: "Automatic", value: "Automatic" },
-          { name: "Manual", value: "Manual" }
-        ]
+          { name: "Manual", value: "Manual" },
+        ],
       },
     });
   } catch (error) {
@@ -1281,28 +1457,28 @@ exports.getModelsByBrand = async (req, res) => {
 exports.approveCar = async (req, res) => {
   try {
     const carId = req.params.id;
-    
+
     const car = await Car.findById(carId);
-    
+
     if (!car) {
       return sendError(res, {
         statusCode: 404,
         message: "Car not found",
       });
     }
-    
+
     // Update the car with approval information
     car.isApproved = true;
     car.approvedAt = Date.now();
     car.approvedBy = req.user.id;
-    
+
     await car.save();
-    
+
     // Fetch the updated car with populated fields
     const updatedCar = await Car.findById(carId)
       .populate("approvedBy", "name email")
       .populate("addedBy", "firstName lastName email");
-    
+
     sendSuccess(res, {
       message: "Car approved successfully",
       data: updatedCar,
@@ -1319,23 +1495,23 @@ exports.approveCar = async (req, res) => {
 exports.rejectCar = async (req, res) => {
   try {
     const carId = req.params.id;
-    
+
     const car = await Car.findById(carId);
-    
+
     if (!car) {
       return sendError(res, {
         statusCode: 404,
         message: "Car not found",
       });
     }
-    
+
     // Update the car to remove approval
     car.isApproved = false;
     car.approvedAt = null;
     car.approvedBy = null;
-    
+
     await car.save();
-    
+
     sendSuccess(res, {
       message: "Car approval rejected successfully",
       data: car,
@@ -1352,28 +1528,28 @@ exports.rejectCar = async (req, res) => {
 exports.archiveCar = async (req, res) => {
   try {
     const carId = req.params.id;
-    
+
     const car = await Car.findById(carId);
-    
+
     if (!car) {
       return sendError(res, {
         statusCode: 404,
         message: "Car not found",
       });
     }
-    
+
     // Update the car with archive information
     car.isArchived = true;
     car.archivedAt = Date.now();
     car.archivedBy = req.user.id;
-    
+
     await car.save();
-    
+
     // Fetch the updated car with populated fields
     const updatedCar = await Car.findById(carId)
       .populate("archivedBy", "name email")
       .populate("addedBy", "firstName lastName email");
-    
+
     sendSuccess(res, {
       message: "Car archived successfully",
       data: updatedCar,
@@ -1390,23 +1566,23 @@ exports.archiveCar = async (req, res) => {
 exports.unarchiveCar = async (req, res) => {
   try {
     const carId = req.params.id;
-    
+
     const car = await Car.findById(carId);
-    
+
     if (!car) {
       return sendError(res, {
         statusCode: 404,
         message: "Car not found",
       });
     }
-    
+
     // Update the car to remove archive status
     car.isArchived = false;
     car.archivedAt = null;
     car.archivedBy = null;
-    
+
     await car.save();
-    
+
     sendSuccess(res, {
       message: "Car unarchived successfully",
       data: car,
@@ -1423,36 +1599,36 @@ exports.unarchiveCar = async (req, res) => {
 exports.searchCars = async (req, res) => {
   try {
     const {
-      search,        // General text search
-      make,          // Brand/Make name (partial match)
-      model,         // Model name (partial match)
-      minYear,       // Minimum year
-      maxYear,       // Maximum year
-      minPrice,      // Minimum price
-      maxPrice,      // Maximum price
-      minMileage,    // Minimum mileage
-      maxMileage,    // Maximum mileage
-      bodyColor,     // Body color name (partial match)
-      fuelType,      // Fuel type name (partial match)
-      vehicleType,   // Vehicle type (partial match)
-      approved,      // Approval status
+      search, // General text search
+      make, // Brand/Make name (partial match)
+      model, // Model name (partial match)
+      minYear, // Minimum year
+      maxYear, // Maximum year
+      minPrice, // Minimum price
+      maxPrice, // Maximum price
+      minMileage, // Minimum mileage
+      maxMileage, // Maximum mileage
+      bodyColor, // Body color name (partial match)
+      fuelType, // Fuel type name (partial match)
+      vehicleType, // Vehicle type (partial match)
+      approved, // Approval status
       includeArchived, // Include archived cars
-      limit = 50,    // Results limit (default 50)
-      page = 1       // Page number (default 1)
+      limit = 50, // Results limit (default 50)
+      page = 1, // Page number (default 1)
     } = req.query;
 
     // Build the main filter
     const filter = {};
-    
+
     // Exclude archived cars by default
-    if (includeArchived !== 'true') {
+    if (includeArchived !== "true") {
       filter.isArchived = false;
     }
-    
+
     // Filter by approval status
-    if (approved === 'true') {
+    if (approved === "true") {
       filter.isApproved = true;
-    } else if (approved === 'false') {
+    } else if (approved === "false") {
       filter.isApproved = false;
     }
 
@@ -1485,61 +1661,62 @@ exports.searchCars = async (req, res) => {
     query = query.skip(skip).limit(parseInt(limit));
 
     // Populate related fields
-    query = query.populate('make', 'name country logo')
-                 .populate('model', 'name startYear endYear image')
-                 .populate('carDrive', 'name type description')
-                 .populate('bodyColor', 'name hexCode type')
-                 .populate('carOptions', 'name category description')
-                 .populate('fuelType', 'name')
-                 .populate('country', 'name')
-                 .populate('vehicleType', 'name category')
-                 .populate("componentSummary.windowsSunroof.rating")
-                 .populate("componentSummary.tires.rating")
-                 .populate("componentSummary.brakes.rating")
-                 .populate("componentSummary.battery.rating")
-                 .populate("componentSummary.engine.rating")
-                 .populate("componentSummary.transmission.rating")
-                 .populate("componentSummary.suspension.rating")
-                 .populate("componentSummary.body.rating")
-                 .populate("componentSummary.interiorButtons.rating")
-                 .populate("componentSummary.exterior.rating")
-                 .populate("componentSummary.ac.rating")
-                 .populate("componentSummary.electrical.rating")
-                 .populate("componentSummary.centralLock.rating")
-                 .populate("componentSummary.audio.rating")
-                 .populate("componentSummary.navigation.rating")
-                 .populate("componentSummary.frontSeats.rating")
-                 .populate("componentSummary.sunroof.rating")
-                 .populate("componentSummary.paint.rating")
-                 .populate("componentSummary.dashboard.rating")
-                 .populate("componentSummary.lights.rating")
-                 .populate("componentSummary.steering.rating")
-                 .populate("componentSummary.exhaust.rating")
-                 .populate("componentSummary.clutch.rating")
-                 .populate("interiorAndExterior.frontBumber.condition")
-                 .populate("interiorAndExterior.bonnet.condition")
-                 .populate("interiorAndExterior.roof.condition")
-                 .populate("interiorAndExterior.reerBumber.condition")
-                 .populate("interiorAndExterior.driverSideFrontWing.condition")
-                 .populate("interiorAndExterior.driverSideFrontDoor.condition")
-                 .populate("interiorAndExterior.driverSideRearDoor.condition")
-                 .populate("interiorAndExterior.driverRearQuarter.condition")
-                 .populate("interiorAndExterior.passengerSideFrontWing.condition")
-                 .populate("interiorAndExterior.passengerSideFrontDoor.condition")
-                 .populate("interiorAndExterior.passengerSideRearDoor.condition")
-                 .populate("interiorAndExterior.passengerRearQuarter.condition")
-                 .populate("interiorAndExterior.driverSideFrontTyre.condition")
-                 .populate("interiorAndExterior.driverSideRearTyre.condition")
-                 .populate("interiorAndExterior.passengerSideFrontTyre.condition")
-                 .populate("interiorAndExterior.passengerSideRearTyre.condition")
-                 .populate("interiorAndExterior.trunk.condition")
-                 .populate("interiorAndExterior.frontGlass.condition")
-                 .populate("interiorAndExterior.rearGlass.condition")
-                 .populate("interiorAndExterior.leftGlass.condition")
-                 .populate("interiorAndExterior.rightGlass.condition")
-                 .populate('approvedBy', 'name email')
-                 .populate('archivedBy', 'name email')
-                 .populate('addedBy', 'firstName lastName email');
+    query = query
+      .populate("make", "name country logo")
+      .populate("model", "name startYear endYear image")
+      .populate("carDrive", "name type description")
+      .populate("bodyColor", "name hexCode type")
+      .populate("carOptions", "name category description")
+      .populate("fuelType", "name")
+      .populate("country", "name")
+      .populate("vehicleType", "name category")
+      .populate("componentSummary.windowsSunroof.rating")
+      .populate("componentSummary.tires.rating")
+      .populate("componentSummary.brakes.rating")
+      .populate("componentSummary.battery.rating")
+      .populate("componentSummary.engine.rating")
+      .populate("componentSummary.transmission.rating")
+      .populate("componentSummary.suspension.rating")
+      .populate("componentSummary.body.rating")
+      .populate("componentSummary.interiorButtons.rating")
+      .populate("componentSummary.exterior.rating")
+      .populate("componentSummary.ac.rating")
+      .populate("componentSummary.electrical.rating")
+      .populate("componentSummary.centralLock.rating")
+      .populate("componentSummary.audio.rating")
+      .populate("componentSummary.navigation.rating")
+      .populate("componentSummary.frontSeats.rating")
+      .populate("componentSummary.sunroof.rating")
+      .populate("componentSummary.paint.rating")
+      .populate("componentSummary.dashboard.rating")
+      .populate("componentSummary.lights.rating")
+      .populate("componentSummary.steering.rating")
+      .populate("componentSummary.exhaust.rating")
+      .populate("componentSummary.clutch.rating")
+      .populate("interiorAndExterior.frontBumber.condition")
+      .populate("interiorAndExterior.bonnet.condition")
+      .populate("interiorAndExterior.roof.condition")
+      .populate("interiorAndExterior.reerBumber.condition")
+      .populate("interiorAndExterior.driverSideFrontWing.condition")
+      .populate("interiorAndExterior.driverSideFrontDoor.condition")
+      .populate("interiorAndExterior.driverSideRearDoor.condition")
+      .populate("interiorAndExterior.driverRearQuarter.condition")
+      .populate("interiorAndExterior.passengerSideFrontWing.condition")
+      .populate("interiorAndExterior.passengerSideFrontDoor.condition")
+      .populate("interiorAndExterior.passengerSideRearDoor.condition")
+      .populate("interiorAndExterior.passengerRearQuarter.condition")
+      .populate("interiorAndExterior.driverSideFrontTyre.condition")
+      .populate("interiorAndExterior.driverSideRearTyre.condition")
+      .populate("interiorAndExterior.passengerSideFrontTyre.condition")
+      .populate("interiorAndExterior.passengerSideRearTyre.condition")
+      .populate("interiorAndExterior.trunk.condition")
+      .populate("interiorAndExterior.frontGlass.condition")
+      .populate("interiorAndExterior.rearGlass.condition")
+      .populate("interiorAndExterior.leftGlass.condition")
+      .populate("interiorAndExterior.rightGlass.condition")
+      .populate("approvedBy", "name email")
+      .populate("archivedBy", "name email")
+      .populate("addedBy", "firstName lastName email");
 
     // Execute the query
     const cars = await query.exec();
@@ -1548,41 +1725,72 @@ exports.searchCars = async (req, res) => {
     let filteredCars = cars;
 
     if (search || make || model || bodyColor || fuelType || vehicleType) {
-      filteredCars = cars.filter(car => {
+      filteredCars = cars.filter((car) => {
         let matches = true;
 
         // General search
         if (search) {
           const searchLower = search.toLowerCase();
           const makeMatch = car.make?.name?.toLowerCase().includes(searchLower);
-          const modelMatch = car.model?.name?.toLowerCase().includes(searchLower);
-          const bodyColorMatch = car.bodyColor?.name?.toLowerCase().includes(searchLower);
-          const fuelTypeMatch = car.fuelType?.name?.toLowerCase().includes(searchLower);
-          const vehicleTypeMatch = car.vehicleType?.name?.toLowerCase().includes(searchLower);
-          const descriptionMatch = car.description?.toLowerCase().includes(searchLower);
-          
-          matches = matches && (makeMatch || modelMatch || bodyColorMatch || fuelTypeMatch || vehicleTypeMatch || descriptionMatch);
+          const modelMatch = car.model?.name
+            ?.toLowerCase()
+            .includes(searchLower);
+          const bodyColorMatch = car.bodyColor?.name
+            ?.toLowerCase()
+            .includes(searchLower);
+          const fuelTypeMatch = car.fuelType?.name
+            ?.toLowerCase()
+            .includes(searchLower);
+          const vehicleTypeMatch = car.vehicleType?.name
+            ?.toLowerCase()
+            .includes(searchLower);
+          const descriptionMatch = car.description
+            ?.toLowerCase()
+            .includes(searchLower);
+
+          matches =
+            matches &&
+            (makeMatch ||
+              modelMatch ||
+              bodyColorMatch ||
+              fuelTypeMatch ||
+              vehicleTypeMatch ||
+              descriptionMatch);
         }
 
         // Specific field searches
         if (make && matches) {
-          matches = matches && car.make?.name?.toLowerCase().includes(make.toLowerCase());
+          matches =
+            matches &&
+            car.make?.name?.toLowerCase().includes(make.toLowerCase());
         }
 
         if (model && matches) {
-          matches = matches && car.model?.name?.toLowerCase().includes(model.toLowerCase());
+          matches =
+            matches &&
+            car.model?.name?.toLowerCase().includes(model.toLowerCase());
         }
 
         if (bodyColor && matches) {
-          matches = matches && car.bodyColor?.name?.toLowerCase().includes(bodyColor.toLowerCase());
+          matches =
+            matches &&
+            car.bodyColor?.name
+              ?.toLowerCase()
+              .includes(bodyColor.toLowerCase());
         }
 
         if (fuelType && matches) {
-          matches = matches && car.fuelType?.name?.toLowerCase().includes(fuelType.toLowerCase());
+          matches =
+            matches &&
+            car.fuelType?.name?.toLowerCase().includes(fuelType.toLowerCase());
         }
 
         if (vehicleType && matches) {
-          matches = matches && car.vehicleType?.name?.toLowerCase().includes(vehicleType.toLowerCase());
+          matches =
+            matches &&
+            car.vehicleType?.name
+              ?.toLowerCase()
+              .includes(vehicleType.toLowerCase());
         }
 
         return matches;
@@ -1603,27 +1811,31 @@ exports.searchCars = async (req, res) => {
         totalCount,
         limit: parseInt(limit),
         hasNextPage,
-        hasPrevPage
+        hasPrevPage,
       },
       searchCriteria: {
         search,
         make,
         model,
         yearRange: minYear || maxYear ? { min: minYear, max: maxYear } : null,
-        priceRange: minPrice || maxPrice ? { min: minPrice, max: maxPrice } : null,
-        mileageRange: minMileage || maxMileage ? { min: minMileage, max: maxMileage } : null,
+        priceRange:
+          minPrice || maxPrice ? { min: minPrice, max: maxPrice } : null,
+        mileageRange:
+          minMileage || maxMileage
+            ? { min: minMileage, max: maxMileage }
+            : null,
         bodyColor,
         fuelType,
         vehicleType,
         approved,
-        includeArchived
-      }
+        includeArchived,
+      },
     });
   } catch (error) {
-    console.error('Search error:', error);
-    sendError(res, { 
-      message: 'Error searching cars',
-      errors: error.message 
+    console.error("Search error:", error);
+    sendError(res, {
+      message: "Error searching cars",
+      errors: error.message,
     });
   }
 };
@@ -1632,11 +1844,13 @@ exports.searchCars = async (req, res) => {
 exports.validateCarData = async (req, res) => {
   try {
     const carData = { ...req.body };
-    
+
     console.log("Raw car data received:", carData);
-    
-    const { isValid, errors, warnings, processedData } = await validateCarData(carData);
-    
+
+    const { isValid, errors, warnings, processedData } = await validateCarData(
+      carData
+    );
+
     sendSuccess(res, {
       message: isValid ? "Car data is valid" : "Car data validation failed",
       data: {
@@ -1647,10 +1861,18 @@ exports.validateCarData = async (req, res) => {
         processedData: processedData,
         summary: {
           totalFields: Object.keys(carData).length,
-          emptyFields: Object.keys(carData).filter(key => carData[key] === '' || carData[key] === null || carData[key] === undefined),
-          objectIdFields: Object.keys(carData).filter(key => typeof carData[key] === 'string' && carData[key].length === 24),
-        }
-      }
+          emptyFields: Object.keys(carData).filter(
+            (key) =>
+              carData[key] === "" ||
+              carData[key] === null ||
+              carData[key] === undefined
+          ),
+          objectIdFields: Object.keys(carData).filter(
+            (key) =>
+              typeof carData[key] === "string" && carData[key].length === 24
+          ),
+        },
+      },
     });
   } catch (error) {
     console.error("Error validating car data:", error);
@@ -1740,9 +1962,9 @@ exports.createModel = async (req, res) => {
     }
 
     // Check if model already exists for this make
-    const existingModel = await Model.findOne({ 
-      name: name.trim(), 
-      make: make 
+    const existingModel = await Model.findOne({
+      name: name.trim(),
+      make: make,
     });
     if (existingModel) {
       return sendError(res, {
@@ -1771,7 +1993,7 @@ exports.createModel = async (req, res) => {
     await model.save();
 
     // Populate the make field in the response
-    await model.populate('make', 'name country logo');
+    await model.populate("make", "name country logo");
 
     sendSuccess(res, {
       statusCode: 201,
@@ -1797,7 +2019,8 @@ exports.createBulkRatings = async (req, res) => {
     if (!ratings || !Array.isArray(ratings) || ratings.length === 0) {
       return sendError(res, {
         statusCode: 400,
-        message: "Ratings array is required and must contain at least one rating",
+        message:
+          "Ratings array is required and must contain at least one rating",
       });
     }
 
@@ -1807,13 +2030,21 @@ exports.createBulkRatings = async (req, res) => {
 
     for (let i = 0; i < ratings.length; i++) {
       const rating = ratings[i];
-      
-      if (!rating.name || typeof rating.name !== 'string' || rating.name.trim() === '') {
-        validationErrors.push(`Rating ${i + 1}: name is required and must be a non-empty string`);
+
+      if (
+        !rating.name ||
+        typeof rating.name !== "string" ||
+        rating.name.trim() === ""
+      ) {
+        validationErrors.push(
+          `Rating ${i + 1}: name is required and must be a non-empty string`
+        );
       }
-      
+
       if (!rating.value || !validValues.includes(rating.value)) {
-        validationErrors.push(`Rating ${i + 1}: value must be one of: ${validValues.join(', ')}`);
+        validationErrors.push(
+          `Rating ${i + 1}: value must be one of: ${validValues.join(", ")}`
+        );
       }
     }
 
@@ -1826,34 +2057,38 @@ exports.createBulkRatings = async (req, res) => {
     }
 
     // Check for duplicate names in the input array
-    const inputNames = ratings.map(r => r.name.trim().toLowerCase());
-    const duplicateNames = inputNames.filter((name, index) => inputNames.indexOf(name) !== index);
-    
+    const inputNames = ratings.map((r) => r.name.trim().toLowerCase());
+    const duplicateNames = inputNames.filter(
+      (name, index) => inputNames.indexOf(name) !== index
+    );
+
     if (duplicateNames.length > 0) {
       return sendError(res, {
         statusCode: 400,
         message: "Duplicate names found in the input array",
-        errors: [`Duplicate names: ${[...new Set(duplicateNames)].join(', ')}`],
+        errors: [`Duplicate names: ${[...new Set(duplicateNames)].join(", ")}`],
       });
     }
 
     // Check for existing ratings with the same names
     const existingRatings = await Rating.find({
-      name: { $in: ratings.map(r => r.name.trim()) }
+      name: { $in: ratings.map((r) => r.name.trim()) },
     });
 
     if (existingRatings.length > 0) {
       return sendError(res, {
         statusCode: 409,
         message: "Some ratings already exist",
-        errors: [`Existing ratings: ${existingRatings.map(r => r.name).join(', ')}`],
+        errors: [
+          `Existing ratings: ${existingRatings.map((r) => r.name).join(", ")}`,
+        ],
       });
     }
 
     // Prepare ratings for insertion
-    const ratingsToCreate = ratings.map(rating => ({
+    const ratingsToCreate = ratings.map((rating) => ({
       name: rating.name.trim(),
-      value: rating.value
+      value: rating.value,
     }));
 
     // Create ratings in bulk
@@ -1864,7 +2099,7 @@ exports.createBulkRatings = async (req, res) => {
       message: `Successfully created ${createdRatings.length} ratings`,
       data: {
         created: createdRatings,
-        count: createdRatings.length
+        count: createdRatings.length,
       },
     });
   } catch (error) {
@@ -1970,7 +2205,8 @@ exports.createBulkCountries = async (req, res) => {
     if (!countries || !Array.isArray(countries) || countries.length === 0) {
       return sendError(res, {
         statusCode: 400,
-        message: "Countries array is required and must contain at least one country",
+        message:
+          "Countries array is required and must contain at least one country",
       });
     }
 
@@ -1979,9 +2215,15 @@ exports.createBulkCountries = async (req, res) => {
 
     for (let i = 0; i < countries.length; i++) {
       const country = countries[i];
-      
-      if (!country.name || typeof country.name !== 'string' || country.name.trim() === '') {
-        validationErrors.push(`Country ${i + 1}: name is required and must be a non-empty string`);
+
+      if (
+        !country.name ||
+        typeof country.name !== "string" ||
+        country.name.trim() === ""
+      ) {
+        validationErrors.push(
+          `Country ${i + 1}: name is required and must be a non-empty string`
+        );
       }
     }
 
@@ -1994,33 +2236,39 @@ exports.createBulkCountries = async (req, res) => {
     }
 
     // Check for duplicate names in the input array
-    const inputNames = countries.map(c => c.name.trim().toLowerCase());
-    const duplicateNames = inputNames.filter((name, index) => inputNames.indexOf(name) !== index);
-    
+    const inputNames = countries.map((c) => c.name.trim().toLowerCase());
+    const duplicateNames = inputNames.filter(
+      (name, index) => inputNames.indexOf(name) !== index
+    );
+
     if (duplicateNames.length > 0) {
       return sendError(res, {
         statusCode: 400,
         message: "Duplicate names found in the input array",
-        errors: [`Duplicate names: ${[...new Set(duplicateNames)].join(', ')}`],
+        errors: [`Duplicate names: ${[...new Set(duplicateNames)].join(", ")}`],
       });
     }
 
     // Check for existing countries with the same names
     const existingCountries = await Country.find({
-      name: { $in: countries.map(c => c.name.trim()) }
+      name: { $in: countries.map((c) => c.name.trim()) },
     });
 
     if (existingCountries.length > 0) {
       return sendError(res, {
         statusCode: 409,
         message: "Some countries already exist",
-        errors: [`Existing countries: ${existingCountries.map(c => c.name).join(', ')}`],
+        errors: [
+          `Existing countries: ${existingCountries
+            .map((c) => c.name)
+            .join(", ")}`,
+        ],
       });
     }
 
     // Prepare countries for insertion
-    const countriesToCreate = countries.map(country => ({
-      name: country.name.trim()
+    const countriesToCreate = countries.map((country) => ({
+      name: country.name.trim(),
     }));
 
     // Create countries in bulk
@@ -2031,7 +2279,7 @@ exports.createBulkCountries = async (req, res) => {
       message: `Successfully created ${createdCountries.length} countries`,
       data: {
         created: createdCountries,
-        count: createdCountries.length
+        count: createdCountries.length,
       },
     });
   } catch (error) {
@@ -2048,7 +2296,7 @@ exports.createBulkCountries = async (req, res) => {
 exports.getCountries = async (req, res) => {
   try {
     const countries = await Country.find({}).sort({ name: 1 });
-    
+
     sendSuccess(res, {
       data: countries,
       message: `Found ${countries.length} countries`,
@@ -2118,7 +2366,7 @@ exports.deleteModel = async (req, res) => {
     const { id } = req.params;
 
     // Validate model exists
-    const model = await Model.findById(id).populate('make', 'name');
+    const model = await Model.findById(id).populate("make", "name");
     if (!model) {
       return sendError(res, {
         statusCode: 404,
@@ -2140,9 +2388,9 @@ exports.deleteModel = async (req, res) => {
 
     sendSuccess(res, {
       message: "Model deleted successfully",
-      data: { 
+      data: {
         deletedModel: model.name,
-        make: model.make?.name || 'Unknown'
+        make: model.make?.name || "Unknown",
       },
     });
   } catch (error) {
@@ -2159,7 +2407,7 @@ exports.deleteModel = async (req, res) => {
 exports.getMakes = async (req, res) => {
   try {
     const makes = await Make.find({}).sort({ name: 1 });
-    
+
     sendSuccess(res, {
       data: makes,
       message: `Found ${makes.length} makes`,
@@ -2178,7 +2426,7 @@ exports.getMakes = async (req, res) => {
 exports.getModels = async (req, res) => {
   try {
     const { makeId } = req.query;
-    
+
     // Build filter
     const filter = {};
     if (makeId) {
@@ -2194,12 +2442,14 @@ exports.getModels = async (req, res) => {
     }
 
     const models = await Model.find(filter)
-      .populate('make', 'name country logo')
+      .populate("make", "name country logo")
       .sort({ name: 1 });
-    
+
     sendSuccess(res, {
       data: models,
-      message: `Found ${models.length} models${makeId ? ' for the specified make' : ''}`,
+      message: `Found ${models.length} models${
+        makeId ? " for the specified make" : ""
+      }`,
     });
   } catch (error) {
     console.error("Error fetching models:", error);
@@ -2215,16 +2465,16 @@ exports.getModels = async (req, res) => {
 exports.getDiagnosticCars = async (req, res) => {
   try {
     const filter = {};
-    if (req.query.includeArchived !== 'true') {
+    if (req.query.includeArchived !== "true") {
       filter.isArchived = false;
     }
-    
+
     // Get raw data without population
     const rawCars = await Car.find(filter).limit(5).sort({ createdAt: -1 });
-    
-    sendSuccess(res, { 
+
+    sendSuccess(res, {
       message: "Diagnostic data - raw car documents without population",
-      data: rawCars.map(car => ({
+      data: rawCars.map((car) => ({
         _id: car._id,
         make: car.make,
         model: car.model,
@@ -2242,11 +2492,11 @@ exports.getDiagnosticCars = async (req, res) => {
         serviceHistory: car.serviceHistory,
         isApproved: car.isApproved,
         isArchived: car.isArchived,
-        createdAt: car.createdAt
-      }))
+        createdAt: car.createdAt,
+      })),
     });
   } catch (error) {
-    console.error('Error in getDiagnosticCars:', error);
+    console.error("Error in getDiagnosticCars:", error);
     sendError(res, { message: error.message });
   }
 };
