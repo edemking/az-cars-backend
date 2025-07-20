@@ -11,7 +11,9 @@ const expo = new Expo({
 if (process.env.EXPO_ACCESS_TOKEN) {
   console.log("✅ Expo SDK initialized with access token");
 } else {
-  console.warn("⚠️  Expo SDK initialized without access token - push notifications may have rate limits");
+  console.warn(
+    "⚠️  Expo SDK initialized without access token - push notifications may have rate limits"
+  );
 }
 
 /**
@@ -28,7 +30,7 @@ if (process.env.EXPO_ACCESS_TOKEN) {
 const sendPushNotificationToUser = async (userId, notificationData) => {
   try {
     console.log(`📱 Attempting to send push notification to user ${userId}`);
-    
+
     // Get user's notification token
     const user = await User.findById(userId).select("notificationToken");
 
@@ -38,11 +40,15 @@ const sendPushNotificationToUser = async (userId, notificationData) => {
     }
 
     const pushToken = user.notificationToken;
-    console.log(`📲 Found push token for user ${userId}: ${pushToken.substring(0, 20)}...`);
+    console.log(
+      `📲 Found push token for user ${userId}: ${pushToken.substring(0, 20)}...`
+    );
 
     // Check that the push token appears to be valid
     if (!Expo.isExpoPushToken(pushToken)) {
-      console.error(`❌ Push token ${pushToken} is not a valid Expo push token`);
+      console.error(
+        `❌ Push token ${pushToken} is not a valid Expo push token`
+      );
       return { success: false, reason: "Invalid push token" };
     }
 
@@ -66,7 +72,7 @@ const sendPushNotificationToUser = async (userId, notificationData) => {
     console.log(`📤 Sending push notification to user ${userId}:`, {
       title: message.title,
       body: message.body,
-      token: pushToken.substring(0, 20) + "..."
+      token: pushToken.substring(0, 20) + "...",
     });
 
     // Send the notification
@@ -74,7 +80,10 @@ const sendPushNotificationToUser = async (userId, notificationData) => {
     const ticket = tickets[0];
 
     if (ticket.status === "error") {
-      console.error(`❌ Error sending push notification to user ${userId}:`, ticket.message);
+      console.error(
+        `❌ Error sending push notification to user ${userId}:`,
+        ticket.message
+      );
       return {
         success: false,
         reason: ticket.message,
@@ -85,7 +94,10 @@ const sendPushNotificationToUser = async (userId, notificationData) => {
     console.log(`✅ Push notification sent successfully to user ${userId}`);
     return { success: true, ticket };
   } catch (error) {
-    console.error(`❌ Error sending push notification to user ${userId}:`, error);
+    console.error(
+      `❌ Error sending push notification to user ${userId}:`,
+      error
+    );
     return { success: false, reason: error.message };
   }
 };
@@ -98,15 +110,19 @@ const sendPushNotificationToUser = async (userId, notificationData) => {
  */
 const sendPushNotificationsToUsers = async (userIds, notificationData) => {
   try {
-    console.log(`📱 Attempting to send push notifications to ${userIds.length} users`);
-    
+    console.log(
+      `📱 Attempting to send push notifications to ${userIds.length} users`
+    );
+
     // Get all users' notification tokens
     const users = await User.find({
       _id: { $in: userIds },
       notificationToken: { $exists: true, $ne: null },
     }).select("_id notificationToken");
 
-    console.log(`📲 Found ${users.length} users with notification tokens out of ${userIds.length} total users`);
+    console.log(
+      `📲 Found ${users.length} users with notification tokens out of ${userIds.length} total users`
+    );
 
     if (users.length === 0) {
       console.log("❌ No users with notification tokens found");
@@ -275,9 +291,11 @@ const sendPushNotificationToUsersForNewAuction = async (
   usersWithTokens
 ) => {
   try {
-    console.log(`🔔 Processing new auction push notifications for auction: ${auction._id}`);
+    console.log(
+      `🔔 Processing new auction push notifications for auction: ${auction._id}`
+    );
     console.log(`📋 Auction details: ${auction.auctionTitle} (${carDetails})`);
-    
+
     if (usersWithTokens.length === 0) {
       console.log(
         "❌ No users with notification tokens found for new auction push notification"
@@ -293,28 +311,32 @@ const sendPushNotificationToUsersForNewAuction = async (
     const endTime = new Date(auction.endTime);
     const now = new Date();
     const timeDifferenceMs = endTime - now;
-    
+
     // Format time remaining precisely
     const formatTimeRemaining = (milliseconds) => {
       const seconds = Math.floor(milliseconds / 1000);
       const minutes = Math.floor(seconds / 60);
       const hours = Math.floor(minutes / 60);
       const days = Math.floor(hours / 24);
-      
+
       if (days > 0) {
         const remainingHours = hours % 24;
         return remainingHours > 0 ? `${days}d ${remainingHours}h` : `${days}d`;
       } else if (hours > 0) {
         const remainingMinutes = minutes % 60;
-        return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`;
+        return remainingMinutes > 0
+          ? `${hours}h ${remainingMinutes}m`
+          : `${hours}h`;
       } else if (minutes > 0) {
         const remainingSeconds = seconds % 60;
-        return remainingSeconds > 0 ? `${minutes}m ${remainingSeconds}s` : `${minutes}m`;
+        return remainingSeconds > 0
+          ? `${minutes}m ${remainingSeconds}s`
+          : `${minutes}m`;
       } else {
         return `${seconds}s`;
       }
     };
-    
+
     const timeRemaining = formatTimeRemaining(timeDifferenceMs);
 
     // Prepare notification data

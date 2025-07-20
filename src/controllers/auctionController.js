@@ -195,6 +195,9 @@ exports.getAuction = asyncHandler(async (req, res, next) => {
           path: "componentSummary.windowsSunroof.rating",
         },
         {
+          path: "componentSummary.windowControl.rating",
+        },
+        {
           path: "componentSummary.tires.rating",
         },
         {
@@ -240,7 +243,16 @@ exports.getAuction = asyncHandler(async (req, res, next) => {
           path: "componentSummary.frontSeats.rating",
         },
         {
+          path: "componentSummary.backSeats.rating",
+        },
+        {
           path: "componentSummary.sunroof.rating",
+        },
+        {
+          path: "componentSummary.fourWDSystem.rating",
+        },
+        {
+          path: "componentSummary.glovebox.rating",
         },
         {
           path: "componentSummary.paint.rating",
@@ -250,6 +262,9 @@ exports.getAuction = asyncHandler(async (req, res, next) => {
         },
         {
           path: "componentSummary.lights.rating",
+        },
+        {
+          path: "componentSummary.dashLight.rating",
         },
         {
           path: "componentSummary.steering.rating",
