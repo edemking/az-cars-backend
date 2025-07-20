@@ -174,6 +174,40 @@ const warrantyItemSchema = new mongoose.Schema(
   { _id: false }
 );
 
+// Define service pack schema that includes both boolean value and comment
+const servicePackItemSchema = new mongoose.Schema(
+  {
+    hasServicePack: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
+    comment: {
+      type: String,
+      required: false,
+      maxlength: 500,
+    },
+  },
+  { _id: false }
+);
+
+// Define mortgage schema that includes both boolean value and comment
+const mortgageItemSchema = new mongoose.Schema(
+  {
+    hasMortgage: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
+    comment: {
+      type: String,
+      required: false,
+      maxlength: 500,
+    },
+  },
+  { _id: false }
+);
+
 const interiorAndExteriorSchema = new mongoose.Schema(
   {
     condition: {
@@ -396,14 +430,8 @@ const carSchema = new mongoose.Schema({
     type: Date,
     required: false,
   },
-  servicePack: {
-    type: Boolean,
-    required: false,
-  },
-  mortgage: {
-    type: Boolean,
-    required: false,
-  },
+  servicePack: servicePackItemSchema,
+  mortgage: mortgageItemSchema,
   locationCity: {
     type: String,
     required: false,

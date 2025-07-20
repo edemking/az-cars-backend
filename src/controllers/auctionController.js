@@ -100,7 +100,7 @@ exports.getAuctions = asyncHandler(async (req, res, next) => {
     .populate({
       path: "car",
       select:
-        "make model year price images mileage carOptions bodyColor cylinder fuelType transmission carDrive country vehicleType",
+        "make model year price images mileage carOptions bodyColor cylinder fuelType transmission carDrive country vehicleType servicePack mortgage",
       populate: [
         {
           path: "make",
@@ -2453,7 +2453,7 @@ exports.getAllAuctionHistory = asyncHandler(async (req, res, next) => {
   const auctionsHistory = await Auction.find(queryFilters)
     .populate({
       path: "car",
-      select: "make model year price images mileage bodyColor vehicleType",
+      select: "make model year price images mileage bodyColor vehicleType servicePack mortgage",
       populate: [
         {
           path: "make",
@@ -2640,7 +2640,7 @@ exports.getEndedAuctionHistory = asyncHandler(async (req, res, next) => {
   const endedAuctions = await Auction.find(queryFilters)
     .populate({
       path: "car",
-      select: "make model year price images mileage bodyColor vehicleType",
+      select: "make model year price images mileage bodyColor vehicleType servicePack mortgage",
       populate: [
         {
           path: "make",
