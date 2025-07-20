@@ -2870,6 +2870,7 @@ exports.getCompletedBidsForAuction = asyncHandler(async (req, res, next) => {
         lastBidTime: bid.time,
       };
     }
+    
 
     bidderActivity[bidderId].bids.push({
       _id: bid._id,
