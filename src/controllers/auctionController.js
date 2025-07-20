@@ -83,6 +83,18 @@ exports.getAuctions = asyncHandler(async (req, res, next) => {
     query.type = req.query.type;
   }
 
+  // Determine sort order
+  let sortBy = { createdAt: -1 }; // Default sort by createdAt descending
+  
+  if (req.query.sortBy) {
+    if (req.query.sortBy === 'updatedAt') {
+      sortBy = { updatedAt: -1 };
+    } else if (req.query.sortBy === 'createdAt') {
+      sortBy = { createdAt: -1 };
+    }
+    // Add more sort options here if needed in the future
+  }
+
   // Find auctions
   const auctions = await Auction.find(query)
     .populate({
@@ -126,7 +138,7 @@ exports.getAuctions = asyncHandler(async (req, res, next) => {
     })
     .populate("createdBy", "firstName lastName")
     .populate("winner", "firstName lastName")
-    .sort({ createdAt: -1 });
+    .sort(sortBy);
 
   // Add sold/unsold status to each auction
   const auctionsWithStatus = auctions.map((auction) => {
