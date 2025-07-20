@@ -424,7 +424,7 @@ exports.getCars = async (req, res) => {
       .populate("interiorAndExterior.rightGlass.condition")
       .populate("approvedBy", "name email")
       .populate("archivedBy", "name email")
-      .populate("addedBy", "firstName lastName email")
+      .populate("addedBy", "firstName lastName email address")
       .sort({ createdAt: -1 });
 
     // Debug logging to see what's actually in the database
@@ -512,7 +512,7 @@ exports.getCar = async (req, res) => {
       .populate("interiorAndExterior.rearGlass.condition")
       .populate("interiorAndExterior.leftGlass.condition")
       .populate("interiorAndExterior.rightGlass.condition")
-      .populate("addedBy", "firstName lastName email");
+      .populate("addedBy", "firstName lastName email address");
 
     if (!car) {
       return sendError(res, {
@@ -817,7 +817,7 @@ exports.createCar = async (req, res) => {
       .populate("interiorAndExterior.rearGlass.condition")
       .populate("interiorAndExterior.leftGlass.condition")
       .populate("interiorAndExterior.rightGlass.condition")
-      .populate("addedBy", "firstName lastName email");
+      .populate("addedBy", "firstName lastName email address");
 
     sendSuccess(res, {
       statusCode: 201,
@@ -1482,7 +1482,7 @@ exports.approveCar = async (req, res) => {
     // Fetch the updated car with populated fields
     const updatedCar = await Car.findById(carId)
       .populate("approvedBy", "name email")
-      .populate("addedBy", "firstName lastName email");
+      .populate("addedBy", "firstName lastName email address");
 
     sendSuccess(res, {
       message: "Car approved successfully",
@@ -1553,7 +1553,7 @@ exports.archiveCar = async (req, res) => {
     // Fetch the updated car with populated fields
     const updatedCar = await Car.findById(carId)
       .populate("archivedBy", "name email")
-      .populate("addedBy", "firstName lastName email");
+      .populate("addedBy", "firstName lastName email address");
 
     sendSuccess(res, {
       message: "Car archived successfully",
@@ -1721,7 +1721,7 @@ exports.searchCars = async (req, res) => {
       .populate("interiorAndExterior.rightGlass.condition")
       .populate("approvedBy", "name email")
       .populate("archivedBy", "name email")
-      .populate("addedBy", "firstName lastName email");
+      .populate("addedBy", "firstName lastName email address");
 
     // Execute the query
     const cars = await query.exec();
