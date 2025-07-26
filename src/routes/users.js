@@ -1,19 +1,25 @@
 const express = require("express");
 const router = express.Router();
 const userController = require("../controllers/userController");
-const { protect, admin, hasPermission, ownerOrAdmin, checkAccountStatus } = require("../middleware/auth");
+const {
+  protect,
+  admin,
+  hasPermission,
+  ownerOrAdmin,
+  checkAccountStatus,
+} = require("../middleware/auth");
 const { PERMISSIONS } = require("../models/Role");
 const { upload } = require("../utils/fileUpload");
 
 // File upload middleware for user ID documents and profile picture
 const uploadUserDocs = upload.fields([
-  { name: 'idFront', maxCount: 1 },
-  { name: 'idBack', maxCount: 1 },
-  { name: 'profilePicture', maxCount: 1 }
+  { name: "idFront", maxCount: 1 },
+  { name: "idBack", maxCount: 1 },
+  { name: "profilePicture", maxCount: 1 },
 ]);
 
 // File upload middleware for profile picture
-const uploadProfilePicture = upload.single('profilePicture');
+const uploadProfilePicture = upload.single("profilePicture");
 
 // User management routes - require appropriate permissions
 router.post(
@@ -25,11 +31,7 @@ router.post(
 );
 
 // Public registration endpoint - no auth required
-router.post(
-  "/register",
-  uploadUserDocs,
-  userController.createUser
-);
+router.post("/register", uploadUserDocs, userController.createUser);
 
 router.get(
   "/",
@@ -119,6 +121,15 @@ router.delete(
   checkAccountStatus,
   ownerOrAdmin,
   userController.removeNotificationToken
+);
+
+//Reset user's loggedIn status - requires user management permission
+router.put(
+  "/:id/reset-logged-in",
+  protect,
+  checkAccountStatus,
+  hasPermission(PERMISSIONS.USER_ROLES_MANAGEMENT),
+  userController.resetLoggedInStatus
 );
 
 module.exports = router;

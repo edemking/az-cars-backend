@@ -1,10 +1,10 @@
-const User = require('../models/User');
-const OTP = require('../models/OTP');
-const jwt = require('jsonwebtoken');
-const config = require('../config/config');
-const emailService = require('../utils/emailService');
-const bcrypt = require('bcryptjs');
-const { sendSuccess, sendError } = require('../utils/responseHandler');
+const User = require("../models/User");
+const OTP = require("../models/OTP");
+const jwt = require("jsonwebtoken");
+const config = require("../config/config");
+const emailService = require("../utils/emailService");
+const bcrypt = require("bcryptjs");
+const { sendSuccess, sendError } = require("../utils/responseHandler");
 
 // Login user and get token
 exports.login = async (req, res) => {
@@ -13,40 +13,51 @@ exports.login = async (req, res) => {
 
     // Validate email and password
     if (!email || !password) {
-      return sendError(res, { 
-        statusCode: 400, 
-        message: 'Please provide email and password' 
+      return sendError(res, {
+        statusCode: 400,
+        message: "Please provide email and password",
       });
     }
 
     // Check if user exists
-    const user = await User.findOne({ email }).populate('role');
+    const user = await User.findOne({ email }).populate("role");
+
     if (!user) {
-      return sendError(res, { 
-        statusCode: 401, 
-        message: 'Invalid credentials' 
+      return sendError(res, {
+        statusCode: 401,
+        message: "Invalid credentials",
+      });
+    }
+
+    //Check if user already logged in
+    if (user.loggedIn) {
+      return sendError(res, {
+        statusCode: 401,
+        message: "User already logged in",
       });
     }
 
     // Check if password matches
     const isMatch = await user.matchPassword(password);
     if (!isMatch) {
-      return sendError(res, { 
-        statusCode: 401, 
-        message: 'Invalid credentials' 
+      return sendError(res, {
+        statusCode: 401,
+        message: "Invalid credentials",
       });
     }
 
     // Generate JWT token
-    const token = jwt.sign(
-      { id: user._id },
-      config.JWT_SECRET,
-      { expiresIn: config.JWT_EXPIRE }
-    );
+    const token = jwt.sign({ id: user._id }, config.JWT_SECRET, {
+      expiresIn: config.JWT_EXPIRE,
+    });
+
+    // Update User loggedIn boolean
+    user.loggedIn = true;
+    await user.save();
 
     sendSuccess(res, {
       statusCode: 200,
-      message: 'Login successful',
+      message: "Login successful",
       data: {
         token,
         user: {
@@ -54,9 +65,9 @@ exports.login = async (req, res) => {
           firstName: user.firstName,
           lastName: user.lastName,
           email: user.email,
-          role: user.role
-        }
-      }
+          role: user.role,
+        },
+      },
     });
   } catch (error) {
     sendError(res, { message: error.message });
@@ -66,10 +77,12 @@ exports.login = async (req, res) => {
 // Get current logged in user
 exports.getMe = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select('-password').populate('role');
-    
+    const user = await User.findById(req.user.id)
+      .select("-password")
+      .populate("role");
+
     sendSuccess(res, {
-      data: user
+      data: user,
     });
   } catch (error) {
     sendError(res, { message: error.message });
@@ -82,18 +95,18 @@ exports.forgotPassword = async (req, res) => {
     const { email } = req.body;
 
     if (!email) {
-      return sendError(res, { 
-        statusCode: 400, 
-        message: 'Please provide an email address' 
+      return sendError(res, {
+        statusCode: 400,
+        message: "Please provide an email address",
       });
     }
 
     // Check if user exists
     const user = await User.findOne({ email });
     if (!user) {
-      return sendError(res, { 
-        statusCode: 404, 
-        message: 'No user found with that email address' 
+      return sendError(res, {
+        statusCode: 404,
+        message: "No user found with that email address",
       });
     }
 
@@ -104,20 +117,20 @@ exports.forgotPassword = async (req, res) => {
     await OTP.deleteMany({ email });
     await OTP.create({
       email,
-      otp
+      otp,
     });
 
     // Send email with OTP
     await emailService.sendPasswordResetEmail(email, otp);
 
     sendSuccess(res, {
-      message: 'Password reset OTP sent to your email'
+      message: "Password reset OTP sent to your email",
     });
   } catch (error) {
-    console.error('Forgot password error:', error);
-    sendError(res, { 
-      message: 'Error sending password reset email', 
-      errors: error.message 
+    console.error("Forgot password error:", error);
+    sendError(res, {
+      message: "Error sending password reset email",
+      errors: error.message,
     });
   }
 };
@@ -128,27 +141,27 @@ exports.resetPassword = async (req, res) => {
     const { email, otp, newPassword } = req.body;
 
     if (!email || !otp || !newPassword) {
-      return sendError(res, { 
-        statusCode: 400, 
-        message: 'Please provide email, OTP, and new password' 
+      return sendError(res, {
+        statusCode: 400,
+        message: "Please provide email, OTP, and new password",
       });
     }
 
     // Find the OTP record
     const otpRecord = await OTP.findOne({ email, otp });
     if (!otpRecord) {
-      return sendError(res, { 
-        statusCode: 400, 
-        message: 'Invalid or expired OTP' 
+      return sendError(res, {
+        statusCode: 400,
+        message: "Invalid or expired OTP",
       });
     }
 
     // Find the user
     const user = await User.findOne({ email });
     if (!user) {
-      return sendError(res, { 
-        statusCode: 404, 
-        message: 'User not found' 
+      return sendError(res, {
+        statusCode: 404,
+        message: "User not found",
       });
     }
 
@@ -160,13 +173,13 @@ exports.resetPassword = async (req, res) => {
     await OTP.deleteOne({ _id: otpRecord._id });
 
     sendSuccess(res, {
-      message: 'Password has been reset successfully'
+      message: "Password has been reset successfully",
     });
   } catch (error) {
-    console.error('Reset password error:', error);
-    sendError(res, { 
-      message: 'Error resetting password', 
-      errors: error.message 
+    console.error("Reset password error:", error);
+    sendError(res, {
+      message: "Error resetting password",
+      errors: error.message,
     });
   }
 };
@@ -177,29 +190,29 @@ exports.verifyOTP = async (req, res) => {
     const { email, otp } = req.body;
 
     if (!email || !otp) {
-      return sendError(res, { 
-        statusCode: 400, 
-        message: 'Please provide email and OTP' 
+      return sendError(res, {
+        statusCode: 400,
+        message: "Please provide email and OTP",
       });
     }
 
     // Find the OTP record
     const otpRecord = await OTP.findOne({ email, otp });
     if (!otpRecord) {
-      return sendError(res, { 
-        statusCode: 400, 
-        message: 'Invalid or expired OTP' 
+      return sendError(res, {
+        statusCode: 400,
+        message: "Invalid or expired OTP",
       });
     }
 
     sendSuccess(res, {
-      message: 'OTP verified successfully'
+      message: "OTP verified successfully",
     });
   } catch (error) {
-    console.error('Verify OTP error:', error);
-    sendError(res, { 
-      message: 'Error verifying OTP', 
-      errors: error.message 
+    console.error("Verify OTP error:", error);
+    sendError(res, {
+      message: "Error verifying OTP",
+      errors: error.message,
     });
   }
 };
@@ -211,51 +224,52 @@ exports.changePassword = async (req, res) => {
 
     // Validate required fields
     if (!currentPassword || !newPassword || !confirmPassword) {
-      return sendError(res, { 
-        statusCode: 400, 
-        message: 'Please provide current password, new password, and confirm password' 
+      return sendError(res, {
+        statusCode: 400,
+        message:
+          "Please provide current password, new password, and confirm password",
       });
     }
 
     // Check if new password and confirm password match
     if (newPassword !== confirmPassword) {
-      return sendError(res, { 
-        statusCode: 400, 
-        message: 'New password and confirm password do not match' 
+      return sendError(res, {
+        statusCode: 400,
+        message: "New password and confirm password do not match",
       });
     }
 
     // Validate new password strength (optional - you can customize these rules)
     if (newPassword.length < 6) {
-      return sendError(res, { 
-        statusCode: 400, 
-        message: 'New password must be at least 6 characters long' 
+      return sendError(res, {
+        statusCode: 400,
+        message: "New password must be at least 6 characters long",
       });
     }
 
     // Check if new password is different from current password
     if (currentPassword === newPassword) {
-      return sendError(res, { 
-        statusCode: 400, 
-        message: 'New password must be different from current password' 
+      return sendError(res, {
+        statusCode: 400,
+        message: "New password must be different from current password",
       });
     }
 
     // Get the current user with password field
     const user = await User.findById(req.user.id);
     if (!user) {
-      return sendError(res, { 
-        statusCode: 404, 
-        message: 'User not found' 
+      return sendError(res, {
+        statusCode: 404,
+        message: "User not found",
       });
     }
 
     // Verify current password
     const isCurrentPasswordValid = await user.matchPassword(currentPassword);
     if (!isCurrentPasswordValid) {
-      return sendError(res, { 
-        statusCode: 400, 
-        message: 'Current password is incorrect' 
+      return sendError(res, {
+        statusCode: 400,
+        message: "Current password is incorrect",
       });
     }
 
@@ -264,13 +278,13 @@ exports.changePassword = async (req, res) => {
     await user.save();
 
     sendSuccess(res, {
-      message: 'Password changed successfully'
+      message: "Password changed successfully",
     });
   } catch (error) {
-    console.error('Change password error:', error);
-    sendError(res, { 
-      message: 'Error changing password', 
-      errors: error.message 
+    console.error("Change password error:", error);
+    sendError(res, {
+      message: "Error changing password",
+      errors: error.message,
     });
   }
-}; 
+};
