@@ -452,6 +452,13 @@ const carSchema = new mongoose.Schema({
     type: String,
     required: false,
   },
+  //vehile rating
+  vehicleRating: {
+    type: Number,
+    required: false,
+    min: 0,
+    max: 5,
+  },
 });
 
 module.exports = mongoose.model("Car", carSchema);
