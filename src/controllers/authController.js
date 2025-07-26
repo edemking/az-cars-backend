@@ -29,12 +29,17 @@ exports.login = async (req, res) => {
       });
     }
 
-    //Check if user already logged in
-    if (user.loggedIn) {
-      return sendError(res, {
-        statusCode: 401,
-        message: "User already logged in",
-      });
+    //Check if user has admin permissions
+    const isBidder = user.role.name.toLowerCase() === "bidder";
+
+    if (isBidder) {
+      //Check if user already logged in
+      if (user.loggedIn) {
+        return sendError(res, {
+          statusCode: 401,
+          message: "User already logged in",
+        });
+      }
     }
 
     // Check if password matches
