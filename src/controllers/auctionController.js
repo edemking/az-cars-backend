@@ -1068,7 +1068,7 @@ exports.getAuctionsByType = asyncHandler(async (req, res, next) => {
     .populate({
       path: "car",
       select:
-        "make model year price images mileage carOptions bodyColor cylinder fuelType transmission carDrive country vehicleType",
+        "make model year price images mileage carOptions bodyColor cylinder fuelType transmission carDrive country vehicleType vehicleRating",
       populate: [
         {
           path: "make",
