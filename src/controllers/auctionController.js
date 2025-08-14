@@ -1374,11 +1374,42 @@ exports.getDashboardData = asyncHandler(async (req, res, next) => {
     .populate(carPopulateConfig)
     .sort({ endTime: -1 });
 
+  // Helper function to add bids to auctions
+  const addBidsToAuctions = async (auctions) => {
+    if (auctions.length === 0) return auctions;
+    
+    const auctionIds = auctions.map(auction => auction._id);
+    const bids = await Bid.find({ auction: { $in: auctionIds } })
+      .populate("bidder", "firstName lastName profilePicture")
+      .sort({ amount: -1 });
+    
+    // Group bids by auction
+    const bidsByAuction = {};
+    bids.forEach(bid => {
+      const auctionId = bid.auction.toString();
+      if (!bidsByAuction[auctionId]) {
+        bidsByAuction[auctionId] = [];
+      }
+      bidsByAuction[auctionId].push(bid);
+    });
+    
+    // Add bids to each auction
+    return auctions.map(auction => ({
+      ...auction.toObject(),
+      bids: bidsByAuction[auction._id.toString()] || []
+    }));
+  };
+
+  // Add bids to all auction arrays
+  const newLiveAuctionsWithBids = await addBidsToAuctions(newLiveAuctions);
+  const endingSoonAuctionsWithBids = await addBidsToAuctions(endingSoonAuctions);
+  const wonAuctionsWithBids = await addBidsToAuctions(wonAuctions);
+
   sendSuccess(res, {
     data: {
-      newLiveAuctions,
-      endingSoonAuctions,
-      wonAuctions,
+      newLiveAuctions: newLiveAuctionsWithBids,
+      endingSoonAuctions: endingSoonAuctionsWithBids,
+      wonAuctions: wonAuctionsWithBids,
     },
     meta: {
       fallbackUsed: {
