@@ -1175,13 +1175,12 @@ exports.getNewLiveAuctions = asyncHandler(async (req, res, next) => {
     .populate("createdBy", "firstName lastName profilePicture")
     .sort({ startTime: -1 });
 
-    const auctionsWithBids = await attachBidsToAuctions(auctions);
-    sendSuccess(res, {
-      data: auctionsWithBids,
-      meta: {
-        count: auctionsWithBids.length,
-      },
-    });
+  sendSuccess(res, {
+    data: auctions,
+    meta: {
+      count: auctions.length,
+    },
+  });
 });
 
 // @desc    Get auctions ending soon (within the next 24 hours)
@@ -1377,9 +1376,9 @@ exports.getDashboardData = asyncHandler(async (req, res, next) => {
 
   sendSuccess(res, {
     data: {
-    newLiveAuctions: newLiveAuctionsWithBids,
-    endingSoonAuctions: endingSoonAuctionsWithBids,
-    wonAuctions: wonAuctionsWithBids,
+      newLiveAuctions,
+      endingSoonAuctions,
+      wonAuctions,
     },
     meta: {
       fallbackUsed: {
@@ -1462,17 +1461,9 @@ exports.getAdminDashboardData = asyncHandler(async (req, res, next) => {
         },
       ],
     })
-// Helper to attach bids to auctions
-async function attachBidsToAuctions(auctions) {
-  return Promise.all(
-    auctions.map(async (auction) => {
-      const bids = await Bid.find({ auction: auction._id })
-        .populate("bidder", "firstName lastName")
-        .sort({ amount: -1 });
-      return { ...auction.toObject(), bids };
-    })
-  );
-}
+    .sort({ totalBids: -1, currentHighestBid: -1 })
+    .limit(10)
+    .select("auctionTitle currentHighestBid totalBids status car createdAt");
 
   // 4. Top bidders analysis
   const topBidders = await Bid.aggregate([
