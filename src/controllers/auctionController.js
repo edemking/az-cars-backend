@@ -85,11 +85,11 @@ exports.getAuctions = asyncHandler(async (req, res, next) => {
 
   // Determine sort order
   let sortBy = { createdAt: -1 }; // Default sort by createdAt descending
-  
+
   if (req.query.sortBy) {
-    if (req.query.sortBy === 'updatedAt') {
+    if (req.query.sortBy === "updatedAt") {
       sortBy = { updatedAt: -1 };
-    } else if (req.query.sortBy === 'createdAt') {
+    } else if (req.query.sortBy === "createdAt") {
       sortBy = { createdAt: -1 };
     }
     // Add more sort options here if needed in the future
@@ -548,6 +548,10 @@ exports.placeBid = asyncHandler(async (req, res, next) => {
       )
     );
   }
+
+  // Extend auction end time by 1 minute for successful bids
+  auction.endTime = new Date(auction.endTime.getTime() + 60 * 1000);
+  await auction.save();
 
   // Create new bid
   const bid = await Bid.create({
@@ -2161,22 +2165,22 @@ exports.getUnsoldAuctions = asyncHandler(async (req, res, next) => {
 // @access  Public
 exports.getCompletedAuctions = asyncHandler(async (req, res, next) => {
   const now = new Date();
-  
+
   // Build query for completed auctions
   const query = {
     $or: [
       { status: "completed" },
-      { endTime: { $lt: now } } // Auctions whose end time has passed
-    ]
+      { endTime: { $lt: now } }, // Auctions whose end time has passed
+    ],
   };
 
   // Filter by auctionStatus if provided
   if (req.query.auctionStatus) {
-    const validStatuses = ['Car Sold', 'Car Bought', 'Following Up'];
+    const validStatuses = ["Car Sold", "Car Bought", "Following Up"];
     if (!validStatuses.includes(req.query.auctionStatus)) {
       return next(
         new ErrorResponse(
-          `Invalid auction status. Must be one of: ${validStatuses.join(', ')}`,
+          `Invalid auction status. Must be one of: ${validStatuses.join(", ")}`,
           400
         )
       );
@@ -2453,7 +2457,8 @@ exports.getAllAuctionHistory = asyncHandler(async (req, res, next) => {
   const auctionsHistory = await Auction.find(queryFilters)
     .populate({
       path: "car",
-      select: "make model year price images mileage bodyColor vehicleType servicePack mortgage",
+      select:
+        "make model year price images mileage bodyColor vehicleType servicePack mortgage",
       populate: [
         {
           path: "make",
@@ -2640,7 +2645,8 @@ exports.getEndedAuctionHistory = asyncHandler(async (req, res, next) => {
   const endedAuctions = await Auction.find(queryFilters)
     .populate({
       path: "car",
-      select: "make model year price images mileage bodyColor vehicleType servicePack mortgage",
+      select:
+        "make model year price images mileage bodyColor vehicleType servicePack mortgage",
       populate: [
         {
           path: "make",
@@ -2870,7 +2876,6 @@ exports.getCompletedBidsForAuction = asyncHandler(async (req, res, next) => {
         lastBidTime: bid.time,
       };
     }
-    
 
     bidderActivity[bidderId].bids.push({
       _id: bid._id,
@@ -2961,7 +2966,10 @@ exports.reauctionAuction = asyncHandler(async (req, res, next) => {
   // Check if auction has ended (endTime has passed)
   if (new Date() <= auction.endTime) {
     return next(
-      new ErrorResponse("Cannot re-auction an auction that hasn't ended yet", 400)
+      new ErrorResponse(
+        "Cannot re-auction an auction that hasn't ended yet",
+        400
+      )
     );
   }
 
