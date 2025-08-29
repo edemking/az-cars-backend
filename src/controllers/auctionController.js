@@ -485,11 +485,11 @@ exports.deleteAuction = asyncHandler(async (req, res, next) => {
   }
 
   // For non-admin users, don't allow deletion if auction has bids
-  if (req.user.role !== "admin" && auction.totalBids > 0) {
-    return next(
-      new ErrorResponse("Cannot delete auction with existing bids", 400)
-    );
-  }
+  // if (req.user.role !== "admin" && req.user.role !== "super-admin" && auction.totalBids > 0) {
+  //   return next(
+  //     new ErrorResponse("Cannot delete auction with existing bids", 400)
+  //   );
+  // }
 
   // For admin users, allow deletion even with bids
   const deletionReason = req.body.reason || "Administrative cancellation";
