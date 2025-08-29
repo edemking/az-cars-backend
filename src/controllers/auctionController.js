@@ -8,6 +8,7 @@ const {
   emitNewBid,
   emitAuctionUpdate,
   emitAuctionCompleted,
+  emitAuctionDeleted,
   getAuctionRoomClients,
 } = require("../utils/socketEvents");
 const {
@@ -18,6 +19,7 @@ const {
   createNewBidOnAuctionNotification,
   createNewAuctionNotifications,
   createReauctionNotifications,
+  createAuctionDeletedNotifications,
 } = require("../utils/notificationService");
 
 // @desc    Create a new auction
@@ -76,6 +78,9 @@ exports.getAuctions = asyncHandler(async (req, res, next) => {
   // Filter by status if provided
   if (req.query.status) {
     query.status = req.query.status;
+  } else {
+    // By default, exclude deleted auctions unless specifically requested
+    query.status = { $ne: "deleted" };
   }
 
   // Filter by type if provided
@@ -479,18 +484,63 @@ exports.deleteAuction = asyncHandler(async (req, res, next) => {
     );
   }
 
-  // Don't allow deletion if auction has bids
-  if (auction.totalBids > 0) {
+  // For non-admin users, don't allow deletion if auction has bids
+  if (req.user.role !== "admin" && auction.totalBids > 0) {
     return next(
       new ErrorResponse("Cannot delete auction with existing bids", 400)
     );
   }
 
-  // Delete the auction
-  await auction.deleteOne();
+  // For admin users, allow deletion even with bids
+  const deletionReason = req.body.reason || "Administrative cancellation";
+
+  // Soft delete the auction
+  auction.status = "deleted";
+  auction.deletedBy = req.user.id;
+  auction.deletedAt = new Date();
+  auction.deletionReason = deletionReason;
+
+  await auction.save();
+
+  // Get all participants for notifications
+  const bids = await Bid.find({ auction: auction._id }).populate("bidder");
+  const uniqueBidders = [...new Set(bids.map((bid) => bid.bidder._id))];
+  if (!uniqueBidders.includes(auction.createdBy)) {
+    uniqueBidders.push(auction.createdBy);
+  }
+
+  // Send real-time updates
+  emitAuctionDeleted(auction._id.toString(), {
+    reason: deletionReason,
+    deletedBy: req.user,
+  });
+
+  // Send notifications in background
+  setImmediate(async () => {
+    try {
+      // Create in-app notifications
+      await createAuctionDeletedNotifications(
+        auction,
+        req.user,
+        deletionReason
+      );
+
+      console.log(
+        `Auction deletion notifications sent for auction ${auction._id}`
+      );
+    } catch (error) {
+      console.error("Error sending auction deletion notifications:", error);
+    }
+  });
 
   sendSuccess(res, {
     message: "Auction deleted successfully",
+    data: {
+      auctionId: auction._id,
+      status: auction.status,
+      deletedAt: auction.deletedAt,
+      reason: auction.deletionReason,
+    },
   });
 });
 
@@ -512,7 +562,7 @@ exports.placeBid = asyncHandler(async (req, res, next) => {
     );
   }
 
-  // Check if auction is active
+  // Check if auction is active and not deleted
   if (auction.status !== "active") {
     return next(new ErrorResponse("This auction is no longer active", 400));
   }
@@ -656,7 +706,7 @@ exports.buyNowAuction = asyncHandler(async (req, res, next) => {
     );
   }
 
-  // Check if auction is active
+  // Check if auction is active and not deleted
   if (auction.status !== "active") {
     return next(new ErrorResponse("This auction is no longer active", 400));
   }
@@ -751,7 +801,10 @@ exports.buyNowAuction = asyncHandler(async (req, res, next) => {
 // @route   GET /api/auctions/user
 // @access  Private
 exports.getUserAuctions = asyncHandler(async (req, res, next) => {
-  const auctions = await Auction.find({ createdBy: req.user.id }).populate({
+  const auctions = await Auction.find({
+    createdBy: req.user.id,
+    status: { $ne: "deleted" },
+  }).populate({
     path: "car",
     select:
       "make model year price images mileage carOptions bodyColor cylinder fuelType transmission carDrive country vehicleType",
