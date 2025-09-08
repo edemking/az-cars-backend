@@ -647,6 +647,7 @@ exports.placeBid = asyncHandler(async (req, res, next) => {
   await auction.save();
 
   // Emit real-time bid update to all clients watching this auction
+  // Note: endTime is included and reflects the updated time (extended by 1 minute)
   emitNewBid(auction._id.toString(), {
     bid: bid,
     auction: {
@@ -655,7 +656,7 @@ exports.placeBid = asyncHandler(async (req, res, next) => {
       totalBids: auction.totalBids,
       status: auction.status,
       winner: auction.winner,
-      endTime: auction.endTime,
+      endTime: auction.endTime, // Updated endTime after 1-minute extension
     },
   });
 
@@ -760,6 +761,19 @@ exports.buyNowAuction = asyncHandler(async (req, res, next) => {
   auction.totalBids += 1;
 
   await auction.save();
+
+  // Emit new bid event first (for consistency with regular bidding)
+  emitNewBid(auction._id.toString(), {
+    bid: bid,
+    auction: {
+      _id: auction._id,
+      currentHighestBid: auction.currentHighestBid,
+      totalBids: auction.totalBids,
+      status: auction.status,
+      winner: auction.winner,
+      endTime: auction.endTime, // Current endTime (not extended for buy-now)
+    },
+  });
 
   // Emit auction completion event
   emitAuctionCompleted(auction._id.toString(), {

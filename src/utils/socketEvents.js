@@ -5,7 +5,7 @@
 /**
  * Emit a new bid event to all clients in the auction room
  * @param {string} auctionId - The auction ID
- * @param {Object} bidData - The bid data to emit
+ * @param {Object} bidData - The bid data to emit (includes updated endTime after extension)
  */
 const emitNewBid = (auctionId, bidData) => {
   if (global.io) {
