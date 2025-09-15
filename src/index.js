@@ -12,8 +12,6 @@ const { sendError, sendSuccess } = require("./utils/responseHandler");
 // Initialize Express app
 const app = express();
 
-app.set("trust proxy", 1);
-
 // Create HTTP server (must be before Socket.IO)
 const server = http.createServer(app);
 
@@ -24,11 +22,35 @@ const parseOrigins = (raw) =>
     .map((s) => s.trim())
     .filter(Boolean);
 
-const ALLOWED_ORIGINS = parseOrigins(process.env.FRONTEND_ORIGINS);
+// Normalize origins: lowercase, strip trailing slashes, remove zero-width spaces
+const normalizeOrigin = (s) => {
+  const cleaned = s
+    .replace(/\u200B/g, "")
+    .replace(/\/+$/, "")
+    .toLowerCase();
+  try {
+    // If it's a standard URL, normalize to protocol//host
+    const u = new URL(cleaned);
+    return `${u.protocol}//${u.host}`;
+  } catch {
+    // For custom schemes like azcars:// just return cleaned
+    return cleaned;
+  }
+};
 
+const ALLOWED_ORIGINS_RAW = parseOrigins(process.env.FRONTEND_ORIGINS);
+const ALLOWED_SET = new Set(ALLOWED_ORIGINS_RAW.map(normalizeOrigin));
+
+// Debug what the server thinks the allowlist is
+console.log("CORS allowlist:", [...ALLOWED_SET]);
+
+// If you're behind Nginx/ALB/Cloudflare, enable this so cookies + SameSite=None behave
+app.set("trust proxy", 1);
+
+// TEMP debug – logs any mismatched origins hitting the API
 app.use((req, _res, next) => {
   const o = req.headers.origin;
-  if (o && !ALLOWED_ORIGINS.includes(o)) {
+  if (o && !ALLOWED_SET.has(normalizeOrigin(o))) {
     console.warn(
       `[CORS] Blocked Origin: ${o} -> ${req.method} ${req.originalUrl}`
     );
@@ -36,54 +58,34 @@ app.use((req, _res, next) => {
   next();
 });
 
-// Allow: specific list, plus no-origin (e.g., curl/postman)
 const corsOptions = {
   origin(origin, cb) {
     if (!origin) return cb(null, true); // non-browser or same-origin
-    if (ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
-    return cb(new Error(`CORS blocked for origin: ${origin}`));
+    const ok = ALLOWED_SET.has(normalizeOrigin(origin));
+    return cb(null, ok); // do NOT throw — just say "not allowed"
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-  // Let cors reflect what the browser asks for; don’t hardcode these.
-  // allowedHeaders: undefined,
-  // If you truly need to read response headers in JS, list them here:
   exposedHeaders: ["Authorization"],
   optionsSuccessStatus: 204,
 };
 
-// Apply CORS for all routes + preflight
+// Apply CORS for all routes + preflight (only once)
 app.use(cors(corsOptions));
-app.options("*", cors(corsOptions)); // <-- keep only ONE app.options
-
-// Body parsers
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.options("*", cors(corsOptions));
 
 // ---------- Socket.IO ----------
-// const io = socketIo(server, {
-//   cors: {
-//     origin: (origin, cb) => {
-//       if (!origin) return cb(null, true);
-//       if (ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
-//       return cb(new Error(`Socket.IO CORS blocked for origin: ${origin}`));
-//     },
-//     credentials: true,
-//     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-//   },
-// });
-
 const io = socketIo(server, {
-  path: "/socket.io", // explicit
+  path: "/socket.io",
   cors: {
     origin: (origin, cb) => {
       if (!origin) return cb(null, true);
-      if (ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
-      return cb(new Error(`Socket.IO CORS blocked for origin: ${origin}`));
+      const ok = ALLOWED_SET.has(normalizeOrigin(origin));
+      return cb(null, ok); // again, no thrown Error
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-    allowedHeaders: ["Content-Type", "Authorization"], // <-- add this
+    allowedHeaders: ["Content-Type", "Authorization"], // explicit for engine.io preflights
   },
 });
 
