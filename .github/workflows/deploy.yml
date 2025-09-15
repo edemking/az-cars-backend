@@ -32,17 +32,17 @@ jobs:
             nvm use 20
 
             # 3) Deploy directory
-            APP_DIR="/home/${USER}/apps/az-cars-backend"
+            APP_DIR="/home/ec2-user/apps/az-cars-backend"
             mkdir -p "$APP_DIR"
             cd "$APP_DIR"
 
             # 4) Make sure remote points to your repo
             if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-              git remote set-url origin https://github.com/<YOUR_GH_USERNAME>/az-cars-backend.git
+              git remote set-url origin https://github.com/edemking/az-cars-backend.git
               git fetch origin main
               git reset --hard origin/main
             else
-              git clone https://github.com/<YOUR_GH_USERNAME>/az-cars-backend.git .
+              git clone https://github.com/edemking/az-cars-backend.git .
               git checkout main
             fi
 

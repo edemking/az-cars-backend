@@ -12,22 +12,52 @@ const { sendError, sendSuccess } = require("./utils/responseHandler");
 // Initialize Express app
 const app = express();
 
-// Create HTTP server and Socket.IO instance
+// Create HTTP server (must be before Socket.IO)
 const server = http.createServer(app);
+
+// ---------- CORS (single source of truth) ----------
+const parseOrigins = (raw) =>
+  (raw || "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+const ALLOWED_ORIGINS = parseOrigins(process.env.FRONTEND_ORIGINS);
+
+// Allow: specific list, plus no-origin (e.g., curl/postman)
+const corsOptions = {
+  origin(origin, cb) {
+    if (!origin) return cb(null, true); // non-browser or same-origin
+    if (ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
+    return cb(new Error(`CORS blocked for origin: ${origin}`));
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+  // Let cors reflect what the browser asks for; don’t hardcode these.
+  // allowedHeaders: undefined,
+  // If you truly need to read response headers in JS, list them here:
+  exposedHeaders: ["Authorization"],
+  optionsSuccessStatus: 204,
+};
+
+// Apply CORS for all routes + preflight
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions)); // <-- keep only ONE app.options
+
+// Body parsers
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// ---------- Socket.IO ----------
 const io = socketIo(server, {
   cors: {
-    origin: true,
+    origin: (origin, cb) => {
+      if (!origin) return cb(null, true);
+      if (ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
+      return cb(new Error(`Socket.IO CORS blocked for origin: ${origin}`));
+    },
     credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: [
-      "Authorization",
-      "Content-Type",
-      "Accept",
-      "Access-Control-Allow-Origin",
-      "Access-Control-Allow-Headers",
-      "Access-Control-Allow-Methods",
-      "ngrok-skip-browser-warning",
-    ],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
   },
 });
 
@@ -38,64 +68,30 @@ global.io = io;
 io.on("connection", (socket) => {
   console.log("Client connected:", socket.id);
 
-  // Join auction room for real-time updates
   socket.on("join-auction", (auctionId) => {
     socket.join(`auction-${auctionId}`);
-    console.log(
-      `Client ${socket.id} joined auction room: auction-${auctionId}`
-    );
+    console.log(`Client ${socket.id} joined auction-${auctionId}`);
   });
 
-  // Leave auction room
   socket.on("leave-auction", (auctionId) => {
     socket.leave(`auction-${auctionId}`);
-    console.log(`Client ${socket.id} left auction room: auction-${auctionId}`);
+    console.log(`Client ${socket.id} left auction-${auctionId}`);
   });
 
-  // Join user room for notifications
   socket.on("join-user", (userId) => {
     socket.join(`user-${userId}`);
-    console.log(`Client ${socket.id} joined user room: user-${userId}`);
+    console.log(`Client ${socket.id} joined user-${userId}`);
   });
 
-  // Leave user room
   socket.on("leave-user", (userId) => {
     socket.leave(`user-${userId}`);
-    console.log(`Client ${socket.id} left user room: user-${userId}`);
+    console.log(`Client ${socket.id} left user-${userId}`);
   });
 
   socket.on("disconnect", () => {
     console.log("Client disconnected:", socket.id);
   });
 });
-
-const corsOptions = {
-  origin: true,
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-  // Only include headers clients actually send
-  allowedHeaders: [
-    "Authorization",
-    "Content-Type",
-    "Accept",
-    "Access-Control-Allow-Origin",
-    "Access-Control-Allow-Headers",
-    "Access-Control-Allow-Methods",
-    "ngrok-skip-browser-warning",
-  ],
-  // If you read Authorization from responses (e.g., refresh tokens in header)
-  exposedHeaders: ["Authorization"],
-};
-
-// 4) Express CORS + preflight
-app.use(cors(corsOptions));
-app.options("*", cors(corsOptions));
-
-// Enable pre-flight requests for all routes
-app.options("*", cors());
-
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
 // Connect to MongoDB
 connectDB();
