@@ -1,8 +1,11 @@
-require("dotenv").config({ path: ".env" });
+const path = require("path"); // you already import it below; keep one import only
+const envPath = path.resolve(__dirname, "..", ".env");
+require("dotenv").config({ path: envPath });
+console.log("Using .env at:", envPath);
+
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
-const path = require("path");
 const http = require("http");
 const socketIo = require("socket.io");
 const config = require("./config/config");
