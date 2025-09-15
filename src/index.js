@@ -69,35 +69,8 @@ io.on("connection", (socket) => {
   });
 });
 
-// Middleware
-// app.use(
-//   cors({
-//     origin: true,
-//     credentials: true,
-//     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-//     allowedHeaders: [
-//       "Authorization",
-//       "Content-Type",
-//       "Accept",
-//       "Access-Control-Allow-Origin",
-//       "Access-Control-Allow-Headers",
-//       "Access-Control-Allow-Methods",
-//       "ngrok-skip-browser-warning",
-//     ],
-//     exposedHeaders: ["Authorization"],
-//   })
-// );
-
-// 1) Define allowed origins explicitly
-// const ALLOWED_ORIGINS = [
-//   process.env.FRONTEND_URL,                 // e.g. https://devedem.com
-//   process.env.FRONTEND_PREVIEW_URL,         // e.g. https://your-app.vercel.app
-//   process.env.ADMIN_URL,                    // if you have an admin app
-// ].filter(Boolean);
-
-// 2) One CORS options object for Express + Socket.IO
 const corsOptions = {
-  origin: "*",
+  origin: true,
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
   // Only include headers clients actually send

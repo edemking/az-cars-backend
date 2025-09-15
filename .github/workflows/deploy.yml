@@ -1,46 +1,66 @@
-name: Deploy to EC2
+name: Deploy
 
 on:
   push:
-    branches: [ main ]  # Triggers when you push to main branch
-  pull_request:
-    branches: [ main ]
+    branches: ["main"]
+  workflow_dispatch:
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    
-    steps:
-    - uses: actions/checkout@v3
-    
-    - name: Setup Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '16'
-        cache: 'npm'
-    
-    - name: Install dependencies
-      run: npm ci
-    
-    - name: Run tests (if you have any)
-      run: npm test || echo "No tests found"
-
   deploy:
-    needs: test
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    
+
     steps:
-    - uses: actions/checkout@v3
-    
-    - name: Deploy to EC2
-      uses: appleboy/ssh-action@v0.1.5
-      with:
-        host: ${{ secrets.EC2_HOST }}
-        username: ${{ secrets.EC2_USER }}
-        key: ${{ secrets.EC2_SSH_KEY }}
-        script: |
-          cd /home/ec2-user/apps/az-cars-backend
-          git pull origin main
-          npm install --production
-          pm2 restart az-cars-backend 
+      - name: Checkout (not strictly needed for SSH, but harmless)
+        uses: actions/checkout@v4
+
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v0.1.5
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          # port: 22   # uncomment if non-default
+          script: |
+            set -e
+
+            # 1) Ensure nvm is available in this non-interactive shell
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" || true
+
+            # 2) Ensure Node 20 is installed & selected (idempotent)
+            nvm install 20
+            nvm use 20
+
+            # 3) Deploy directory
+            APP_DIR="/home/${USER}/apps/az-cars-backend"
+            mkdir -p "$APP_DIR"
+            cd "$APP_DIR"
+
+            # 4) Make sure remote points to your repo
+            if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+              git remote set-url origin https://github.com/<YOUR_GH_USERNAME>/az-cars-backend.git
+              git fetch origin main
+              git reset --hard origin/main
+            else
+              git clone https://github.com/<YOUR_GH_USERNAME>/az-cars-backend.git .
+              git checkout main
+            fi
+
+            # 5) Install (prefer lockfile)
+            if [ -f package-lock.json ]; then
+              npm ci --omit=dev
+            else
+              npm install --omit=dev
+            fi
+
+            # 6) Start or reload PM2
+            if pm2 describe az-cars-backend >/dev/null 2>&1; then
+              pm2 reload az-cars-backend --update-env
+            else
+              pm2 start src/index.js --name az-cars-backend
+              pm2 save
+            fi
+
+            # 7) Optional: show status and recent logs for debugging
+            pm2 status az-cars-backend
+            pm2 logs az-cars-backend --lines 50
