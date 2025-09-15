@@ -12,6 +12,8 @@ const { sendError, sendSuccess } = require("./utils/responseHandler");
 // Initialize Express app
 const app = express();
 
+app.set("trust proxy", 1);
+
 // Create HTTP server (must be before Socket.IO)
 const server = http.createServer(app);
 
@@ -23,6 +25,16 @@ const parseOrigins = (raw) =>
     .filter(Boolean);
 
 const ALLOWED_ORIGINS = parseOrigins(process.env.FRONTEND_ORIGINS);
+
+app.use((req, _res, next) => {
+  const o = req.headers.origin;
+  if (o && !ALLOWED_ORIGINS.includes(o)) {
+    console.warn(
+      `[CORS] Blocked Origin: ${o} -> ${req.method} ${req.originalUrl}`
+    );
+  }
+  next();
+});
 
 // Allow: specific list, plus no-origin (e.g., curl/postman)
 const corsOptions = {
@@ -49,7 +61,20 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // ---------- Socket.IO ----------
+// const io = socketIo(server, {
+//   cors: {
+//     origin: (origin, cb) => {
+//       if (!origin) return cb(null, true);
+//       if (ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
+//       return cb(new Error(`Socket.IO CORS blocked for origin: ${origin}`));
+//     },
+//     credentials: true,
+//     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+//   },
+// });
+
 const io = socketIo(server, {
+  path: "/socket.io", // explicit
   cors: {
     origin: (origin, cb) => {
       if (!origin) return cb(null, true);
@@ -58,6 +83,7 @@ const io = socketIo(server, {
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allowedHeaders: ["Content-Type", "Authorization"], // <-- add this
   },
 });
 
