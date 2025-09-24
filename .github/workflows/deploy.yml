@@ -40,7 +40,44 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            cd /home/ec2-user/apps/az-cars-backend
-            git pull origin main
-            npm install --production
-            pm2 restart az-cars-backend
+            set -e
+
+            # Ensure nvm + Node 20 are available in this non-interactive shell
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+            nvm install 20
+            nvm use 20
+
+            APP_DIR="/home/ec2-user/apps/az-cars-backend"
+            mkdir -p "$APP_DIR"
+            cd "$APP_DIR"
+
+            # Pull cleanly
+            if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+              git remote set-url origin https://github.com/edemking/az-cars-backend.git
+              git fetch origin main
+              git reset --hard origin/main
+            else
+              git clone https://github.com/edemking/az-cars-backend.git .
+              git checkout main
+            fi
+
+            # Install deps
+            if [ -f package-lock.json ]; then
+              npm ci --omit=dev
+            else
+              npm install --omit=dev
+            fi
+
+            # Start or reload PM2 (handles the "not found" case)
+            if pm2 describe az-cars-backend >/dev/null 2>&1; then
+              pm2 reload az-cars-backend --update-env
+            else
+              pm2 start src/index.js --name az-cars-backend
+              pm2 save
+            fi
+
+            # Optional brief logs (no streaming)
+            pm2 status az-cars-backend || true
+            tail -n 80 ~/.pm2/logs/az-cars-backend-out.log || true
+            tail -n 80 ~/.pm2/logs/az-cars-backend-error.log || true
