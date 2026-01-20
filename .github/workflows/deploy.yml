@@ -48,6 +48,9 @@ jobs:
             nvm install 20
             nvm use 20
 
+            # Install PM2 globally if not already installed
+            npm install -g pm2
+
             APP_DIR="/home/ec2-user/apps/az-cars-backend"
             mkdir -p "$APP_DIR"
             cd "$APP_DIR"
