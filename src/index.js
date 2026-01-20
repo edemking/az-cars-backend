@@ -38,6 +38,7 @@ const normalizeOrigin = (s) => {
 const ALLOWED_ORIGINS_RAW = [
   "https://main.dr6pagvri9whk.amplifyapp.com",
   "https://auction.azcarsae.com",
+  "http://localhost:3000",
 ];
 const ALLOWED_SET = new Set(ALLOWED_ORIGINS_RAW.map(normalizeOrigin));
 
