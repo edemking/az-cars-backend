@@ -19,12 +19,6 @@ const app = express();
 const server = http.createServer(app);
 
 // ---------- CORS (single source of truth) ----------
-const parseOrigins = (raw) =>
-  (raw || "")
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
-
 // Normalize origins: lowercase, strip trailing slashes, remove zero-width spaces
 const normalizeOrigin = (s) => {
   const cleaned = s
@@ -41,7 +35,10 @@ const normalizeOrigin = (s) => {
   }
 };
 
-const ALLOWED_ORIGINS_RAW = parseOrigins(process.env.FRONTEND_ORIGINS);
+const ALLOWED_ORIGINS_RAW = [
+  "https://main.dr6pagvri9whk.amplifyapp.com",
+  "https://auction.azcarsae.com",
+];
 const ALLOWED_SET = new Set(ALLOWED_ORIGINS_RAW.map(normalizeOrigin));
 
 // Debug what the server thinks the allowlist is
